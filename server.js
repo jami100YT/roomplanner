@@ -95,6 +95,8 @@ function apply(s, o) {
   } else if (o.t === 'itemDel' && typeof o.id === 'string') {
     const r = s.rooms.find(x => x.id === o.rid);
     if (r) r.items = r.items.filter(x => x.id !== o.id);
+  } else if (o.t === 'meta' && o.k === 'north' && Number.isFinite(o.v)) { // Plan-Einstellung: Himmelsrichtung
+    s.meta = s.meta || {}; s.meta.north = ((o.v % 360) + 360) % 360;
   } else return false;
   return true;
 }

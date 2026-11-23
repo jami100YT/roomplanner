@@ -105,6 +105,15 @@ button[data-armed]{background:var(--danger);color:#fff;border-color:var(--danger
 .undo{display:inline-flex;gap:4px}.undo button{min-width:38px;font-size:16px;padding:3px 8px}
 .rarea{paint-order:stroke;stroke:var(--floor);stroke-width:3px;stroke-linejoin:round;fill:var(--muted);font-family:var(--f-mono);pointer-events:none}
 .curs{pointer-events:none}
+.compass{position:absolute;top:10px;right:10px;display:flex;flex-direction:column;align-items:center;gap:4px;z-index:5}
+#rose{width:74px;height:74px;cursor:grab;touch-action:none;filter:drop-shadow(0 2px 6px rgba(0,0,0,.12))}
+#rose:active{cursor:grabbing}
+.cring{fill:var(--panel);stroke:var(--line);stroke-width:2}
+.cn{fill:var(--danger)}.cs{fill:var(--muted);opacity:.55}.cc{fill:var(--panel);stroke:var(--fg);stroke-width:1.5}
+.cl{font:700 13px var(--f-body);fill:var(--fg)}
+#northBtn{font-family:var(--f-mono);font-size:12px;padding:3px 8px}
+.npop{position:absolute;top:calc(100% + 6px);right:0;width:310px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:10px;box-shadow:0 6px 24px rgba(0,0,0,.14)}
+.npop .hrow button{border:0;background:transparent;font-size:18px;padding:0 4px}
 .grpbox{fill:none;stroke:var(--sel);stroke-width:1.5;stroke-dasharray:6 4;vector-effect:non-scaling-stroke;pointer-events:none}
 .grptx{fill:var(--sel);font-family:var(--f-body);font-weight:600;pointer-events:none;paint-order:stroke;stroke:var(--floor);stroke-width:3px}
 .marquee{fill:var(--sel);fill-opacity:.07;stroke:var(--sel);stroke-width:1;stroke-dasharray:4 3;vector-effect:non-scaling-stroke;pointer-events:none}
@@ -360,6 +369,22 @@ button.on{background:var(--sel);border-color:var(--sel);color:#fff}
       <span class="hint" id="hint">Mausrad = zoomen · leere Fläche / Leertaste ziehen = Ausschnitt verschieben · Raumname oder Boden ziehen = Raum verschieben · Ziehen = verschieben · Doppelklick / R = drehen · Q / E = 45° links / rechts · Pfeiltasten = 1 cm (⇧ 10 cm) · Entf = löschen · Boden anklicken = Raum wählen</span>
     </div>
     <div class="stage"><svg id="plan" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="compass" id="compass">
+        <svg id="rose" viewBox="-50 -50 100 100" aria-label="Kompass – ziehen zum Drehen" role="img">
+          <circle r="46" class="cring"/>
+          <g id="needle"><path d="M0-40 L9 0 L0 6 L-9 0Z" class="cn"/><path d="M0 40 L9 0 L0-6 L-9 0Z" class="cs"/>
+            <text y="-27" class="cl" text-anchor="middle">N</text></g>
+          <circle r="3.5" class="cc"/>
+        </svg>
+        <button type="button" id="northBtn" title="Norden einstellen">N <span id="northTxt">0°</span></button>
+        <div class="npop" id="northPop" hidden>
+          <div class="hrow"><h2>Himmelsrichtung</h2><button type="button" id="northClose" aria-label="Schließen">×</button></div>
+          <div class="meta">Wo ist Norden? Kompass ziehen oder Winkel eingeben (0° = oben im Plan, im Uhrzeigersinn). Gilt für alle in diesem Plan.</div>
+          <label class="vrow">Norden <input type="range" id="northRange" min="0" max="359" step="1"><input type="number" id="northNum" min="0" max="359" step="1" style="width:76px"> °</label>
+          <div class="btnrow"><button type="button" data-n="-15">⟲ 15°</button><button type="button" data-n="-90">⟲ 90°</button><button type="button" data-n="90">⟳ 90°</button><button type="button" data-n="15">⟳ 15°</button></div>
+          <div class="btnrow"><button type="button" data-nset="0">Norden = oben</button><button type="button" data-nset="90">= rechts</button><button type="button" data-nset="180">= unten</button><button type="button" data-nset="270">= links</button></div>
+        </div>
+      </div>
       <div class="zoom" role="group" aria-label="Zoom">
         <button type="button" id="zoomOut" title="Herauszoomen (−)" aria-label="Herauszoomen">−</button>
         <button type="button" id="zoomFit" title="Alles einpassen (0)">100 %</button>
@@ -437,9 +462,10 @@ function parsePlan(o,keep){
     out.push(room);
   }
   if(!out.length)throw new Error('Keine Räume in der Datei gefunden');
-  return{rooms:out,snap:o.snap===undefined?true:!!o.snap,step:o.step==45?45:90};
+  const nn=+(o.north!==undefined?o.north:o.meta&&o.meta.north);
+  return{rooms:out,snap:o.snap===undefined?true:!!o.snap,step:o.step==45?45:90,north:isFinite(nn)?((nn%360)+360)%360:0};
 }
-function exportObj(withIds){return{app:'raumplaner',version:2,snap:S.snap,step:S.step,
+function exportObj(withIds){return{app:'raumplaner',version:2,snap:S.snap,step:S.step,north:S.north||0,
   rooms:S.rooms.map(({id,items,...r})=>({...(withIds?{id}:{}),...r,items:items.map(({id,...i})=>withIds?{id,...i}:i)}))}}
 
 function example(){
@@ -486,6 +512,7 @@ function save(){cacheLocal();sync();sealUndo()}
 
 let S=load()||example();
 S.rooms.forEach(r=>r.hidden=hiddenSet.has(r.id));
+if(!isFinite(S.north))S.north=0;
 let sel=null, tab='furn', lockRooms=false, showNames=true;
 const extra=new Set(); // weitere ausgewählte Möbel (Mehrfachauswahl / Gruppe); sel = Hauptauswahl
 /* ---------- Persönliche Einstellungen (nur in diesem Browser) ---------- */
@@ -528,7 +555,12 @@ function wallInfo(r,i){const Q=r.pts,n=Q.length;i=((i%n)+n)%n;const a=Q[i],b=Q[(
 function endLabels(g){return Math.abs(g.u[0])>=Math.abs(g.u[1])?(g.u[0]>0?['links','rechts']:['rechts','links']):(g.u[1]>0?['oben','unten']:['unten','oben'])}
 function wallDir(g){const ox=-g.n[0],oy=-g.n[1];if(Math.abs(ox)>.38&&Math.abs(oy)>.38)return'schräg';
   return Math.abs(oy)>Math.abs(ox)?(oy<0?'oben':'unten'):(ox>0?'rechts':'links')}
-function wallName(r,i){const g=wallInfo(r,i);return`Wand ${g.i+1} · ${wallDir(g)} · ${fmt(g.L)} cm`}
+// Himmelsrichtung: S.north = Winkel (im Uhrzeigersinn) von „oben im Plan“ nach Norden
+const WINDS=['Nord','Nordost','Ost','Südost','Süd','Südwest','West','Nordwest'],WINDS_S=['N','NO','O','SO','S','SW','W','NW'];
+function bearing(v){const a=Math.atan2(v[0],-v[1])*180/Math.PI;return(((a-(S.north||0))%360)+360)%360} // Bildschirm-Richtung → Kompass (0 = Nord)
+const windOf=b=>Math.round(b/45)%8;
+const wallFacing=g=>bearing([-g.n[0],-g.n[1]]); // Außenseite der Wand
+function wallName(r,i){const g=wallInfo(r,i);return`Wand ${g.i+1} · ${WINDS_S[windOf(wallFacing(g))]} · ${fmt(g.L)} cm`}
 function normalizeRoom(r){ // Ursprung auf min x/y schieben, Möbel bleiben global an ihrem Platz
   const mx=Math.min(...r.pts.map(p=>p[0])),my=Math.min(...r.pts.map(p=>p[1]));
   if(mx||my){r.pts=r.pts.map(p=>[r1(p[0]-mx),r1(p[1]-my)]);r.x=r1(r.x+mx);r.y=r1(r.y+my);
@@ -742,6 +774,26 @@ function wallDims(vis,A,fs){
 function dim(x1,y1,x2,y2,fs){const len=Math.hypot(x2-x1,y2-y1);if(len<0.5)return'';
   return`<line class="dimln" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/><text class="dimtx" font-size="${fs*0.85}" text-anchor="middle" dy="0.35em" x="${(x1+x2)/2}" y="${(y1+y2)/2}">${fmt(len)}</text>`}
 
+/* ---------- Himmelsrichtung / Kompass ---------- */
+function renderCompass(){const n=Math.round(S.north||0);$('#needle').setAttribute('transform',`rotate(${n})`);$('#northTxt').textContent=n+'°';
+  if(document.activeElement!==$('#northNum'))$('#northNum').value=n;$('#northRange').value=n}
+function setNorth(v,commit){S.north=Math.round(((v%360)+360)%360);renderCompass();renderPanel();renderWalls();if(commit)save();else{cacheLocal();syncSoon()}}
+$('#northBtn').addEventListener('click',()=>{$('#northPop').hidden=!$('#northPop').hidden});
+$('#northClose').addEventListener('click',()=>{$('#northPop').hidden=true});
+$('#northRange').addEventListener('input',e=>setNorth(+e.target.value,false));
+$('#northRange').addEventListener('change',e=>setNorth(+e.target.value,true));
+$('#northNum').addEventListener('change',e=>{const v=parseFloat(e.target.value);if(isFinite(v))setNorth(v,true)});
+$('#northPop').addEventListener('click',e=>{const b=e.target.closest('button[data-n],button[data-nset]');if(!b)return;
+  setNorth(b.dataset.nset!==undefined?+b.dataset.nset:(S.north||0)+ +b.dataset.n,true)});
+{ // Kompassnadel ziehen (rastet auf 5°, mit Shift frei)
+  const rose=$('#rose');let rd=null;
+  const ang=e=>{const b=rose.getBoundingClientRect();return Math.atan2(e.clientX-(b.left+b.width/2),-(e.clientY-(b.top+b.height/2)))*180/Math.PI};
+  rose.addEventListener('pointerdown',e=>{rd={a0:ang(e),n0:S.north||0};rose.setPointerCapture(e.pointerId);e.preventDefault()});
+  rose.addEventListener('pointermove',e=>{if(!rd)return;let v=rd.n0+ang(e)-rd.a0;if(!e.shiftKey)v=Math.round(v/5)*5;setNorth(v,false)});
+  const up=()=>{if(!rd)return;rd=null;save()};rose.addEventListener('pointerup',up);rose.addEventListener('pointercancel',up);
+}
+document.addEventListener('pointerdown',e=>{const c=$('#compass');if(!$('#northPop').hidden&&!c.contains(e.target))$('#northPop').hidden=true});
+
 /* ---------- Zoom & Ausschnitt ---------- */
 let view=null; // eigener Ausschnitt [x,y,w,h]; null = ganze Wohnung einpassen
 const curVB=()=>view||layout.vb;
@@ -875,6 +927,7 @@ function renderPanel(){
   if(it.grp)h+=`<div class="ginfo">Teil der Gruppe „${esc(it.gn||'Gruppe')}“<button type="button" data-act="selgrp">Ganze Gruppe wählen</button><button type="button" data-act="leavegrp">Aus Gruppe lösen</button></div>`;
   if(it.type==='furn'){
     h+=`<div class="r3">${num('w','Breite',it)}${num('d','Tiefe',it)}<label class="f">Farbe<input type="color" data-k="color" value="${esc(it.color)}"></label></div>
+    <div class="meta">Vorderseite zeigt nach <b style="color:var(--fg)">${(()=>{const a=it.rot*Math.PI/180,b=bearing([-Math.sin(a),Math.cos(a)]);return WINDS[windOf(b)]+' ('+Math.round(b)+'°)'})()}</b></div>
     <div class="f" style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)">Drehung: <b id="rotv" style="color:var(--fg);font-family:var(--f-mono)">${it.rot}°</b>
       <div class="r4"><button type="button" data-act="rot" data-v="-90">⟲ 90°</button><button type="button" data-act="rot" data-v="-45">⟲ 45°</button><button type="button" data-act="rot" data-v="45">⟳ 45°</button><button type="button" data-act="rot" data-v="90">⟳ 90°</button></div></div>
     <div class="r2"><label class="f">Form<select data-k="form"><option value="rect"${!it.pts?' selected':''}>Rechteck</option><option value="L"${it.form==='L'?' selected':''}>L-Form</option><option value="free"${it.form==='free'?' selected':''}>Frei (Ecken)</option></select></label>
@@ -888,7 +941,8 @@ function renderPanel(){
   }else{
     const A=R(),[a,b]=endLabels(wallInfo(A,it.wall));
     h+=`<div class="r2"><label class="f">Wand<select data-k="wall">${A.pts.map((_,i)=>`<option value="${i}"${it.wall===i?' selected':''}>${esc(wallName(A,i))}</option>`).join('')}</select></label>${num('w','Breite',it)}</div>
-    <div class="r2">${num('ds','Abstand von '+a,it)}${num('de','Abstand von '+b,it)}</div>`;
+    <div class="r2">${num('ds','Abstand von '+a,it)}${num('de','Abstand von '+b,it)}</div>
+    <div class="meta">${it.type==='window'?'Fenster blickt nach':'Tür liegt in der Wand nach'} <b style="color:var(--fg)">${(()=>{const b=wallFacing(wallInfo(A,it.wall));return WINDS[windOf(b)]+' ('+Math.round(b)+'°)'})()}</b></div>`;
     if(it.type==='door')h+=`<div class="r2"><label class="f">Anschlag<select data-k="hinge"><option value="start"${it.hinge==='start'?' selected':''}>${a}</option><option value="end"${it.hinge==='end'?' selected':''}>${b}</option></select></label>
       <label class="f">Öffnet<select data-k="swing"><option value="in"${it.swing==='in'?' selected':''}>nach innen</option><option value="out"${it.swing==='out'?' selected':''}>nach außen</option></select></label></div>`;
     h+=`<div class="btnrow"><button type="button" data-act="cs">↔ auf Wand zentrieren</button>${it.type==='door'?'<button type="button" data-act="flip">Anschlag tauschen</button>':''}</div>
@@ -950,7 +1004,7 @@ function renderList(){
   const order={door:0,window:1,furn:2};
   const row=(it,cls='')=>{
     const sw=it.type==='furn'?`<i class="dot" style="background:${esc(it.color)}"></i>`:`<i class="dot" style="background:${it.type==='window'?'var(--glass)':'var(--floor)'}"></i>`;
-    const sz=it.type==='furn'?`${fmt(it.w)}×${fmt(it.d)}${it.rot?' · '+it.rot+'°':''}`:`${fmt(it.w)} · Wand ${it.wall+1}`;
+    const sz=it.type==='furn'?`${fmt(it.w)}×${fmt(it.d)}${it.rot?' · '+it.rot+'°':''}`:`${fmt(it.w)} · Wand ${it.wall+1} · ${WINDS_S[windOf(wallFacing(wallInfo(A,it.wall)))]}`;
     return`<button type="button" data-id="${it.id}" class="${cls} ${isSel(it.id)?'on':''}"><span>${sw}${esc(it.name)}</span><span>${sz}</span></button>`};
   const done=new Set();let h='';
   for(const it of [...A.items].sort((a,b)=>order[a.type]-order[b.type])){
@@ -1117,7 +1171,7 @@ function renderWalls(){
   const A=R(),ae=document.activeElement,box=$('#wallList');
   if(ae&&box.contains(ae))return; // nicht beim Tippen überschreiben
   box.innerHTML=A.pts.map((_,i)=>{const g=wallInfo(A,i);
-    return`<label class="wrow${wallHL===i?' hl':''}" data-wi="${i}"><span>Wand ${i+1} · ${wallDir(g)}</span><input type="number" min="5" step="1" data-wl="${i}" value="${r1(g.L)}"></label>`}).join('');
+    return`<label class="wrow${wallHL===i?' hl':''}" data-wi="${i}"><span>Wand ${i+1} · ${wallDir(g)} · ${WINDS_S[windOf(wallFacing(g))]}</span><input type="number" min="5" step="1" data-wl="${i}" value="${r1(g.L)}"></label>`}).join('');
 }
 let wallHL=null;
 $('#wallList').addEventListener('change',e=>{const i=e.target.dataset.wl;if(i===undefined)return;
@@ -1407,7 +1461,7 @@ function doImport(text,src){
   if($('#appendImp').checked){
     const B=bounds(S.rooms),IB=bounds(p.rooms),dx=B.x+B.w+T-IB.x,dy=B.y-IB.y;
     p.rooms.forEach(r=>{r.x+=dx;r.y+=dy});S.rooms.push(...p.rooms);
-  }else{S.rooms=p.rooms}
+  }else{S.rooms=p.rooms;S.north=p.north||0;renderCompass()}
   S.active=p.rooms[0].id;sel=null;renderAll();save();
   msg(`${p.rooms.length} ${p.rooms.length===1?'Raum':'Räume'} aus ${src} importiert.`);
 }
@@ -1457,8 +1511,9 @@ if(!/^#[0-9a-f]{6}$/i.test(me.c))me.c=COLORS_ME[Math.floor(Math.random()*COLORS_
 $('#me-name').value=me.n;$('#me-color').value=me.c;
 
 const roomKey=r=>{const{items,hidden,...p}=r;return JSON.stringify(p)};
-const opKey=o=>(o.t==='room'?'r:'+o.r.id:o.t==='roomDel'?'r:'+o.id:'i:'+(o.t==='item'?o.it.id:o.id));
-function resetShadow(){shadowR.clear();shadowI.clear();
+const opKey=o=>(o.t==='meta'?'m:'+o.k:o.t==='room'?'r:'+o.r.id:o.t==='roomDel'?'r:'+o.id:'i:'+(o.t==='item'?o.it.id:o.id));
+const shadowM=new Map();
+function resetShadow(){shadowR.clear();shadowI.clear();shadowM.set('north',S.north||0);
   for(const r of S.rooms){shadowR.set(r.id,roomKey(r));for(const it of r.items)shadowI.set(it.id,{rid:r.id,j:JSON.stringify(it)})}}
 function send(m){if(ws&&ws.readyState===1){ws.send(JSON.stringify(m));return true}return false}
 function sync(){
@@ -1477,6 +1532,7 @@ function sync(){
     inv('r:'+id,[{t:'room',r:JSON.parse(shadowR.get(id))},...[...shadowI].filter(([,s])=>s.rid===id).map(([,s])=>({t:'item',rid:id,it:JSON.parse(s.j)}))]);
     shadowR.delete(id)}
   for(const[id,s] of [...shadowI])if(!seenI.has(id)){if(seenR.has(s.rid)){ops.push({t:'itemDel',rid:s.rid,id});inv('i:'+id,[{t:'item',rid:s.rid,it:JSON.parse(s.j)}])}shadowI.delete(id)}
+  const nv=S.north||0;if(shadowM.get('north')!==nv){const old=shadowM.has('north')?shadowM.get('north'):0;ops.push({t:'meta',k:'north',v:nv});inv('m:north',[{t:'meta',k:'north',v:old}]);shadowM.set('north',nv)}
   if(!ops.length)return;
   for(const o of ops){const k=opKey(o);pend.set(k,(pend.get(k)||0)+1)}
   send({t:'ops',ops});
@@ -1509,6 +1565,7 @@ function sealUndo(){
 }
 let undoRedoing=false;
 function applyLocal(o){
+  if(o.t==='meta'&&o.k==='north'){S.north=o.v;renderCompass();return}
   if(o.t==='room'){let r=S.rooms.find(x=>x.id===o.r.id);
     if(r)Object.assign(r,o.r);else{r={...o.r,hidden:hiddenSet.has(o.r.id),items:[]};S.rooms.push(r)}}
   else if(o.t==='roomDel')S.rooms=S.rooms.filter(x=>x.id!==o.id);
@@ -1565,6 +1622,8 @@ function applyRemote(ops,mine){
       const i=r.items.findIndex(x=>x.id===it.id);
       if(i>=0){const o=r.items[i];for(const k of Object.keys(o))if(!(k in it))delete o[k];Object.assign(o,it)}else r.items.push(it); // entfernte Felder (z. B. Form) mit übernehmen
       shadowI.set(it.id,{rid:r.id,j:JSON.stringify(i>=0?r.items[i]:it)});changed=true;
+    }else if(o.t==='meta'&&o.k==='north'&&isFinite(o.v)){
+      S.north=((+o.v%360)+360)%360;shadowM.set('north',S.north);renderCompass();changed=true;
     }else if(o.t==='itemDel'){
       const r=S.rooms.find(x=>x.id===o.rid);if(!r)continue;
       r.items=r.items.filter(x=>x.id!==o.id);shadowI.delete(o.id);changed=true;
@@ -1608,8 +1667,8 @@ function handle(m){
     const srv=m.state&&Array.isArray(m.state.rooms)?m.state.rooms:[];
     let p=null;if(srv.length){try{p=parsePlan({rooms:srv},true)}catch(e){}}
     ready=true;
-    if(p){p.rooms.forEach(r=>r.hidden=hiddenSet.has(r.id));S.rooms=p.rooms;sel=null;drag=null;resetShadow();remoteRender()}
-    else{shadowR.clear();shadowI.clear();recording=false;sync();recording=true}   // leerer Plan: eigenen Stand hochladen
+    if(p){p.rooms.forEach(r=>r.hidden=hiddenSet.has(r.id));S.rooms=p.rooms;S.north=m.state.meta&&isFinite(m.state.meta.north)?m.state.meta.north:0;sel=null;drag=null;resetShadow();renderCompass();remoteRender()}
+    else{shadowR.clear();shadowI.clear();shadowM.clear();recording=false;sync();recording=true}   // leerer Plan: eigenen Stand hochladen
     setConn('● live · '+(peers.size+1)+' online','ok');send({t:'pres',p:me});renderPeers();render();
   }else if(m.t==='ops'&&Array.isArray(m.ops)){
     applyRemote(m.ops,m.from===myId);
@@ -1688,7 +1747,7 @@ $('#wallBox').addEventListener('toggle',()=>{SET.walls=$('#wallBox').open;saveSe
 document.addEventListener('pointerdown',e=>{const m=$('#viewMenu');if(m.open&&!m.contains(e.target))m.open=false});
 syncSettingsUI();
 
-wallLabels();renderAll();renderVersion();renderPeers();cacheLocal();connect();
+wallLabels();renderAll();renderCompass();renderVersion();renderPeers();cacheLocal();connect();
 }
 </script>
 </body></html>

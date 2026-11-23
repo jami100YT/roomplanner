@@ -80,6 +80,16 @@ Der Gratis-Plan schläft nach einer Weile Inaktivität ein (der erste Aufruf dau
 - Die Beschriftung sitzt automatisch im breitesten Teil der Form. Die Vorderkante ist dick markiert.
 - **Mittlere Maustaste gedrückt halten und ziehen** verschiebt die Ansicht, auch über Möbeln.
 
+## Himmelsrichtungen
+
+- Oben rechts im Plan sitzt eine **Kompassrose**. Die rote Nadel zeigt nach Norden. Du kannst die Nadel **ziehen** (rastet auf 5° ein, mit Shift frei) oder auf **„N 0°“** klicken. Dort gibt es Winkel eingeben, ±15°, ±90° und „Norden = oben/rechts/unten/links“.
+- Die Richtung gilt für den **ganzen Plan und alle Personen**, sie wird live geteilt und auf dem Server gespeichert. Strg+Z funktioniert auch hier.
+- Angezeigt wird die Himmelsrichtung bei
+  - **Wänden** (Wandlängen-Liste und Wandauswahl), z. B. „Wand 1 · oben · SO“
+  - **Fenstern und Türen** (Liste „Im Raum“ und Auswahl: „Fenster blickt nach Süd (180°)“)
+  - **Möbeln**: „Vorderseite zeigt nach Ost (90°)“, praktisch für Sofa, Bett oder Schreibtisch.
+- Der Plan selbst bleibt gerade, nur die Richtungsangaben richten sich nach dem Kompass.
+
 ## Mehrere Möbel auswählen & gruppieren
 
 - **Mehrfachauswahl:** Mit Shift- oder Strg-Klick auf Möbel (auch in der Liste) fügst du hinzu oder entfernst. **Shift + Ziehen** auf freier Fläche zieht ein Auswahlrechteck. **Strg+A** wählt alle Möbel des Raums.
