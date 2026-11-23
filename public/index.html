@@ -98,8 +98,12 @@ button[data-armed]{background:var(--danger);color:#fff;border-color:var(--danger
 .gr2{fill:none;stroke:var(--grid2);stroke-width:1;vector-effect:non-scaling-stroke}
 .wall{fill:var(--wall)}
 .actv{fill:none;stroke:var(--accent);stroke-width:2;stroke-dasharray:7 4;vector-effect:non-scaling-stroke;pointer-events:none}
-.rname{fill:var(--muted);font-family:var(--f-body);font-weight:600;pointer-events:none}
-.rarea{fill:var(--muted);font-family:var(--f-mono);pointer-events:none}
+.rname{paint-order:stroke;stroke:var(--floor);stroke-width:3px;stroke-linejoin:round;fill:var(--muted);font-family:var(--f-body);font-weight:600;cursor:move}
+.rname:hover{fill:var(--accent)}
+#plan.locked .rname{cursor:default;pointer-events:none}
+#plan:not(.locked) .rm.act{cursor:move}
+.undo{display:inline-flex;gap:4px}.undo button{min-width:38px;font-size:16px;padding:3px 8px}
+.rarea{paint-order:stroke;stroke:var(--floor);stroke-width:3px;stroke-linejoin:round;fill:var(--muted);font-family:var(--f-mono);pointer-events:none}
 .curs{pointer-events:none}
 #wallBox summary{cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
 .walls{display:flex;flex-direction:column;gap:4px}
@@ -283,9 +287,10 @@ button.on{background:var(--sel);border-color:var(--sel);color:#fff}
     <div class="bar">
       <label>Drehschritt <select id="step"><option value="45">45°</option><option value="90">90°</option></select></label>
       <label><input type="checkbox" id="snap"> am 5-cm-Raster einrasten</label>
-      <label><input type="checkbox" id="moveRooms"> Räume verschieben</label>
+      <label><input type="checkbox" id="lockRooms"> Räume fixieren</label>
+      <span class="undo"><button type="button" id="undoBtn" title="Rückgängig (Strg+Z)" aria-label="Rückgängig" disabled>↶</button><button type="button" id="redoBtn" title="Wiederholen (Strg+Y / Strg+⇧+Z)" aria-label="Wiederholen" disabled>↷</button></span>
       <button type="button" id="resetBtn">Beispiel laden</button>
-      <span class="hint" id="hint">Ziehen = verschieben · Doppelklick / R = drehen · Q / E = 45° links / rechts · Pfeiltasten = 1 cm (⇧ 10 cm) · Entf = löschen · Boden anklicken = Raum wählen</span>
+      <span class="hint" id="hint">Raumname oder Boden ziehen = Raum verschieben · Ziehen = verschieben · Doppelklick / R = drehen · Q / E = 45° links / rechts · Pfeiltasten = 1 cm (⇧ 10 cm) · Entf = löschen · Boden anklicken = Raum wählen</span>
     </div>
     <div class="stage"><svg id="plan" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"></svg></div>
   </main>
@@ -398,11 +403,11 @@ function load(){try{const t=localStorage.getItem(KEY);if(!t)return null;
 function cacheLocal(){try{
   localStorage.setItem(KEY,JSON.stringify({...exportObj(true),active:S.rooms.findIndex(r=>r.id===S.active)}));
   hiddenSet=new Set(S.rooms.filter(r=>r.hidden).map(r=>r.id));localStorage.setItem(HKEY,JSON.stringify([...hiddenSet]))}catch(e){}}
-function save(){cacheLocal();sync()}
+function save(){cacheLocal();sync();sealUndo()}
 
 let S=load()||example();
 S.rooms.forEach(r=>r.hidden=hiddenSet.has(r.id));
-let sel=null, tab='furn', moveRooms=false;
+let sel=null, tab='furn', lockRooms=false;
 const R=()=>S.rooms.find(r=>r.id===S.active)||S.rooms[0];
 const byId=id=>id?R().items.find(i=>i.id===id):null;
 function findItem(id){for(const r of S.rooms)for(const it of r.items)if(it.id===id)return[r,it];return null}
@@ -481,7 +486,7 @@ function computeLayout(){
 }
 function render(){
   const vis=S.rooms.filter(r=>!r.hidden),A=R();
-  svg.classList.toggle('mv',moveRooms);svg.classList.toggle('drawing',mode==='draw'||mode==='extend');
+  svg.classList.toggle('locked',lockRooms);svg.classList.toggle('drawing',mode==='draw'||mode==='extend');
   if(!vis.length&&mode!=='draw'){svg.setAttribute('viewBox','0 0 400 160');
     svg.innerHTML='<text class="dimtxt" x="200" y="84" font-size="14" text-anchor="middle">Alle Räume sind ausgeblendet</text>';return}
   if(!drag&&mode!=='draw'&&mode!=='extend')computeLayout();
@@ -492,8 +497,7 @@ function render(){
   if(mode==='draw'||mode==='extend')h+=`<rect x="${layout.vb[0]}" y="${layout.vb[1]}" width="${layout.vb[2]}" height="${layout.vb[3]}" fill="url(#g2)" opacity=".55"/>`;
   for(const r of vis){
     const pp=pts(r.pts),c=r.pts.reduce((m,p)=>(p[1]<m[1]||(p[1]===m[1]&&p[0]<m[0]))?p:m,r.pts[0]);
-    h+=`<g transform="translate(${r.x} ${r.y})"><polygon points="${pp}" class="floor rm" data-room="${r.id}"/><polygon points="${pp}" fill="url(#g2)" pointer-events="none"/>
-    <text class="rname" x="${c[0]+fs*.5}" y="${c[1]+fs*1.25}" font-size="${fs*.9}">${esc(r.name)}</text><text class="rarea" x="${c[0]+fs*.5}" y="${c[1]+fs*2.3}" font-size="${fs*.7}">${area(r)} m²</text></g>`;
+    h+=`<g transform="translate(${r.x} ${r.y})"><polygon points="${pp}" class="floor rm${r.id===A.id?' act':''}" data-room="${r.id}"/><polygon points="${pp}" fill="url(#g2)" pointer-events="none"/></g>`;
   }
   for(const r of vis){const o=outerPts(r.pts,T).map(p=>[r1(p[0]+r.x),r1(p[1]+r.y)]),i=r.pts.map(p=>[p[0]+r.x,p[1]+r.y]);
     h+=`<path class="wall" fill-rule="evenodd" d="M${o.join('L')}Z M${i.join('L')}Z"/>`}
@@ -510,6 +514,9 @@ function render(){
     if(lf<3)continue;
     h+=`<text class="lbl" font-size="${lf}" text-anchor="middle" x="${X}" y="${Y}"><tspan x="${X}" dy="-0.15em">${esc(it.name)}</tspan><tspan class="sz" x="${X}" dy="1.2em" font-size="${lf*0.8}">${fmt(it.w)}×${fmt(it.d)}</tspan></text>`;
   }
+  // Raumnamen über den Möbeln (zum Ziehen des Raums)
+  for(const r of vis){const c=r.pts.reduce((m,p)=>(p[1]<m[1]||(p[1]===m[1]&&p[0]<m[0]))?p:m,r.pts[0]),X=r.x+c[0]+fs*.5,Y=r.y+c[1];
+    h+=`<text class="rname" data-room="${r.id}" x="${X}" y="${Y+fs*1.25}" font-size="${fs*.9}"><title>Ziehen = Raum verschieben</title>${esc(r.name)}</text><text class="rarea" x="${X}" y="${Y+fs*2.3}" font-size="${fs*.7}">${area(r)} m²</text>`}
   // Fenster & Türen
   for(const r of vis){
     h+=`<g transform="translate(${r.x} ${r.y})">`;
@@ -702,13 +709,16 @@ function select(id){if(sel===id)return;sel=id;render();renderPanel()}
 function pt(e){const p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(svg.getScreenCTM().inverse())}
 const snapv=(v,g)=>S.snap?Math.round(v/g)*g:Math.round(v);
 function snapRoom(r,nx,ny){
-  const tol=Math.max(10,layout.fs*1.2);let bx=nx,by=ny,dx=tol,dy=tol;
+  const tol=Math.max(8,layout.fs*0.8),mine=[...r.pts,...outerPts(r.pts,T)],cx=[],cy=[];
   for(const o of S.rooms){if(o===r||o.hidden)continue;
-    for(const c of [o.x+o.w+T,o.x-T-r.w,o.x,o.x+o.w-r.w]){const d=Math.abs(nx-c);if(d<dx){dx=d;bx=c}}
-    for(const c of [o.y+o.d+T,o.y-T-r.d,o.y,o.y+o.d-r.d]){const d=Math.abs(ny-c);if(d<dy){dy=d;by=c}}}
-  return[bx,by]}
+    for(const v of [...o.pts,...outerPts(o.pts,T)]){cx.push(o.x+v[0]);cy.push(o.y+v[1])}}
+  let bx=nx,by=ny,dx=tol,dy=tol;
+  for(const v of mine){
+    for(const c of cx){const d=Math.abs(nx+v[0]-c);if(d<dx){dx=d;bx=c-v[0]}}
+    for(const c of cy){const d=Math.abs(ny+v[1]-c);if(d<dy){dy=d;by=c-v[1]}}}
+  return[r1(bx),r1(by)]}
 /* ---------- Raum zeichnen & Form bearbeiten ---------- */
-const HINT_DEFAULT='Ziehen = verschieben · Doppelklick / R = drehen · Q / E = 45° links / rechts · Pfeiltasten = 1 cm (⇧ 10 cm) · Entf = löschen · Boden anklicken = Raum wählen';
+const HINT_DEFAULT='Raumname oder Boden ziehen = Raum verschieben · Strg+Z / Strg+Y = rückgängig / wiederholen · Ziehen = verschieben · Doppelklick / R = drehen · Q / E = 45° links / rechts · Pfeiltasten = 1 cm (⇧ 10 cm) · Entf = löschen · Boden anklicken = Raum wählen';
 function updateModeUI(){
   $('#drawRoom').classList.toggle('on',mode==='draw');$('#drawRoom').textContent=mode==='draw'?'Zeichnen beenden':'✎ Raum zeichnen';
   $('#editShape').classList.toggle('on',mode==='shape');$('#editShape').textContent=mode==='shape'?'Form fertig':'Form bearbeiten';
@@ -861,11 +871,12 @@ svg.addEventListener('pointerdown',e=>{
     if(S.active!==r.id){S.active=r.id;sel=it.id;renderAll()}else select(it.id);
     drag={kind:'item',r,it,ox:p.x-r.x-(it.x||0),oy:p.y-r.y-(it.y||0),moved:false};
   }else{
-    const fl=e.target.closest('.rm');
+    const nm=e.target.closest('.rname'),fl=nm||e.target.closest('.rm');
     if(!fl){select(null);return}
-    const r=S.rooms.find(x=>x.id===fl.dataset.room);
-    if(S.active!==r.id){S.active=r.id;sel=null;renderAll();save()}else select(null);
-    if(!moveRooms)return;
+    const r=S.rooms.find(x=>x.id===fl.dataset.room);if(!r)return;
+    const wasActive=S.active===r.id;
+    if(!wasActive){S.active=r.id;sel=null;renderAll();cacheLocal()}else select(null);
+    if(lockRooms||(!nm&&!wasActive))return; // Boden zieht nur den schon gewählten Raum, der Name immer
     drag={kind:'room',r,ox:p.x-r.x,oy:p.y-r.y,cx:e.clientX,cy:e.clientY,moved:false};
   }
   svg.setPointerCapture(e.pointerId);e.preventDefault();
@@ -1027,17 +1038,76 @@ function sync(){
   const ops=[],seenR=new Set(),seenI=new Set();
   for(const r of S.rooms){
     seenR.add(r.id);const k=roomKey(r);
-    if(shadowR.get(r.id)!==k){ops.push({t:'room',r:JSON.parse(k)});shadowR.set(r.id,k)}
+    const old=shadowR.get(r.id);
+    if(old!==k){ops.push({t:'room',r:JSON.parse(k)});inv('r:'+r.id,old?[{t:'room',r:JSON.parse(old)}]:[{t:'roomDel',id:r.id}]);shadowR.set(r.id,k)}
     for(const it of r.items){seenI.add(it.id);const j=JSON.stringify(it),s=shadowI.get(it.id);
-      if(!s||s.j!==j||s.rid!==r.id){ops.push({t:'item',rid:r.id,it:JSON.parse(j)});shadowI.set(it.id,{rid:r.id,j})}}
+      if(!s||s.j!==j||s.rid!==r.id){ops.push({t:'item',rid:r.id,it:JSON.parse(j)});
+        inv('i:'+it.id,s?[{t:'item',rid:s.rid,it:JSON.parse(s.j)}]:[{t:'itemDel',rid:r.id,id:it.id}]);shadowI.set(it.id,{rid:r.id,j})}}
   }
-  for(const id of [...shadowR.keys()])if(!seenR.has(id)){ops.push({t:'roomDel',id});shadowR.delete(id)}
-  for(const[id,s] of [...shadowI])if(!seenI.has(id)){if(seenR.has(s.rid))ops.push({t:'itemDel',rid:s.rid,id});shadowI.delete(id)}
+  for(const id of [...shadowR.keys()])if(!seenR.has(id)){ops.push({t:'roomDel',id});
+    inv('r:'+id,[{t:'room',r:JSON.parse(shadowR.get(id))},...[...shadowI].filter(([,s])=>s.rid===id).map(([,s])=>({t:'item',rid:id,it:JSON.parse(s.j)}))]);
+    shadowR.delete(id)}
+  for(const[id,s] of [...shadowI])if(!seenI.has(id)){if(seenR.has(s.rid)){ops.push({t:'itemDel',rid:s.rid,id});inv('i:'+id,[{t:'item',rid:s.rid,it:JSON.parse(s.j)}])}shadowI.delete(id)}
   if(!ops.length)return;
   for(const o of ops){const k=opKey(o);pend.set(k,(pend.get(k)||0)+1)}
   send({t:'ops',ops});
 }
 function syncSoon(){if(!syncT)syncT=setTimeout(sync,40)}
+
+/* ---------- Rückgängig / Wiederholen ----------
+   sync() kennt zu jeder eigenen Änderung den vorherigen Stand (shadow) und legt die Umkehr-Op ab.
+   Eine Aktion (bis save()) = ein Schritt. Rückgängig setzt nur die Objekte zurück, die du selbst
+   geändert hast – Änderungen deiner Freunde an anderen Objekten bleiben erhalten. */
+const undoStack=[],redoStack=[];let openGroup=null,recTarget='undo',recording=true,lastSeal=0;
+function inv(key,ops){if(!recording)return;if(!openGroup)openGroup={keys:new Set(),entries:[]};
+  if(openGroup.keys.has(key))return;openGroup.keys.add(key);openGroup.entries.push(ops)}
+function sealUndo(){
+  if(!openGroup||!openGroup.entries.length){openGroup=null;return}
+  const g=openGroup;openGroup=null;
+  if(recTarget==='undo'){
+    const prev=undoStack[undoStack.length-1],now=Date.now();
+    // Tippen/Pfeiltasten am selben Objekt kurz hintereinander zu einem Schritt zusammenfassen
+    if(!undoRedoing&&prev&&now-lastSeal<900&&g.keys.size===1&&prev.keys.size===1&&[...g.keys][0]===[...prev.keys][0]){lastSeal=now;updateUndoUI();return}
+    undoStack.push(g);if(undoStack.length>200)undoStack.shift();lastSeal=now;
+    if(!undoRedoing)redoStack.length=0;
+  }else redoStack.push(g);
+  updateUndoUI();
+}
+let undoRedoing=false;
+function applyLocal(o){
+  if(o.t==='room'){let r=S.rooms.find(x=>x.id===o.r.id);
+    if(r)Object.assign(r,o.r);else{r={...o.r,hidden:hiddenSet.has(o.r.id),items:[]};S.rooms.push(r)}}
+  else if(o.t==='roomDel')S.rooms=S.rooms.filter(x=>x.id!==o.id);
+  else if(o.t==='item'){const r=S.rooms.find(x=>x.id===o.rid);if(!r)return;
+    for(const q of S.rooms)if(q!==r)q.items=q.items.filter(x=>x.id!==o.it.id);
+    const i=r.items.findIndex(x=>x.id===o.it.id);if(i>=0)r.items[i]=o.it;else r.items.push(o.it)}
+  else if(o.t==='itemDel'){const r=S.rooms.find(x=>x.id===o.rid);if(r)r.items=r.items.filter(x=>x.id!==o.id)}
+}
+function undoRedo(which){
+  if(drag)return;
+  if(!ready){msg('Rückgängig geht nur, wenn du verbunden bist.');return}
+  const from=which==='undo'?undoStack:redoStack,g=from.pop();if(!g){updateUndoUI();return}
+  sync();sealUndo(); // offene Änderungen vorher abschließen
+  for(let k=g.entries.length-1;k>=0;k--)for(const o of g.entries[k])applyLocal(JSON.parse(JSON.stringify(o)));
+  if(!S.rooms.length)S.rooms=[{id:nid('r'),name:'Raum 1',x:0,y:0,w:400,d:300,pts:rectPts(400,300),hidden:false,items:[]}];
+  if(!S.rooms.find(r=>r.id===S.active))S.active=S.rooms[0].id;
+  if(sel&&!byId(sel))sel=null;
+  undoRedoing=true;recTarget=which==='undo'?'redo':'undo';
+  cacheLocal();sync();sealUndo();
+  recTarget='undo';undoRedoing=false;
+  renderAll();
+}
+function updateUndoUI(){$('#undoBtn').disabled=!undoStack.length;$('#redoBtn').disabled=!redoStack.length}
+$('#undoBtn').addEventListener('click',()=>undoRedo('undo'));
+$('#redoBtn').addEventListener('click',()=>undoRedo('redo'));
+document.addEventListener('keydown',e=>{
+  if(!(e.ctrlKey||e.metaKey)||e.altKey)return;
+  const k=e.key.toLowerCase();if(k!=='z'&&k!=='y')return;
+  if(e.target.closest('input,textarea'))return; // dort gilt das normale Rückgängig des Feldes
+  e.preventDefault();e.stopImmediatePropagation();
+  if((mode==='draw'||mode==='extend')&&k==='z'&&!e.shiftKey&&drawPts.length){drawPts.pop();if(!drawPts.length)extStart=null;render();return}
+  undoRedo(k==='y'||e.shiftKey?'redo':'undo');
+},true);
 function pres(patch){Object.assign(me,patch);if(!presT)presT=setTimeout(()=>{presT=null;if(ready)send({t:'pres',p:me})},50)}
 
 function applyRemote(ops,mine){
@@ -1094,13 +1164,13 @@ function renderPeers(){
 function setConn(t,cls){const c=$('#conn');c.textContent=t;c.className='meta '+(cls||'')}
 function handle(m){
   if(m.t==='init'){
-    myId=m.you;pend.clear();peers.clear();
+    myId=m.you;pend.clear();peers.clear();undoStack.length=redoStack.length=0;openGroup=null;updateUndoUI();
     for(const p of m.peers||[])if(p&&p.p)peers.set(p.id,p.p);
     const srv=m.state&&Array.isArray(m.state.rooms)?m.state.rooms:[];
     let p=null;if(srv.length){try{p=parsePlan({rooms:srv},true)}catch(e){}}
     ready=true;
     if(p){p.rooms.forEach(r=>r.hidden=hiddenSet.has(r.id));S.rooms=p.rooms;sel=null;drag=null;resetShadow();remoteRender()}
-    else{shadowR.clear();shadowI.clear();sync()}   // leerer Plan: eigenen Stand hochladen
+    else{shadowR.clear();shadowI.clear();recording=false;sync();recording=true}   // leerer Plan: eigenen Stand hochladen
     setConn('● live · '+(peers.size+1)+' online','ok');send({t:'pres',p:me});renderPeers();render();
   }else if(m.t==='ops'&&Array.isArray(m.ops)){
     applyRemote(m.ops,m.from===myId);
@@ -1136,7 +1206,7 @@ $('#shareBtn').addEventListener('click',async()=>{const b=$('#shareBtn'),url=sha
 /* ---------- Leiste ---------- */
 $('#step').value=S.step;$('#step').addEventListener('change',e=>{S.step=+e.target.value;save()});
 $('#snap').checked=S.snap;$('#snap').addEventListener('change',e=>{S.snap=e.target.checked;save()});
-$('#moveRooms').addEventListener('change',e=>{moveRooms=e.target.checked;render()});
+$('#lockRooms').addEventListener('change',e=>{lockRooms=e.target.checked;render()});
 
 wallLabels();renderAll();renderPeers();cacheLocal();connect();
 }
