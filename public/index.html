@@ -1486,7 +1486,12 @@ let SERVER=null;
 const verStr=v=>v?`v${v.version||'?'}${v.commit?' · '+v.commit:''}`:'–';
 function renderVersion(){
   $('#verTop').textContent='v'+CLIENT.version;$('#verClient').textContent=`${verStr(CLIENT)} · Build ${CLIENT.build}`;
-  if(!SERVER){$('#verState').textContent='';return}
+  if(!SERVER){
+    if(ready){ // verbunden, aber der Server schickt keine Version → Server älter als v1.7.0
+      $('#verServer').textContent='älter als v1.7.0';$('#verState').textContent='⚠ Server veraltet';$('#verState').className='meta bad';
+      $('#verHint').textContent='Der Server läuft noch mit einer alten Version (Dateien neu, Prozess alt?). Auf dem Server: fuser -k 3000/tcp && pm2 restart raumplaner – danach hier neu laden.';
+    }else $('#verState').textContent='';
+    return}
   $('#verServer').textContent=`${verStr(SERVER)} · Build ${SERVER.build}`;
   $('#verStarted').textContent=new Date(SERVER.started).toLocaleString('de-DE',{dateStyle:'short',timeStyle:'short'});
   const same=CLIENT.build===SERVER.build,dev=CLIENT.build==='dev';
@@ -1661,6 +1666,7 @@ function renderPeers(){
 function setConn(t,cls){const c=$('#conn');c.textContent=t;c.className='meta '+(cls||'')}
 function handle(m){
   if(m.t==='init'){
+    if(!m.server){SERVER=null;ready=true;renderVersion()}
     if(m.server&&typeof m.server==='object'){SERVER={version:String(m.server.version||'?').slice(0,20),commit:m.server.commit?String(m.server.commit).slice(0,12):null,build:String(m.server.build||'?').slice(0,12),started:m.server.started};renderVersion()}
     myId=m.you;pend.clear();peers.clear();undoStack.length=redoStack.length=0;openGroup=null;updateUndoUI();
     for(const p of m.peers||[])if(p&&p.p&&p.p.sid!==SID)peers.set(p.id,p.p);

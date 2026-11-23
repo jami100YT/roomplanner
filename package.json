@@ -1,6 +1,6 @@
 {
   "name": "raumplaner-live",
-  "version": "1.9.0",
+  "version": "1.9.1",
   "description": "Raumplaner mit Echtzeit-Zusammenarbeit (ohne Login)",
   "main": "server.js",
   "scripts": {
