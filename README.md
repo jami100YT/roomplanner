@@ -41,6 +41,13 @@ Der Tunnel zeigt eine Adresse wie `https://irgendwas.trycloudflare.com`. Öffne 
 
 Der Gratis-Plan schläft nach einer Weile Inaktivität ein (der erste Aufruf dauert dann etwa 30 Sekunden), und Dateien bleiben nicht dauerhaft erhalten. Pläne können also nach einem Neustart weg sein. Deshalb solltest du ab und zu „Als JSON-Datei speichern“ nutzen. Dauerhaft gespeichert wird mit einer „Persistent Disk“ (kostenpflichtig): als Mount-Pfad `/data` einhängen und die Umgebungsvariable `DATA_DIR=/data` setzen.
 
+## Räume mit eigener Form (z. B. L-förmig)
+
+- **✎ Raum zeichnen** (Karte „Wohnung“): Klicke Ecke für Ecke. Zum Abschließen den Startpunkt anklicken, doppelklicken oder Enter drücken. ⌫ entfernt die letzte Ecke, Esc bricht ab. Die Punkte rasten am 5-cm-Raster ein, an waagrechten und senkrechten Linien zur letzten Ecke und zum Startpunkt sowie an den Innen- und Außenecken der anderen Räume. So teilen sich Nachbarräume automatisch eine Wand.
+- **Form bearbeiten** (Karte „Raum“): ● Ecken ziehen, ■ Wände parallel verschieben. Doppelklick auf ■ teilt eine Wand (neue Ecke), Doppelklick auf ● löscht eine Ecke. Formen, deren Wände sich überkreuzen, werden automatisch zurückgenommen.
+- **Zu Rechteck** setzt die Form auf das umschließende Rechteck zurück. Fenster und Türen wandern dabei auf die nächstgelegene Wand.
+- Alte Pläne mit Rechteckräumen werden automatisch übernommen.
+
 ## Was live geteilt wird
 
 - Räume, Möbel, Fenster und Türen: jede Änderung, auch während du ziehst

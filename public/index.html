@@ -101,6 +101,16 @@ button[data-armed]{background:var(--danger);color:#fff;border-color:var(--danger
 .rname{fill:var(--muted);font-family:var(--f-body);font-weight:600;pointer-events:none}
 .rarea{fill:var(--muted);font-family:var(--f-mono);pointer-events:none}
 .curs{pointer-events:none}
+button.on{background:var(--sel);border-color:var(--sel);color:#fff}
+#plan.drawing{cursor:crosshair}
+.vh{fill:var(--floor);stroke:var(--sel);stroke-width:2.5;vector-effect:non-scaling-stroke;cursor:move}
+.eh{fill:var(--sel);stroke:var(--floor);stroke-width:1.5;vector-effect:non-scaling-stroke;cursor:grab;opacity:.85}
+.vh:hover,.eh:hover{stroke-width:4}
+.drawln{fill:none;stroke:var(--sel);stroke-width:2.5;vector-effect:non-scaling-stroke;pointer-events:none}
+.drawln.ghost{stroke-dasharray:5 4;stroke-width:1.5;opacity:.7}
+.drawpt{fill:var(--sel);pointer-events:none}
+.drawpt.close{fill:var(--floor);stroke:var(--sel);stroke-width:2.5;vector-effect:non-scaling-stroke}
+.drawcur{fill:none;stroke:var(--sel);stroke-width:1.5;vector-effect:non-scaling-stroke;pointer-events:none}
 .curtx{font-family:var(--f-body);font-weight:600;paint-order:stroke;stroke:var(--floor);stroke-width:3px;stroke-linejoin:round}
 .peers{display:flex;flex-wrap:wrap;gap:6px}
 .peer{display:inline-flex;align-items:center;gap:6px;font-size:12px;border:1px solid var(--line);border-radius:999px;padding:3px 9px;background:var(--floor)}
@@ -157,6 +167,7 @@ button[data-armed]{background:var(--danger);color:#fff;border-color:var(--danger
       <div id="rooms"></div>
       <div class="btnrow">
         <button type="button" id="addRoom" class="primary">+ Raum</button>
+        <button type="button" id="drawRoom">✎ Raum zeichnen</button>
         <button type="button" id="showAll">Alle einblenden</button>
         <button type="button" id="onlyActive">Nur aktiven zeigen</button>
       </div>
@@ -174,6 +185,10 @@ button[data-armed]{background:var(--danger);color:#fff;border-color:var(--danger
         <label class="f">Position Y <input id="room-y" data-rk="y" type="number" step="1"></label>
       </div>
       <div class="meta" id="roomMeta"></div>
+      <div class="btnrow">
+        <button type="button" id="editShape">Form bearbeiten</button>
+        <button type="button" id="rectShape">Zu Rechteck</button>
+      </div>
       <div class="btnrow">
         <button type="button" id="dupRoom">Duplizieren</button>
         <button type="button" id="clearRoom" class="danger">Leeren</button>
@@ -208,7 +223,7 @@ button[data-armed]{background:var(--danger);color:#fff;border-color:var(--danger
         </div>
         <div data-show="window door" style="display:flex;flex-direction:column;gap:10px" hidden>
           <div class="r2">
-            <label class="f">Wand <select id="a-wall"><option value="top">obere Wand</option><option value="right">rechte Wand</option><option value="bottom">untere Wand</option><option value="left">linke Wand</option></select></label>
+            <label class="f">Wand <select id="a-wall"><option value="0">Wand 1</option></select></label>
             <label class="f">Breite <input id="a-ow" type="number" min="10" value="120"></label>
           </div>
           <div class="r2">
@@ -256,7 +271,7 @@ button[data-armed]{background:var(--danger);color:#fff;border-color:var(--danger
       <label><input type="checkbox" id="snap"> am 5-cm-Raster einrasten</label>
       <label><input type="checkbox" id="moveRooms"> Räume verschieben</label>
       <button type="button" id="resetBtn">Beispiel laden</button>
-      <span class="hint">Ziehen = verschieben · Doppelklick / R = drehen · Q / E = 45° links / rechts · Pfeiltasten = 1 cm (⇧ 10 cm) · Entf = löschen · Boden anklicken = Raum wählen</span>
+      <span class="hint" id="hint">Ziehen = verschieben · Doppelklick / R = drehen · Q / E = 45° links / rechts · Pfeiltasten = 1 cm (⇧ 10 cm) · Entf = löschen · Boden anklicken = Raum wählen</span>
     </div>
     <div class="stage"><svg id="plan" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"></svg></div>
   </main>
@@ -270,7 +285,7 @@ const T=12;
 const planId=(()=>{const u=new URL(location.href);let p=(u.searchParams.get('plan')||'').toLowerCase();
   if(!/^[a-z0-9-]{1,40}$/.test(p)){p=Math.random().toString(36).slice(2,10);u.searchParams.set('plan',p);history.replaceState(null,'',u)}return p})();
 const KEY='raumplaner-live-'+planId, HKEY='raumplaner-hidden-'+planId;
-const WALLS=['top','right','bottom','left'];
+const LEGACY=['top','right','bottom','left']; // alte Wandnamen → Kante 0..3 eines Rechtecks
 const COLORS=['#7a9cc6','#b9926a','#8fae7e','#c9877a','#a08bc0','#d0b25c','#7fb3ad'];
 const EYE='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
 const EYE_OFF='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" opacity=".45"/><path d="M3 3l18 18"/></svg>';
@@ -279,21 +294,34 @@ const safeColor=c=>/^#[0-9a-f]{6}$/i.test(c)?c:'#888888';
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const r1=v=>Math.round(v*10)/10;
 const fmt=v=>r1(v).toLocaleString('de-DE');
-const area=r=>(r.w*r.d/1e4).toLocaleString('de-DE',{maximumFractionDigits:2});
+const area=r=>(Math.abs(polyArea(r.pts))/1e4).toLocaleString('de-DE',{maximumFractionDigits:2});
 
 /* ---------- Datenmodell & Import-Prüfung ---------- */
 const N=(v,def,min,max)=>{v=+v;return isFinite(v)?Math.min(max,Math.max(min,v)):def};
 const okId=(id,keep,p)=>keep&&typeof id==='string'&&/^[a-z0-9_-]{1,40}$/i.test(id)?id:nid(p);
-function normRoom(r,keep){return{id:okId(r.id,keep,'r'),name:String(r.name||'Raum').slice(0,60),x:N(r.x,0,-1e5,1e5),y:N(r.y,0,-1e5,1e5),
-  w:N(r.w,400,50,3000),d:N(r.d,300,50,3000),hidden:!!r.hidden,items:[]}}
+function normRoom(r,keep){
+  const w=N(r.w,400,50,3000),d=N(r.d,300,50,3000);
+  const okPts=Array.isArray(r.pts)&&r.pts.length>=3&&r.pts.length<=64&&r.pts.every(v=>Array.isArray(v)&&isFinite(+v[0])&&isFinite(+v[1]));
+  const room={id:okId(r.id,keep,'r'),name:String(r.name||'Raum').slice(0,60),x:N(r.x,0,-1e5,1e5),y:N(r.y,0,-1e5,1e5),
+    w,d,hidden:!!r.hidden,items:[],pts:okPts?r.pts.map(v=>[N(v[0],0,-1e5,1e5),N(v[1],0,-1e5,1e5)]):rectPts(w,d)};
+  if(Math.abs(polyArea(room.pts))<100)room.pts=rectPts(w,d);
+  if(polyArea(room.pts)<0)room.pts.reverse();
+  normalizeRoom(room);
+  return room;
+}
 function normItem(i,room,keep){
   if(!i||typeof i!=='object')return null;let it;
   if(i.type==='furn')it={id:okId(i.id,keep),type:'furn',name:String(i.name||'Objekt').slice(0,60),w:N(i.w,100,1,3000),d:N(i.d,50,1,3000),
     color:safeColor(i.color),x:N(i.x,room.w/2,-1e5,1e5),y:N(i.y,room.d/2,-1e5,1e5),
     rot:((Math.round(N(i.rot,0,-1e4,1e4)/45)*45)%360+360)%360};
   else if(i.type==='window'||i.type==='door'){
-    it={id:okId(i.id,keep),type:i.type,name:String(i.name||(i.type==='door'?'Tür':'Fenster')).slice(0,60),wall:WALLS.includes(i.wall)?i.wall:'top',w:N(i.w,90,10,3000),s:N(i.s,0,0,1e5)};
-    if(i.type==='door'){it.hinge=i.hinge==='end'?'end':'start';it.swing=i.swing==='out'?'out':'in'}
+    const w=N(i.w,90,10,3000);let wall=i.wall,s=N(i.s,0,0,1e5),hinge=i.hinge==='end'?'end':'start';
+    if(typeof wall==='string'){ // altes Format: Kanten unten/links laufen jetzt andersherum
+      const k=Math.max(0,LEGACY.indexOf(wall));wall=k;
+      if(k>=2){s=wallInfo(room,k).L-s-w;hinge=hinge==='start'?'end':'start'}
+    }else wall=Math.round(N(wall,0,0,999))%room.pts.length;
+    it={id:okId(i.id,keep),type:i.type,name:String(i.name||(i.type==='door'?'Tür':'Fenster')).slice(0,60),wall,w,s};
+    if(i.type==='door'){it.hinge=hinge;it.swing=i.swing==='out'?'out':'in'}
   }else return null;
   clamp(room,it);return it;
 }
@@ -366,16 +394,58 @@ const byId=id=>id?R().items.find(i=>i.id===id):null;
 function findItem(id){for(const r of S.rooms)for(const it of r.items)if(it.id===id)return[r,it];return null}
 
 /* ---------- Geometrie (raumlokal) ---------- */
-function wallInfo(r,w){const W=r.w,D=r.d;return{
-  top:{p:[0,0],u:[1,0],n:[0,1],L:W},bottom:{p:[0,D],u:[1,0],n:[0,-1],L:W},
-  left:{p:[0,0],u:[0,1],n:[1,0],L:D},right:{p:[W,0],u:[0,1],n:[-1,0],L:D}}[w]}
-const horiz=w=>w==='top'||w==='bottom';
+// Ein Raum ist ein Polygon r.pts (raumlokal, im Uhrzeigersinn auf dem Bildschirm, min x/y = 0).
+// Wand i ist die Kante pts[i] → pts[i+1]; n zeigt in den Raum hinein.
+function rectPts(w,d){return[[0,0],[w,0],[w,d],[0,d]]}
+function polyArea(p){let s=0;for(let i=0;i<p.length;i++){const a=p[i],b=p[(i+1)%p.length];s+=a[0]*b[1]-b[0]*a[1]}return s/2}
+function wallInfo(r,i){const Q=r.pts,n=Q.length;i=((i%n)+n)%n;const a=Q[i],b=Q[(i+1)%n],dx=b[0]-a[0],dy=b[1]-a[1],
+  L=Math.hypot(dx,dy)||1e-9,u=[dx/L,dy/L];return{i,p:a,b,u,n:[-u[1],u[0]],L}}
+function endLabels(g){return Math.abs(g.u[0])>=Math.abs(g.u[1])?(g.u[0]>0?['links','rechts']:['rechts','links']):(g.u[1]>0?['oben','unten']:['unten','oben'])}
+function wallDir(g){const ox=-g.n[0],oy=-g.n[1];if(Math.abs(ox)>.38&&Math.abs(oy)>.38)return'schräg';
+  return Math.abs(oy)>Math.abs(ox)?(oy<0?'oben':'unten'):(ox>0?'rechts':'links')}
+function wallName(r,i){const g=wallInfo(r,i);return`Wand ${g.i+1} · ${wallDir(g)} · ${fmt(g.L)} cm`}
+function normalizeRoom(r){ // Ursprung auf min x/y schieben, Möbel bleiben global an ihrem Platz
+  const mx=Math.min(...r.pts.map(p=>p[0])),my=Math.min(...r.pts.map(p=>p[1]));
+  if(mx||my){r.pts=r.pts.map(p=>[r1(p[0]-mx),r1(p[1]-my)]);r.x=r1(r.x+mx);r.y=r1(r.y+my);
+    for(const it of r.items)if(it.type==='furn'){it.x=r1(it.x-mx);it.y=r1(it.y-my)}}
+  r.w=Math.max(...r.pts.map(p=>p[0]));r.d=Math.max(...r.pts.map(p=>p[1]));
+}
+const isRect=r=>r.pts.length===4&&r.pts.every(p=>(p[0]===0||p[0]===r.w)&&(p[1]===0||p[1]===r.d))&&Math.abs(polyArea(r.pts)-r.w*r.d)<1;
+function outerPts(Q,t){ // Außenkontur der Wand (Gehrung, begrenzt)
+  const n=Q.length,out=[],nv=v=>{const l=Math.hypot(v[0],v[1])||1;return[v[0]/l,v[1]/l]};
+  for(let i=0;i<n;i++){
+    const a=Q[(i-1+n)%n],b=Q[i],c=Q[(i+1)%n],e1=nv([b[0]-a[0],b[1]-a[1]]),e2=nv([c[0]-b[0],c[1]-b[1]]);
+    const p1=[b[0]+e1[1]*t,b[1]-e1[0]*t],p2=[b[0]+e2[1]*t,b[1]-e2[0]*t],den=e1[0]*e2[1]-e1[1]*e2[0];
+    if(Math.abs(den)<1e-9){out.push(p1);continue}
+    const s=((p2[0]-p1[0])*e2[1]-(p2[1]-p1[1])*e2[0])/den;let q=[p1[0]+e1[0]*s,p1[1]+e1[1]*s];
+    const dd=Math.hypot(q[0]-b[0],q[1]-b[1]);if(dd>t*4){q=[b[0]+(q[0]-b[0])/dd*t*4,b[1]+(q[1]-b[1])/dd*t*4]}
+    out.push(q);
+  }
+  return out;
+}
+function wallsAround(r,x,y){ // nächste Wand links/rechts/oben/unten von (x,y)
+  const Q=r.pts,n=Q.length,xs=[],ys=[];
+  for(let i=0;i<n;i++){const a=Q[i],b=Q[(i+1)%n];
+    if(a[1]!==b[1]&&(a[1]-y)*(b[1]-y)<=0)xs.push(a[0]+(y-a[1])*(b[0]-a[0])/(b[1]-a[1]));
+    if(a[0]!==b[0]&&(a[0]-x)*(b[0]-x)<=0)ys.push(a[1]+(x-a[0])*(b[1]-a[1])/(b[0]-a[0]))}
+  const lo=(arr,v,def)=>{const f=arr.filter(q=>q<=v+1e-6);return f.length?Math.max(...f):def};
+  const hi=(arr,v,def)=>{const f=arr.filter(q=>q>=v-1e-6);return f.length?Math.min(...f):def};
+  return{L:lo(xs,x,0),R:hi(xs,x,r.w),T:lo(ys,y,0),B:hi(ys,y,r.d)};
+}
+function nearestWall(r,p){let bi=0,bd=Infinity,bt=0;
+  for(let i=0;i<r.pts.length;i++){const g=wallInfo(r,i),t=Math.max(0,Math.min(g.L,(p[0]-g.p[0])*g.u[0]+(p[1]-g.p[1])*g.u[1]));
+    const d=Math.hypot(p[0]-g.p[0]-g.u[0]*t,p[1]-g.p[1]-g.u[1]*t);if(d<bd){bd=d;bi=i;bt=t}}
+  return{i:bi,t:bt}}
+// Fenster/Türen vor einer Formänderung global merken und danach auf die nächste Wand setzen
+function openingCenters(r){return r.items.filter(i=>i.type!=='furn').map(it=>{const g=wallInfo(r,it.wall),t=it.s+it.w/2;
+  return[it,[r.x+g.p[0]+g.u[0]*t,r.y+g.p[1]+g.u[1]*t]]})}
+function remapOpenings(r,centers){for(const[it,c]of centers){const{i,t}=nearestWall(r,[c[0]-r.x,c[1]-r.y]);it.wall=i;it.s=t-it.w/2;clampO(r,it)}}
 function ext(it){const a=it.rot*Math.PI/180,c=Math.abs(Math.cos(a)),s=Math.abs(Math.sin(a));
   return{hx:(c*it.w+s*it.d)/2,hy:(s*it.w+c*it.d)/2}}
 function clampF(r,it){const{hx,hy}=ext(it),W=r.w,D=r.d;
   it.x=2*hx>W?W/2:Math.min(W-hx,Math.max(hx,it.x));
   it.y=2*hy>D?D/2:Math.min(D-hy,Math.max(hy,it.y))}
-function clampO(r,it){const L=wallInfo(r,it.wall).L;it.w=Math.min(Math.max(10,it.w),L);it.s=Math.min(L-it.w,Math.max(0,it.s))}
+function clampO(r,it){const g=wallInfo(r,it.wall),L=g.L;it.wall=g.i;it.w=Math.min(Math.max(10,it.w),L);it.s=Math.min(L-it.w,Math.max(0,it.s))}
 function clamp(r,it){it.type==='furn'?clampF(r,it):clampO(r,it)}
 function rotate(r,it,d){it.rot=((it.rot+d)%360+360)%360;clampF(r,it)}
 const P=(a,b,k=1)=>[a[0]+b[0]*k,a[1]+b[1]*k];
@@ -386,22 +456,33 @@ function bounds(rs){let a=Infinity,b=Infinity,c=-Infinity,d=-Infinity;
 
 /* ---------- Zeichnen ---------- */
 let layout={vb:[0,0,100,100],fs:10}, drag=null;
+let mode=null, drawPts=[], drawCur=null; // mode: null | 'draw' (Raum zeichnen) | 'shape' (Form bearbeiten)
+function computeLayout(){
+  const vis=S.rooms.filter(r=>!r.hidden);
+  const B=vis.length?bounds(vis):{x:0,y:0,w:600,h:400},fs=Math.max(8,Math.max(B.w,B.h)/45);
+  const outDoor=Math.max(0,...vis.flatMap(r=>r.items.filter(i=>i.type==='door'&&i.swing==='out').map(i=>i.w)));
+  let M=Math.max(T+fs*3.2,outDoor+T+8);
+  if(mode==='draw')M+=Math.max(300,Math.max(B.w,B.h)*0.45); // Platz zum Zeichnen neben der Wohnung
+  layout={vb:[B.x-M,B.y-M,B.w+2*M,B.h+2*M],fs};
+}
 function render(){
   const vis=S.rooms.filter(r=>!r.hidden),A=R();
-  svg.classList.toggle('mv',moveRooms);
-  if(!vis.length){svg.setAttribute('viewBox','0 0 400 160');
+  svg.classList.toggle('mv',moveRooms);svg.classList.toggle('drawing',mode==='draw');
+  if(!vis.length&&mode!=='draw'){svg.setAttribute('viewBox','0 0 400 160');
     svg.innerHTML='<text class="dimtxt" x="200" y="84" font-size="14" text-anchor="middle">Alle Räume sind ausgeblendet</text>';return}
-  if(!drag){const B=bounds(vis),fs=Math.max(8,Math.max(B.w,B.h)/45);
-    const outDoor=Math.max(0,...vis.flatMap(r=>r.items.filter(i=>i.type==='door'&&i.swing==='out').map(i=>i.w)));
-    const M=Math.max(T+fs*3.2,outDoor+T+8);
-    layout={vb:[B.x-M,B.y-M,B.w+2*M,B.h+2*M],fs}}
+  if(!drag&&mode!=='draw')computeLayout();
   const fs=layout.fs;
   svg.setAttribute('viewBox',layout.vb.join(' '));
   let h=`<defs><pattern id="g1" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M10 0H0V10" class="gr1"/></pattern>
   <pattern id="g2" width="50" height="50" patternUnits="userSpaceOnUse"><rect width="50" height="50" fill="url(#g1)"/><path d="M50 0H0V50" class="gr2"/></pattern></defs>`;
-  for(const r of vis)h+=`<g transform="translate(${r.x} ${r.y})"><rect width="${r.w}" height="${r.d}" class="floor rm" data-room="${r.id}"/><rect width="${r.w}" height="${r.d}" fill="url(#g2)" pointer-events="none"/>
-    <text class="rname" x="${fs*.5}" y="${fs*1.25}" font-size="${fs*.9}">${esc(r.name)}</text><text class="rarea" x="${fs*.5}" y="${fs*2.3}" font-size="${fs*.7}">${area(r)} m²</text></g>`;
-  for(const r of vis)h+=`<path class="wall" fill-rule="evenodd" d="M${r.x-T} ${r.y-T}h${r.w+2*T}v${r.d+2*T}h${-r.w-2*T}Z M${r.x} ${r.y}v${r.d}h${r.w}v${-r.d}Z"/>`;
+  if(mode==='draw')h+=`<rect x="${layout.vb[0]}" y="${layout.vb[1]}" width="${layout.vb[2]}" height="${layout.vb[3]}" fill="url(#g2)" opacity=".55"/>`;
+  for(const r of vis){
+    const pp=pts(r.pts),c=r.pts.reduce((m,p)=>(p[1]<m[1]||(p[1]===m[1]&&p[0]<m[0]))?p:m,r.pts[0]);
+    h+=`<g transform="translate(${r.x} ${r.y})"><polygon points="${pp}" class="floor rm" data-room="${r.id}"/><polygon points="${pp}" fill="url(#g2)" pointer-events="none"/>
+    <text class="rname" x="${c[0]+fs*.5}" y="${c[1]+fs*1.25}" font-size="${fs*.9}">${esc(r.name)}</text><text class="rarea" x="${c[0]+fs*.5}" y="${c[1]+fs*2.3}" font-size="${fs*.7}">${area(r)} m²</text></g>`;
+  }
+  for(const r of vis){const o=outerPts(r.pts,T).map(p=>[r1(p[0]+r.x),r1(p[1]+r.y)]),i=r.pts.map(p=>[p[0]+r.x,p[1]+r.y]);
+    h+=`<path class="wall" fill-rule="evenodd" d="M${o.join('L')}Z M${i.join('L')}Z"/>`}
   // Möbel
   const psel={};for(const p of peers.values())if(p&&typeof p.sel==='string')psel[p.sel]=safeColor(p.c);
   for(const r of vis)for(const it of r.items.filter(i=>i.type==='furn')){
@@ -436,22 +517,39 @@ function render(){
     }
     h+='</g>';
   }
-  // Aktiver Raum: Rahmen, Außenmaße, Abstände der Auswahl
-  if(!A.hidden){
-    const W=A.w,D=A.d,oy=-T-fs*0.9,ox=-T-fs*0.9,tk=fs*0.35;
-    h+=`<rect class="actv" x="${A.x}" y="${A.y}" width="${W}" height="${D}"/><g transform="translate(${A.x} ${A.y})">
-    <path class="dimout" d="M0 ${oy}H${W}M0 ${oy-tk}V${oy+tk}M${W} ${oy-tk}V${oy+tk}M${ox} 0V${D}M${ox-tk} 0H${ox+tk}M${ox-tk} ${D}H${ox+tk}"/>
-    <text class="dimtxt" x="${W/2}" y="${oy-fs*0.45}" font-size="${fs}" text-anchor="middle">${fmt(W)} cm</text>
-    <text class="dimtxt" font-size="${fs}" text-anchor="middle" transform="translate(${ox-fs*0.45} ${D/2}) rotate(-90)">${fmt(D)} cm</text>`;
+  // Aktiver Raum: Rahmen, Wandlängen, Abstände der Auswahl, Griffe
+  if(!A.hidden&&mode!=='draw'){
+    h+=`<g transform="translate(${A.x} ${A.y})"><polygon class="actv" points="${pts(A.pts)}"/>`;
+    for(let i=0;i<A.pts.length;i++){const g=wallInfo(A,i);if(g.L<fs*1.5)continue;
+      const m=P(P(g.p,g.u,g.L/2),g.n,-(T+fs*0.8));let ang=Math.atan2(g.u[1],g.u[0])*180/Math.PI;if(ang>90)ang-=180;if(ang<=-90)ang+=180;
+      h+=`<text class="dimtxt" font-size="${fs*.85}" text-anchor="middle" dy="0.35em" transform="translate(${r1(m[0])} ${r1(m[1])}) rotate(${r1(ang)})">${fmt(g.L)}</text>`}
     const s=byId(sel);
-    if(s&&s.type==='furn'){
-      const{hx,hy}=ext(s),L=s.x-hx,Rr=s.x+hx,Tt=s.y-hy,Bb=s.y+hy;
-      h+=dim(0,s.y,L,s.y,fs)+dim(Rr,s.y,W,s.y,fs)+dim(s.x,0,s.x,Tt,fs)+dim(s.x,Bb,s.x,D,fs);
-    }else if(s){
+    if(s&&s.type==='furn'&&mode!=='shape'){
+      const{hx,hy}=ext(s),Wa=wallsAround(A,s.x,s.y);
+      h+=dim(Wa.L,s.y,s.x-hx,s.y,fs)+dim(s.x+hx,s.y,Wa.R,s.y,fs)+dim(s.x,Wa.T,s.x,s.y-hy,fs)+dim(s.x,s.y+hy,s.x,Wa.B,fs);
+    }else if(s&&mode!=='shape'){
       const g=wallInfo(A,s.wall),off=Math.min(fs*1.6,30),a=P(g.p,g.n,off),b=P(a,g.u,s.s),c=P(b,g.u,s.w),e=P(a,g.u,g.L);
       h+=dim(...a,...b,fs)+dim(...c,...e,fs);
     }
+    if(mode==='shape'){const hs=fs*.42;
+      for(let i=0;i<A.pts.length;i++){const g=wallInfo(A,i),m=P(g.p,g.u,g.L/2);
+        h+=`<rect class="eh" data-e="${i}" x="${r1(m[0]-hs)}" y="${r1(m[1]-hs)}" width="${r1(hs*2)}" height="${r1(hs*2)}" rx="${r1(hs*.3)}"><title>Wand ${i+1} verschieben · Doppelklick = teilen</title></rect>`}
+      A.pts.forEach((p,i)=>h+=`<circle class="vh" data-v="${i}" cx="${p[0]}" cy="${p[1]}" r="${r1(fs*.5)}"><title>Ecke ziehen · Doppelklick = löschen</title></circle>`);
+    }
     h+='</g>';
+  }
+  // Vorschau beim Raum-Zeichnen
+  if(mode==='draw'){
+    const q=drawCur?[...drawPts,drawCur]:drawPts;
+    if(q.length>1)h+=`<polyline class="drawln" points="${pts(q)}"/>`;
+    if(drawPts.length>=3&&drawCur)h+=`<line class="drawln ghost" x1="${drawCur[0]}" y1="${drawCur[1]}" x2="${drawPts[0][0]}" y2="${drawPts[0][1]}"/>`;
+    drawPts.forEach((p,i)=>h+=`<circle class="drawpt${i===0&&drawPts.length>=3?' close':''}" cx="${p[0]}" cy="${p[1]}" r="${r1(fs*(i===0&&drawPts.length>=3?.7:.4))}"/>`);
+    if(drawCur){
+      h+=`<circle class="drawcur" cx="${drawCur[0]}" cy="${drawCur[1]}" r="${r1(fs*.35)}"/>`;
+      const l=drawPts[drawPts.length-1];
+      if(l){const len=Math.hypot(drawCur[0]-l[0],drawCur[1]-l[1]);
+        if(len>0.5)h+=`<text class="dimtx" font-size="${fs*.9}" text-anchor="middle" x="${(l[0]+drawCur[0])/2}" y="${(l[1]+drawCur[1])/2-fs*.6}">${fmt(len)} cm</text>`}
+    }
   }
   svg.innerHTML=h+'<g id="cur" class="curs"></g>';
   renderCursors();
@@ -465,14 +563,18 @@ function renderRooms(){
   $('#rooms').innerHTML=S.rooms.map(r=>`<div class="rrow${r.id===S.active?' on':''}${r.hidden?' off':''}">
     <button type="button" class="eye" data-eye="${r.id}" aria-pressed="${!r.hidden}" title="${r.hidden?'Einblenden':'Ausblenden'}" aria-label="${esc(r.name)} ${r.hidden?'einblenden':'ausblenden'}">${r.hidden?EYE_OFF:EYE}</button>
     <button type="button" class="rn" data-room="${r.id}"><span>${esc(r.name)}</span><span>${area(r)} m²</span></button></div>`).join('');
-  const tot=S.rooms.reduce((a,r)=>a+r.w*r.d,0)/1e4;
+  const tot=S.rooms.reduce((a,r)=>a+Math.abs(polyArea(r.pts)),0)/1e4;
   $('#aptMeta').textContent=`${S.rooms.length} ${S.rooms.length===1?'Raum':'Räume'} · ${tot.toLocaleString('de-DE',{maximumFractionDigits:2})} m²`;
   const A=R();
-  $('#roomMeta').textContent=`${fmt(A.w)} × ${fmt(A.d)} cm · ${area(A)} m²${A.hidden?' · ausgeblendet':''}`;
+  const rect=isRect(A);
+  $('#roomMeta').textContent=`${rect?'Rechteck':'Freie Form · '+A.pts.length+' Wände'} · ${fmt(A.w)} × ${fmt(A.d)} cm · ${area(A)} m²${A.hidden?' · ausgeblendet':''}`;
   $('#addTo').textContent=A.name;
   $('#delRoom').disabled=S.rooms.length<2;
+  $('#rectShape').disabled=rect;
+  fillWallSelect();
 }
-function syncRoomInputs(){const A=R();$('#room-name').value=A.name;$('#room-w').value=A.w;$('#room-d').value=A.d;$('#room-x').value=r1(A.x);$('#room-y').value=r1(A.y)}
+function syncRoomInputs(){const A=R(),rect=isRect(A);$('#room-name').value=A.name;$('#room-w').value=A.w;$('#room-d').value=A.d;$('#room-x').value=r1(A.x);$('#room-y').value=r1(A.y);
+  $('#room-w').disabled=$('#room-d').disabled=!rect;$('#room-w').title=$('#room-d').title=rect?'':'Freie Form: Größe über „Form bearbeiten“ ändern'}
 function renderAll(){render();renderPanel();renderRooms();syncRoomInputs()}
 function setActive(id){if(S.active!==id){S.active=id;sel=null}renderAll();save()}
 $('#rooms').addEventListener('click',e=>{
@@ -482,19 +584,20 @@ $('#rooms').addEventListener('click',e=>{
 });
 function placeRight(r){const B=bounds(S.rooms);r.x=B.x+B.w+T;r.y=B.y}
 $('#addRoom').addEventListener('click',()=>{
-  const r={id:nid('r'),name:'Raum '+(S.rooms.length+1),x:0,y:0,w:300,d:300,hidden:false,items:[]};
+  const r={id:nid('r'),name:'Raum '+(S.rooms.length+1),x:0,y:0,w:300,d:300,pts:rectPts(300,300),hidden:false,items:[]};
   placeRight(r);S.rooms.push(r);S.active=r.id;sel=null;renderAll();save();
   $('#room-name').focus();$('#room-name').select();
 });
 $('#showAll').addEventListener('click',()=>{S.rooms.forEach(r=>r.hidden=false);renderAll();save()});
 $('#onlyActive').addEventListener('click',()=>{S.rooms.forEach(r=>r.hidden=r.id!==S.active);renderAll();save()});
 $('#dupRoom').addEventListener('click',()=>{const A=R();
-  const c={...A,id:nid('r'),name:A.name+' (Kopie)',hidden:false,items:A.items.map(i=>({...i,id:nid()}))};
+  const c={...A,id:nid('r'),name:A.name+' (Kopie)',hidden:false,pts:A.pts.map(p=>[...p]),items:A.items.map(i=>({...i,id:nid()}))};
   placeRight(c);S.rooms.push(c);S.active=c.id;sel=null;renderAll();save()});
 $('#room-name').addEventListener('input',e=>{const A=R();A.name=e.target.value.slice(0,60)||'Raum';render();renderRooms();renderPanel();save()});
 document.querySelectorAll('[data-rk]').forEach(el=>el.addEventListener('change',()=>{
   const A=R(),k=el.dataset.rk,v=parseFloat(el.value);
   if(!isFinite(v)||((k==='w'||k==='d')&&(v<50||v>3000))){syncRoomInputs();return}
+  if(k==='w'||k==='d'){if(!isRect(A)){syncRoomInputs();return}const j=k==='w'?0:1,old=A[k];A.pts=A.pts.map(p=>{const q=[...p];q[j]=q[j]===old?v:q[j];return q})}
   A[k]=v;if(k==='w'||k==='d')A.items.forEach(i=>clamp(A,i));renderAll();save()}));
 
 function armed(btn,fn){btn.addEventListener('click',()=>{
@@ -507,7 +610,7 @@ armed($('#resetBtn'),()=>{S=example();sel=null;$('#step').value=S.step;$('#snap'
 
 /* ---------- Auswahl-Panel ---------- */
 function getVal(it,k){const A=R();
-  if(it.type==='furn'){const{hx,hy}=ext(it);const m={dl:it.x-hx,dr:A.w-it.x-hx,dt:it.y-hy,db:A.d-it.y-hy};return k in m?r1(m[k]):it[k]}
+  if(it.type==='furn'){const{hx,hy}=ext(it),W=wallsAround(A,it.x,it.y);const m={dl:it.x-hx-W.L,dr:W.R-it.x-hx,dt:it.y-hy-W.T,db:W.B-it.y-hy};return k in m?r1(m[k]):it[k]}
   const L=wallInfo(A,it.wall).L,m={ds:it.s,de:L-it.s-it.w};return k in m?r1(m[k]):it[k];
 }
 function num(k,label,it){return`<label class="f">${label}<input type="number" step="1" data-k="${k}" value="${getVal(it,k)}"></label>`}
@@ -525,8 +628,8 @@ function renderPanel(){
     <div class="btnrow"><button type="button" data-act="cx">↔ horizontal zentrieren</button><button type="button" data-act="cy">↕ vertikal zentrieren</button></div>
     <div class="btnrow"><button type="button" data-act="dup">Duplizieren</button><button type="button" data-act="del" class="danger">Löschen</button></div>`;
   }else{
-    const hz=horiz(it.wall),a=hz?'links':'oben',b=hz?'rechts':'unten';
-    h+=`<div class="r2"><label class="f">Wand<select data-k="wall">${[['top','obere Wand'],['right','rechte Wand'],['bottom','untere Wand'],['left','linke Wand']].map(([v,t])=>`<option value="${v}"${it.wall===v?' selected':''}>${t}</option>`).join('')}</select></label>${num('w','Breite',it)}</div>
+    const A=R(),[a,b]=endLabels(wallInfo(A,it.wall));
+    h+=`<div class="r2"><label class="f">Wand<select data-k="wall">${A.pts.map((_,i)=>`<option value="${i}"${it.wall===i?' selected':''}>${esc(wallName(A,i))}</option>`).join('')}</select></label>${num('w','Breite',it)}</div>
     <div class="r2">${num('ds','Abstand von '+a,it)}${num('de','Abstand von '+b,it)}</div>`;
     if(it.type==='door')h+=`<div class="r2"><label class="f">Anschlag<select data-k="hinge"><option value="start"${it.hinge==='start'?' selected':''}>${a}</option><option value="end"${it.hinge==='end'?' selected':''}>${b}</option></select></label>
       <label class="f">Öffnet<select data-k="swing"><option value="in"${it.swing==='in'?' selected':''}>nach innen</option><option value="out"${it.swing==='out'?' selected':''}>nach außen</option></select></label></div>`;
@@ -541,9 +644,9 @@ function updateFields(except){const it=byId(sel);if(!it)return;
 selBox.addEventListener('input',e=>{
   const k=e.target.dataset.k,it=byId(sel),A=R();if(!k||!it)return;
   let v=e.target.value;if(e.target.type==='number'){v=parseFloat(v);if(!isFinite(v))return}
-  const W=A.w,D=A.d;
-  if(it.type==='furn'){const{hx,hy}=ext(it);
-    if(k==='dl')it.x=v+hx;else if(k==='dr')it.x=W-v-hx;else if(k==='dt')it.y=v+hy;else if(k==='db')it.y=D-v-hy;
+  if(k==='wall')v=+v;
+  if(it.type==='furn'){const{hx,hy}=ext(it),W=wallsAround(A,it.x,it.y);
+    if(k==='dl')it.x=W.L+v+hx;else if(k==='dr')it.x=W.R-v-hx;else if(k==='dt')it.y=W.T+v+hy;else if(k==='db')it.y=W.B-v-hy;
     else if(k==='w'||k==='d')it[k]=Math.max(1,v);else it[k]=v;
   }else{const L=wallInfo(A,it.wall).L;
     if(k==='ds')it.s=v;else if(k==='de')it.s=L-it.w-v;else if(k==='w')it.w=Math.max(10,v);else it[k]=v;
@@ -555,7 +658,7 @@ selBox.addEventListener('click',e=>{
   const b=e.target.closest('button[data-act]'),it=byId(sel),A=R();if(!b||!it)return;
   const a=b.dataset.act;
   if(a==='rot')rotate(A,it,+b.dataset.v);
-  else if(a==='cx')it.x=A.w/2;else if(a==='cy')it.y=A.d/2;
+  else if(a==='cx'){const W=wallsAround(A,it.x,it.y);it.x=(W.L+W.R)/2}else if(a==='cy'){const W=wallsAround(A,it.x,it.y);it.y=(W.T+W.B)/2}
   else if(a==='cs')it.s=(wallInfo(A,it.wall).L-it.w)/2;
   else if(a==='flip')it.hinge=it.hinge==='start'?'end':'start';
   else if(a==='del'){A.items=A.items.filter(i=>i!==it);sel=null}
@@ -569,7 +672,7 @@ function renderList(){
   const order={door:0,window:1,furn:2};
   L.innerHTML=[...A.items].sort((a,b)=>order[a.type]-order[b.type]).map(it=>{
     const sw=it.type==='furn'?`<i class="dot" style="background:${esc(it.color)}"></i>`:`<i class="dot" style="background:${it.type==='window'?'var(--glass)':'var(--floor)'}"></i>`;
-    const sz=it.type==='furn'?`${fmt(it.w)}×${fmt(it.d)}${it.rot?' · '+it.rot+'°':''}`:`${fmt(it.w)} · ${({top:'oben',right:'rechts',bottom:'unten',left:'links'})[it.wall]}`;
+    const sz=it.type==='furn'?`${fmt(it.w)}×${fmt(it.d)}${it.rot?' · '+it.rot+'°':''}`:`${fmt(it.w)} · Wand ${it.wall+1}`;
     return`<button type="button" data-id="${it.id}" class="${sel===it.id?'on':''}"><span>${sw}${esc(it.name)}</span><span>${sz}</span></button>`}).join('');
 }
 $('#list').addEventListener('click',e=>{const b=e.target.closest('button[data-id]');if(b)select(b.dataset.id)});
@@ -584,8 +687,81 @@ function snapRoom(r,nx,ny){
     for(const c of [o.x+o.w+T,o.x-T-r.w,o.x,o.x+o.w-r.w]){const d=Math.abs(nx-c);if(d<dx){dx=d;bx=c}}
     for(const c of [o.y+o.d+T,o.y-T-r.d,o.y,o.y+o.d-r.d]){const d=Math.abs(ny-c);if(d<dy){dy=d;by=c}}}
   return[bx,by]}
+/* ---------- Raum zeichnen & Form bearbeiten ---------- */
+const HINT_DEFAULT='Ziehen = verschieben · Doppelklick / R = drehen · Q / E = 45° links / rechts · Pfeiltasten = 1 cm (⇧ 10 cm) · Entf = löschen · Boden anklicken = Raum wählen';
+function updateModeUI(){
+  $('#drawRoom').classList.toggle('on',mode==='draw');$('#drawRoom').textContent=mode==='draw'?'Zeichnen beenden':'✎ Raum zeichnen';
+  $('#editShape').classList.toggle('on',mode==='shape');$('#editShape').textContent=mode==='shape'?'Form fertig':'Form bearbeiten';
+  $('#hint').textContent=mode==='draw'?'Raum zeichnen: Klick = Ecke setzen · Startpunkt anklicken, Doppelklick oder Enter = fertig · ⌫ = letzte Ecke weg · Esc = abbrechen · rastet am Raster, an Achsen und an Wänden ein'
+    :mode==='shape'?'Form bearbeiten: ● Ecke ziehen · ■ Wand verschieben · Doppelklick auf ■ = Wand teilen (neue Ecke) · Doppelklick auf ● = Ecke löschen · Esc = fertig'
+    :HINT_DEFAULT;
+}
+function setMode(m){
+  mode=m;drawPts=[];drawCur=null;drag=null;
+  if(m)sel=null;
+  computeLayout();updateModeUI();renderAll();
+}
+function snapDraw(p){
+  let x=snapv(p[0],5),y=snapv(p[1],5);const tol=layout.fs*0.6,xs=[],ys=[];
+  if(drawPts.length){const l=drawPts[drawPts.length-1],f=drawPts[0];xs.push(l[0],f[0]);ys.push(l[1],f[1])}
+  for(const r of S.rooms)if(!r.hidden)for(const v of [...r.pts,...outerPts(r.pts,T)]){xs.push(r1(v[0]+r.x));ys.push(r1(v[1]+r.y))}
+  let bx=tol,by=tol,X=x,Y=y;
+  for(const c of xs){const d=Math.abs(c-x);if(d<bx){bx=d;X=c}}
+  for(const c of ys){const d=Math.abs(c-y);if(d<by){by=d;Y=c}}
+  return[r1(X),r1(Y)];
+}
+function drawClick(p){
+  if(drawPts.length>=3&&Math.hypot(p[0]-drawPts[0][0],p[1]-drawPts[0][1])<layout.fs*1.2){finishDraw();return}
+  const l=drawPts[drawPts.length-1];if(l&&Math.hypot(l[0]-p[0],l[1]-p[1])<0.5)return;
+  drawPts.push(p);render();
+}
+function cleanPts(p){
+  let q=p.map(v=>[r1(v[0]),r1(v[1])]),again=true;
+  while(again&&q.length>3){again=false;
+    for(let i=0;i<q.length;i++){const a=q[(i-1+q.length)%q.length],b=q[i],c=q[(i+1)%q.length];
+      const l1=Math.hypot(b[0]-a[0],b[1]-a[1]),l2=Math.hypot(c[0]-b[0],c[1]-b[1]);
+      const cr=(b[0]-a[0])*(c[1]-b[1])-(b[1]-a[1])*(c[0]-b[0]);
+      if(l1<0.5||Math.abs(cr)<1e-3*l1*l2){q.splice(i,1);again=true;break}}}
+  if(polyArea(q)<0)q.reverse();
+  return q;
+}
+function finishDraw(){
+  const q=drawPts.length>=3?cleanPts(drawPts):[];
+  if(q.length<3||Math.abs(polyArea(q))<2500){setMode(null);msg('Raum zu klein – mindestens 3 Ecken und 0,25 m².');return}
+  const r={id:nid('r'),name:'Raum '+(S.rooms.length+1),x:0,y:0,pts:q,hidden:false,items:[]};
+  normalizeRoom(r);
+  S.rooms.push(r);S.active=r.id;sel=null;setMode(null);save();
+  $('#room-name').focus();$('#room-name').select();
+}
+function shapeOk(r){ // keine sich kreuzenden Wände, sinnvolle Fläche
+  const Q=r.pts,n=Q.length;if(n<3||polyArea(Q)<2500)return false;
+  const X=(a,b,c,d)=>{const o=(p,q,s)=>Math.sign((q[0]-p[0])*(s[1]-p[1])-(q[1]-p[1])*(s[0]-p[0]));
+    return o(a,b,c)*o(a,b,d)<0&&o(c,d,a)*o(c,d,b)<0};
+  for(let i=0;i<n;i++)for(let j=i+2;j<n;j++){if(i===0&&j===n-1)continue;if(X(Q[i],Q[(i+1)%n],Q[j],Q[(j+1)%n]))return false}
+  return true;
+}
+function commitShape(r,orig,centers){ // nach einer Formänderung aufräumen oder zurücknehmen
+  if(!shapeOk(r)){r.pts=orig;msg('Diese Form geht nicht (Wände überkreuzen sich oder Raum zu klein).')}
+  else{if(centers)remapOpenings(r,centers);normalizeRoom(r);r.items.forEach(i=>clamp(r,i))}
+  renderAll();save();
+}
+function splitWall(r,i){const orig=r.pts.map(p=>[...p]),c=openingCenters(r),g=wallInfo(r,i);
+  if(g.L<20)return;r.pts.splice(g.i+1,0,[r1(g.p[0]+g.u[0]*g.L/2),r1(g.p[1]+g.u[1]*g.L/2)]);commitShape(r,orig,c)}
+function deleteCorner(r,i){if(r.pts.length<=3){msg('Ein Raum braucht mindestens 3 Ecken.');return}
+  const orig=r.pts.map(p=>[...p]),c=openingCenters(r);r.pts.splice(i,1);commitShape(r,orig,c)}
+$('#drawRoom').addEventListener('click',()=>setMode(mode==='draw'?null:'draw'));
+$('#editShape').addEventListener('click',()=>{if(R().hidden&&mode!=='shape'){R().hidden=false}setMode(mode==='shape'?null:'shape')});
+$('#rectShape').addEventListener('click',()=>{const A=R();if(isRect(A))return;const orig=A.pts.map(p=>[...p]),c=openingCenters(A);A.pts=rectPts(A.w,A.d);commitShape(A,orig,c)});
+
+/* ---------- Zeiger ---------- */
 svg.addEventListener('pointerdown',e=>{
-  const p=pt(e),g=e.target.closest('.it');
+  const p=pt(e);
+  if(mode==='draw'){drawCur=snapDraw([p.x,p.y]);drawClick(drawCur);e.preventDefault();return}
+  const vh=e.target.closest('.vh'),eh=e.target.closest('.eh');
+  if(mode==='shape'&&(vh||eh)){const A=R();
+    drag={kind:vh?'vtx':'edge',r:A,i:+(vh?vh.dataset.v:eh.dataset.e),start:[p.x,p.y],orig:A.pts.map(q=>[...q]),moved:false};
+    svg.setPointerCapture(e.pointerId);e.preventDefault();return}
+  const g=e.target.closest('.it');
   if(g){const f=findItem(g.dataset.id);if(!f)return;const[r,it]=f;
     if(S.active!==r.id){S.active=r.id;sel=it.id;renderAll()}else select(it.id);
     drag={kind:'item',r,it,ox:p.x-r.x-(it.x||0),oy:p.y-r.y-(it.y||0),moved:false};
@@ -599,39 +775,64 @@ svg.addEventListener('pointerdown',e=>{
   }
   svg.setPointerCapture(e.pointerId);e.preventDefault();
 });
-svg.addEventListener('pointerleave',()=>pres({x:null,y:null}));
+svg.addEventListener('pointerleave',()=>{pres({x:null,y:null});if(mode==='draw'&&drawCur){drawCur=null;render()}});
 svg.addEventListener('pointermove',e=>{
   const p=pt(e);pres({x:r1(p.x),y:r1(p.y)});
+  if(mode==='draw'){drawCur=snapDraw([p.x,p.y]);render();return}
   if(!drag)return;
+  if(drag.kind==='vtx'||drag.kind==='edge'){
+    const r=drag.r,n=r.pts.length,i=drag.i,tol=layout.fs*1.2;drag.moved=true;
+    if(drag.kind==='vtx'){
+      let x=snapv(p.x-r.x,5),y=snapv(p.y-r.y,5);
+      for(const nb of [drag.orig[(i-1+n)%n],drag.orig[(i+1)%n]]){if(Math.abs(x-nb[0])<tol)x=nb[0];if(Math.abs(y-nb[1])<tol)y=nb[1]}
+      r.pts[i]=[r1(x),r1(y)];
+    }else{
+      const a=drag.orig[i],b=drag.orig[(i+1)%n],L=Math.hypot(b[0]-a[0],b[1]-a[1])||1,nv=[-(b[1]-a[1])/L,(b[0]-a[0])/L];
+      const d=snapv((p.x-drag.start[0])*nv[0]+(p.y-drag.start[1])*nv[1],5);
+      r.pts[i]=[r1(a[0]+nv[0]*d),r1(a[1]+nv[1]*d)];r.pts[(i+1)%n]=[r1(b[0]+nv[0]*d),r1(b[1]+nv[1]*d)];
+    }
+    r.items.forEach(it=>{if(it.type!=='furn')clampO(r,it)});
+    render();return;
+  }
   if(drag.kind==='room'){
     if(!drag.moved&&Math.hypot(e.clientX-drag.cx,e.clientY-drag.cy)<4)return;
     drag.moved=true;const r=drag.r;[r.x,r.y]=snapRoom(r,snapv(p.x-drag.ox,5),snapv(p.y-drag.oy,5));
     render();syncRoomInputs();syncSoon();return;
   }
-  const{r,it}=drag,lx=p.x-r.x,ly=p.y-r.y,W=r.w,D=r.d;drag.moved=true;
+  const{r,it}=drag,lx=p.x-r.x,ly=p.y-r.y;drag.moved=true;
   if(it.type==='furn'){const{hx,hy}=ext(it);
     it.x=snapv(lx-drag.ox-hx,5)+hx;it.y=snapv(ly-drag.oy-hy,5)+hy;clampF(r,it);
   }else{
-    const d={top:Math.abs(ly),bottom:Math.abs(ly-D),left:Math.abs(lx),right:Math.abs(lx-W)};
-    it.wall=Object.keys(d).reduce((a,b)=>d[a]<=d[b]?a:b);
-    const along=horiz(it.wall)?lx:ly;it.s=snapv(along-it.w/2,5);clampO(r,it);
+    const{i,t}=nearestWall(r,[lx,ly]);it.wall=i;it.s=snapv(t-it.w/2,5);clampO(r,it);
   }
   render();updateFields();syncSoon();
 });
-const endDrag=()=>{if(!drag)return;const m=drag.moved;drag=null;if(m){render();renderPanel();syncRoomInputs();save()}};
+const endDrag=()=>{if(!drag)return;const d=drag;drag=null;
+  if(d.kind==='vtx'||d.kind==='edge'){if(d.moved)commitShape(d.r,d.orig,null);return}
+  if(d.moved){render();renderPanel();syncRoomInputs();save()}};
 svg.addEventListener('pointerup',endDrag);svg.addEventListener('pointercancel',endDrag);
-svg.addEventListener('dblclick',e=>{const g=e.target.closest('.furn');if(!g)return;const f=findItem(g.dataset.id);if(!f)return;
+svg.addEventListener('dblclick',e=>{
+  if(mode==='draw'){e.preventDefault();finishDraw();return}
+  if(mode==='shape'){const vh=e.target.closest('.vh'),eh=e.target.closest('.eh');
+    if(vh)deleteCorner(R(),+vh.dataset.v);else if(eh)splitWall(R(),+eh.dataset.e);return}
+  const g=e.target.closest('.furn');if(!g)return;const f=findItem(g.dataset.id);if(!f)return;
   rotate(f[0],f[1],S.step);render();renderPanel();save()});
 
 document.addEventListener('keydown',e=>{
-  if(e.target.closest('input,select,textarea'))return;const it=byId(sel),A=R();if(!it)return;
+  if(e.target.closest('input,select,textarea'))return;
+  if(mode==='draw'){
+    if(e.key==='Escape')setMode(null);else if(e.key==='Enter')finishDraw();
+    else if(e.key==='Backspace'||e.key==='Delete'){drawPts.pop();render()}else return;
+    e.preventDefault();return}
+  if(mode==='shape'&&e.key==='Escape'){setMode(null);e.preventDefault();return}
+  const it=byId(sel),A=R();if(!it)return;
   const st=e.shiftKey?10:1,ar={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[e.key];
   const k=e.key.toLowerCase();
   if(k==='r'){if(it.type!=='furn')return;rotate(A,it,(e.shiftKey?-1:1)*S.step)}
   else if(k==='q'||k==='e'){if(it.type!=='furn'||e.ctrlKey||e.metaKey||e.altKey)return;rotate(A,it,k==='q'?-45:45)}
   else if(e.key==='Delete'||e.key==='Backspace'){A.items=A.items.filter(i=>i!==it);sel=null}
   else if(e.key==='Escape')sel=null;
-  else if(ar){if(it.type==='furn'){it.x+=ar[0]*st;it.y+=ar[1]*st}else it.s+=(horiz(it.wall)?ar[0]:ar[1])*st;clamp(A,it)}
+  else if(ar){if(it.type==='furn'){it.x+=ar[0]*st;it.y+=ar[1]*st}else{const g=wallInfo(A,it.wall);it.s+=(ar[0]*g.u[0]+ar[1]*g.u[1])*st}clamp(A,it)}
   else return;
   e.preventDefault();render();renderPanel();save();
 });
@@ -648,7 +849,10 @@ function setTab(t){tab=t;
   if(t!=='furn')$('#a-ow').value=t==='door'?90:120;
 }
 $('#tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setTab(b.dataset.tab)});
-function wallLabels(){const hz=horiz($('#a-wall').value),a=hz?'links':'oben',b=hz?'rechts':'unten';
+function fillWallSelect(){const A=R(),el=$('#a-wall'),cur=+el.value||0;
+  el.innerHTML=A.pts.map((_,i)=>`<option value="${i}">${esc(wallName(A,i))}</option>`).join('');
+  el.value=String(Math.min(cur,A.pts.length-1));wallLabels()}
+function wallLabels(){const[a,b]=endLabels(wallInfo(R(),+$('#a-wall').value||0));
   $('#a-om').options[0].text='Abstand von '+a;$('#a-om').options[1].text='Abstand von '+b;
   $('#a-hinge').options[0].text=a;$('#a-hinge').options[1].text=b}
 $('#a-wall').addEventListener('change',wallLabels);
@@ -661,7 +865,7 @@ $('#addForm').addEventListener('submit',e=>{e.preventDefault();const A=R(),W=A.w
       x:hm==='left'?n('#a-hv')+w/2:hm==='right'?W-n('#a-hv')-w/2:W/2,
       y:vm==='top'?n('#a-vv')+d/2:vm==='bottom'?D-n('#a-vv')-d/2:D/2};
   }else{
-    const wall=$('#a-wall').value,L=wallInfo(A,wall).L,w=Math.max(10,n('#a-ow')),m=$('#a-om').value;
+    const wall=+$('#a-wall').value||0,L=wallInfo(A,wall).L,w=Math.max(10,n('#a-ow')),m=$('#a-om').value;
     it={id:nid(),type:tab,name:tab==='door'?'Tür':'Fenster',wall,w,s:m==='start'?n('#a-ov'):m==='end'?L-w-n('#a-ov'):(L-w)/2};
     if(tab==='door'){it.hinge=$('#a-hinge').value;it.swing=$('#a-swing').value}
   }
@@ -742,7 +946,7 @@ function applyRemote(ops,mine){
     if(mine){const n=(pend.get(k)||1)-1;n>0?pend.set(k,n):pend.delete(k);continue}
     if(pend.get(k))continue;
     if(o.t==='room'&&o.r){
-      const nr=normRoom(o.r,true);let r=S.rooms.find(x=>x.id===nr.id);
+      const nr=normRoom(o.r,true);if(drag&&drag.r&&drag.r.id===nr.id)continue;let r=S.rooms.find(x=>x.id===nr.id);
       if(r){const{items,hidden,...p}=nr;Object.assign(r,p)}else{nr.hidden=hiddenSet.has(nr.id);r=nr;S.rooms.push(r)}
       shadowR.set(r.id,roomKey(r));changed=true;
     }else if(o.t==='roomDel'){
@@ -763,7 +967,7 @@ function applyRemote(ops,mine){
   if(changed)remoteRender();
 }
 function remoteRender(){
-  if(!S.rooms.length){S.rooms=[{id:nid('r'),name:'Raum 1',x:0,y:0,w:400,d:300,hidden:false,items:[]}];syncSoon()}
+  if(!S.rooms.length){S.rooms=[{id:nid('r'),name:'Raum 1',x:0,y:0,w:400,d:300,pts:rectPts(400,300),hidden:false,items:[]}];syncSoon()}
   if(!S.rooms.find(r=>r.id===S.active)){S.active=S.rooms[0].id;sel=null}
   if(sel&&!byId(sel))sel=null;
   if(drag&&drag.kind==='room'&&!S.rooms.includes(drag.r))drag=null;
