@@ -70,6 +70,16 @@ Der Gratis-Plan schläft nach einer Weile Inaktivität ein (der erste Aufruf dau
 - Unten rechts im Plan: **− / + / Prozentanzeige**. Ein Klick auf die Prozentanzeige passt die ganze Wohnung wieder ein. Auf der Tastatur gehen **+**, **−** und **0** (einpassen).
 - Der Ausschnitt gilt nur für dich, Freunde behalten ihre eigene Ansicht.
 
+## Möbel in L-Form oder freier Form
+
+- Beim Hinzufügen gibt es **Form: Rechteck / L-Form** mit Schenkeltiefe und neue Vorlagen: **Ecksofa, Eckschreibtisch, Küche L-Form, Eckbank**.
+- Für ein ausgewähltes Möbelstück: **Form: Rechteck / L-Form / Frei (Ecken)**.
+  - L-Form: **Schenkel links** und **Schenkel vorne** als Zahl, **⇋ Spiegeln** für die andere Seite, Drehen wie gewohnt (Q/E, R).
+  - **Ecken bearbeiten:** ● Ecke ziehen, ■ Kante verschieben, Doppelklick auf ■ fügt eine Ecke ein, Doppelklick auf ● löscht sie, Esc beendet. Das funktioniert wie bei den Wänden.
+  - Breite/Tiefe ändern skaliert die Form mit. „Rechteck“ macht sie wieder eckig.
+- Die Beschriftung sitzt automatisch im breitesten Teil der Form. Die Vorderkante ist dick markiert.
+- **Mittlere Maustaste gedrückt halten und ziehen** verschiebt die Ansicht, auch über Möbeln.
+
 ## Räume verschieben, Rückgängig
 
 - **Raumnamen** (Häkchen oben): blendet Namen und Flächen im Plan aus oder ein. Die Einstellung gilt nur für dich und bleibt gespeichert. Ohne Namen ziehst du Räume am Boden des gewählten Raums.

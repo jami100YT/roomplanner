@@ -118,6 +118,7 @@ button[data-armed]{background:var(--danger);color:#fff;border-color:var(--danger
 .dimtxt.sh{fill:var(--fg);font-weight:600}
 .dimtxt.act{fill:var(--accent);opacity:1}
 .dimtxt.in,.dimtxt.sh,.dimtxt.ext{paint-order:stroke;stroke:var(--floor);stroke-width:3px;stroke-linejoin:round}
+.dimtxt,.dimtot,.dimout,.lbl{pointer-events:none}
 .dimtot{stroke:var(--muted);stroke-width:1;vector-effect:non-scaling-stroke;opacity:.8}
 .zoom{position:absolute;right:10px;bottom:10px;display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:4px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
 .zoom button{min-width:36px;height:34px;padding:0 8px;font-size:16px;font-family:var(--f-mono)}
@@ -133,10 +134,11 @@ button[data-armed]{background:var(--danger);color:#fff;border-color:var(--danger
 .ehit:hover{stroke:var(--sel);stroke-opacity:.25}
 .wallhl{stroke:var(--sel);stroke-width:5;vector-effect:non-scaling-stroke;pointer-events:none;opacity:.8}
 button.on{background:var(--sel);border-color:var(--sel);color:#fff}
+.list button.on{background:transparent;border-color:transparent;border-bottom-color:var(--line);color:var(--sel)}
 #plan.drawing{cursor:crosshair}
-.vh{fill:var(--floor);stroke:var(--sel);stroke-width:2.5;vector-effect:non-scaling-stroke;cursor:move}
-.eh{fill:var(--sel);stroke:var(--floor);stroke-width:1.5;vector-effect:non-scaling-stroke;cursor:grab;opacity:.85}
-.vh:hover,.eh:hover{stroke-width:4}
+.fvh,.vh{fill:var(--floor);stroke:var(--sel);stroke-width:2.5;vector-effect:non-scaling-stroke;cursor:move}
+.feh,.eh{fill:var(--sel);stroke:var(--floor);stroke-width:1.5;vector-effect:non-scaling-stroke;cursor:grab;opacity:.85}
+.vh:hover,.eh:hover,.fvh:hover,.feh:hover{stroke-width:4}
 .drawln{fill:none;stroke:var(--sel);stroke-width:2.5;vector-effect:non-scaling-stroke;pointer-events:none}
 .drawln.ghost{stroke-dasharray:5 4;stroke-width:1.5;opacity:.7}
 .drawpt{fill:var(--sel);pointer-events:none}
@@ -149,9 +151,9 @@ button.on{background:var(--sel);border-color:var(--sel);color:#fff}
 #conn{color:var(--muted)}#conn.ok{color:#2f8a4f}#conn.bad{color:var(--danger)}
 .it{cursor:grab}
 .it:active{cursor:grabbing}
-.furn rect{fill-opacity:.6;stroke:var(--fg);stroke-opacity:.55;stroke-width:1.2;vector-effect:non-scaling-stroke}
+.furn polygon,.furn rect{fill-opacity:.6;stroke:var(--fg);stroke-opacity:.55;stroke-width:1.2;vector-effect:non-scaling-stroke}
 .furn .front{stroke:var(--fg);stroke-opacity:.8;stroke-width:3;vector-effect:non-scaling-stroke}
-.furn.sel rect{stroke:var(--sel);stroke-opacity:1;stroke-width:2.5}
+.furn.sel polygon,.furn.sel rect{stroke:var(--sel);stroke-opacity:1;stroke-width:2.5}
 .lbl{fill:var(--fg);font-family:var(--f-body);font-weight:500;pointer-events:none}
 .lbl .sz{font-family:var(--f-mono);font-weight:400;fill:var(--muted)}
 .glass{fill:var(--glass);stroke:var(--fg);stroke-width:1;vector-effect:non-scaling-stroke}
@@ -249,6 +251,10 @@ button.on{background:var(--sel);border-color:var(--sel);color:#fff}
         <div data-show="furn" style="display:flex;flex-direction:column;gap:10px">
           <div class="chips" id="presets"></div>
           <label class="f">Name <input id="a-name" value="Kommode"></label>
+          <div class="r2">
+            <label class="f">Form <select id="a-form"><option value="rect">Rechteck</option><option value="L">L-Form</option></select></label>
+            <label class="f">Schenkeltiefe <input id="a-arm" type="number" min="5" value="60" disabled></label>
+          </div>
           <div class="r3">
             <label class="f">Breite <input id="a-w" type="number" min="1" value="100"></label>
             <label class="f">Tiefe <input id="a-d" type="number" min="1" value="45"></label>
@@ -371,10 +377,15 @@ function normRoom(r,keep){
 }
 function normItem(i,room,keep){
   if(!i||typeof i!=='object')return null;let it;
-  if(i.type==='furn')it={id:okId(i.id,keep),type:'furn',name:String(i.name||'Objekt').slice(0,60),w:N(i.w,100,1,3000),d:N(i.d,50,1,3000),
-    color:safeColor(i.color),x:N(i.x,room.w/2,-1e5,1e5),y:N(i.y,room.d/2,-1e5,1e5),
-    rot:((Math.round(N(i.rot,0,-1e4,1e4)/45)*45)%360+360)%360};
-  else if(i.type==='window'||i.type==='door'){
+  if(i.type==='furn'){
+    it={id:okId(i.id,keep),type:'furn',name:String(i.name||'Objekt').slice(0,60),w:N(i.w,100,1,3000),d:N(i.d,50,1,3000),
+      color:safeColor(i.color),x:N(i.x,room.w/2,-1e5,1e5),y:N(i.y,room.d/2,-1e5,1e5),
+      rot:((Math.round(N(i.rot,0,-1e4,1e4)/45)*45)%360+360)%360};
+    // Möbelform: L-Form (Parameter) oder frei (Ecken), sonst Rechteck
+    if(i.form==='L'){it.form='L';it.la=N(i.la,60,5,3000);it.lb=N(i.lb,60,5,3000);it.mir=!!i.mir;it.pts=lPts(it)}
+    else if(i.form==='free'&&Array.isArray(i.pts)&&i.pts.length>=3&&i.pts.length<=40&&i.pts.every(v=>Array.isArray(v)&&isFinite(+v[0])&&isFinite(+v[1]))){
+      it.form='free';it.pts=i.pts.map(v=>[N(v[0],0,-1e4,1e4),N(v[1],0,-1e4,1e4)])}
+  }else if(i.type==='window'||i.type==='door'){
     const w=N(i.w,90,10,3000);let wall=i.wall,s=N(i.s,0,0,1e5),hinge=i.hinge==='end'?'end':'start';
     if(typeof wall==='string'){ // altes Format: Kanten unten/links laufen jetzt andersherum
       const k=Math.max(0,LEGACY.indexOf(wall));wall=k;
@@ -463,6 +474,26 @@ function findItem(id){for(const r of S.rooms)for(const it of r.items)if(it.id===
 // Ein Raum ist ein Polygon r.pts (raumlokal, im Uhrzeigersinn auf dem Bildschirm, min x/y = 0).
 // Wand i ist die Kante pts[i] → pts[i+1]; n zeigt in den Raum hinein.
 function rectPts(w,d){return[[0,0],[w,0],[w,d],[0,d]]}
+// L-förmiges Möbel um den Mittelpunkt: Schenkel la (links, senkrecht) und lb (vorne, waagrecht)
+function lPts(it){const w=it.w,d=it.d,a=Math.min(it.la,w-1),b=Math.min(it.lb,d-1),x0=-w/2,x1=w/2,y0=-d/2,y1=d/2;
+  let p=[[x0,y0],[x0+a,y0],[x0+a,y1-b],[x1,y1-b],[x1,y1],[x0,y1]];
+  if(it.mir)p=p.map(q=>[-q[0],q[1]]).reverse();return p.map(q=>[r1(q[0]),r1(q[1])])}
+const furnToG=(r,it,p)=>{const a=it.rot*Math.PI/180,c=Math.cos(a),s=Math.sin(a);return[r.x+it.x+c*p[0]-s*p[1],r.y+it.y+s*p[0]+c*p[1]]};
+const furnToL=(r,it,g)=>{const a=it.rot*Math.PI/180,c=Math.cos(a),s=Math.sin(a),dx=g[0]-r.x-it.x,dy=g[1]-r.y-it.y;return[dx*c+dy*s,-dx*s+dy*c]};
+function fitFurn(r,it){ // Umriss neu zentrieren, Breite/Tiefe = umschließendes Rechteck
+  const xs=it.pts.map(p=>p[0]),ys=it.pts.map(p=>p[1]),x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys),cx=(x0+x1)/2,cy=(y0+y1)/2;
+  it.pts=it.pts.map(p=>[r1(p[0]-cx),r1(p[1]-cy)]);it.w=r1(x1-x0);it.d=r1(y1-y0);
+  const a=it.rot*Math.PI/180;it.x=r1(it.x+Math.cos(a)*cx-Math.sin(a)*cy);it.y=r1(it.y+Math.sin(a)*cx+Math.cos(a)*cy);clampF(r,it);
+}
+function pole(Q){ // Punkt im Polygon mit größtem Abstand zum Rand (für die Beschriftung)
+  const xs=Q.map(p=>p[0]),ys=Q.map(p=>p[1]),x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
+  const inside=(x,y)=>{let c=false;for(let i=0,j=Q.length-1;i<Q.length;j=i++){const a=Q[i],b=Q[j];if((a[1]>y)!==(b[1]>y)&&x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0])c=!c}return c};
+  const dist=(x,y)=>{let m=Infinity;for(let i=0;i<Q.length;i++){const a=Q[i],b=Q[(i+1)%Q.length],dx=b[0]-a[0],dy=b[1]-a[1],l=dx*dx+dy*dy||1;
+    const t=Math.max(0,Math.min(1,((x-a[0])*dx+(y-a[1])*dy)/l));m=Math.min(m,Math.hypot(x-a[0]-t*dx,y-a[1]-t*dy))}return m};
+  let best=[(x0+x1)/2,(y0+y1)/2,0];
+  for(let i=1;i<20;i++)for(let j=1;j<20;j++){const x=x0+(x1-x0)*i/20,y=y0+(y1-y0)*j/20;if(!inside(x,y))continue;const d=dist(x,y);if(d>best[2])best=[x,y,d]}
+  return best;
+}
 function polyArea(p){let s=0;for(let i=0;i<p.length;i++){const a=p[i],b=p[(i+1)%p.length];s+=a[0]*b[1]-b[0]*a[1]}return s/2}
 function wallInfo(r,i){const Q=r.pts,n=Q.length;i=((i%n)+n)%n;const a=Q[i],b=Q[(i+1)%n],dx=b[0]-a[0],dy=b[1]-a[1],
   L=Math.hypot(dx,dy)||1e-9,u=[dx/L,dy/L];return{i,p:a,b,u,n:[-u[1],u[0]],L}}
@@ -533,6 +564,7 @@ function computeLayout(){
 }
 function render(){
   const vis=S.rooms.filter(r=>!r.hidden),A=R();
+  if(mode==='fshape'){const it=byId(sel);if(!it||it.type!=='furn'||!it.pts){mode=null;updateModeUI()}}
   svg.classList.toggle('locked',lockRooms);svg.classList.toggle('drawing',mode==='draw'||mode==='extend');
   if(!vis.length&&mode!=='draw'){svg.setAttribute('viewBox','0 0 400 160');
     svg.innerHTML='<text class="dimtxt" x="200" y="84" font-size="14" text-anchor="middle">Alle Räume sind ausgeblendet</text>';return}
@@ -553,11 +585,14 @@ function render(){
   for(const r of vis)for(const it of r.items.filter(i=>i.type==='furn')){
     const{w,d}=it,pc=sel!==it.id&&psel[it.id];
     h+=`<g class="it furn${sel===it.id?' sel':''}" data-id="${it.id}" transform="translate(${r.x+it.x} ${r.y+it.y}) rotate(${it.rot})">
-      <rect x="${-w/2}" y="${-d/2}" width="${w}" height="${d}" rx="2" fill="${esc(it.color)}"${pc?` style="stroke:${pc};stroke-opacity:1;stroke-width:2.5"`:''}/>
-      <line class="front" x1="${-w/2+2}" y1="${d/2}" x2="${w/2-2}" y2="${d/2}"/></g>`;
+      ${it.pts?`<polygon points="${pts(it.pts)}" fill="${esc(it.color)}"${pc?` style="stroke:${pc};stroke-opacity:1;stroke-width:2.5"`:''}/>`
+        +it.pts.map((a,k)=>{const b=it.pts[(k+1)%it.pts.length];return Math.abs(a[1]-d/2)<0.6&&Math.abs(b[1]-d/2)<0.6?`<line class="front" x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}"/>`:''}).join('')
+      :`<rect x="${-w/2}" y="${-d/2}" width="${w}" height="${d}" rx="2" fill="${esc(it.color)}"${pc?` style="stroke:${pc};stroke-opacity:1;stroke-width:2.5"`:''}/>
+      <line class="front" x1="${-w/2+2}" y1="${d/2}" x2="${w/2-2}" y2="${d/2}"/>`}</g>`;
   }
   for(const r of vis)for(const it of r.items.filter(i=>i.type==='furn')){
-    const{hx,hy}=ext(it),lf=Math.min(fs,Math.min(hx,hy)/1.6)*SET.ff,X=r.x+it.x,Y=r.y+it.y;
+    let{hx,hy}=ext(it),lf=Math.min(fs,Math.min(hx,hy)/1.6)*SET.ff,X=r.x+it.x,Y=r.y+it.y;
+    if(it.pts){const q=pole(it.pts),g=furnToG(r,it,q);X=r1(g[0]);Y=r1(g[1]);lf=Math.min(fs,q[2]/1.3)*SET.ff}
     if(lf<3)continue;
     h+=SET.fsize?`<text class="lbl" font-size="${r1(lf)}" text-anchor="middle" x="${X}" y="${Y}"><tspan x="${X}" dy="-0.15em">${esc(it.name)}</tspan><tspan class="sz" x="${X}" dy="1.2em" font-size="${r1(lf*0.8)}">${fmt(it.w)}×${fmt(it.d)}</tspan></text>`
       :`<text class="lbl" font-size="${r1(lf)}" text-anchor="middle" dy="0.35em" x="${X}" y="${Y}">${esc(it.name)}</text>`;
@@ -609,6 +644,10 @@ function render(){
     h+='</g>';
   }
   if(mode!=='draw')h+=wallDims(vis,A,fs);
+  if(mode==='fshape'){const it=byId(sel);if(it&&it.pts){const hs=fs*.38,G=it.pts.map(p=>furnToG(A,it,p));
+    G.forEach((a,i)=>{const b=G[(i+1)%G.length],m=[(a[0]+b[0])/2,(a[1]+b[1])/2];
+      h+=`<rect class="feh" data-fe="${i}" x="${r1(m[0]-hs)}" y="${r1(m[1]-hs)}" width="${r1(hs*2)}" height="${r1(hs*2)}" rx="${r1(hs*.3)}"><title>Kante verschieben · Doppelklick = neue Ecke</title></rect>`});
+    G.forEach((p,i)=>h+=`<circle class="fvh" data-fv="${i}" cx="${r1(p[0])}" cy="${r1(p[1])}" r="${r1(fs*.42)}"><title>Ecke ziehen · Doppelklick = löschen</title></circle>`)}}
   // Vorschau beim Raum-Zeichnen / Anbau
   if(mode==='draw'||mode==='extend'){
     const q=drawCur?[...drawPts,drawCur]:drawPts;
@@ -702,6 +741,8 @@ document.addEventListener('keydown',e=>{
   else if(e.key==='0'){setView(null);e.preventDefault()}
 });
 document.addEventListener('keyup',e=>{if(e.code==='Space'){spaceDown=false;svg.classList.remove('spacepan')}});
+svg.addEventListener('mousedown',e=>{if(e.button===1)e.preventDefault()});
+svg.addEventListener('auxclick',e=>{if(e.button===1)e.preventDefault()});
 function startPan(e){const k=svg.getScreenCTM().a||1;drag={kind:'pan',cx:e.clientX,cy:e.clientY,v:[...curVB()],k,moved:false};
   svg.classList.add('panning');svg.setPointerCapture(e.pointerId);e.preventDefault()}
 // Touch: zwei Finger = zoomen + verschieben
@@ -758,7 +799,7 @@ $('#addRoom').addEventListener('click',()=>{
 $('#showAll').addEventListener('click',()=>{S.rooms.forEach(r=>r.hidden=false);renderAll();save()});
 $('#onlyActive').addEventListener('click',()=>{S.rooms.forEach(r=>r.hidden=r.id!==S.active);renderAll();save()});
 $('#dupRoom').addEventListener('click',()=>{const A=R();
-  const c={...A,id:nid('r'),name:A.name+' (Kopie)',hidden:false,pts:A.pts.map(p=>[...p]),items:A.items.map(i=>({...i,id:nid()}))};
+  const c={...A,id:nid('r'),name:A.name+' (Kopie)',hidden:false,pts:A.pts.map(p=>[...p]),items:A.items.map(i=>({...i,id:nid(),...(i.pts?{pts:i.pts.map(p=>[...p])}:{})}))};
   placeRight(c);S.rooms.push(c);S.active=c.id;sel=null;renderAll();save()});
 $('#room-name').addEventListener('input',e=>{const A=R();A.name=e.target.value.slice(0,60)||'Raum';render();renderRooms();renderPanel();save()});
 document.querySelectorAll('[data-rk]').forEach(el=>el.addEventListener('change',()=>{
@@ -790,6 +831,10 @@ function renderPanel(){
     h+=`<div class="r3">${num('w','Breite',it)}${num('d','Tiefe',it)}<label class="f">Farbe<input type="color" data-k="color" value="${esc(it.color)}"></label></div>
     <div class="f" style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)">Drehung: <b id="rotv" style="color:var(--fg);font-family:var(--f-mono)">${it.rot}°</b>
       <div class="r4"><button type="button" data-act="rot" data-v="-90">⟲ 90°</button><button type="button" data-act="rot" data-v="-45">⟲ 45°</button><button type="button" data-act="rot" data-v="45">⟳ 45°</button><button type="button" data-act="rot" data-v="90">⟳ 90°</button></div></div>
+    <div class="r2"><label class="f">Form<select data-k="form"><option value="rect"${!it.pts?' selected':''}>Rechteck</option><option value="L"${it.form==='L'?' selected':''}>L-Form</option><option value="free"${it.form==='free'?' selected':''}>Frei (Ecken)</option></select></label>
+      ${it.pts?`<button type="button" data-act="mir" style="align-self:end">⇋ Spiegeln</button>`:'<span></span>'}</div>
+    ${it.form==='L'?`<div class="r2">${num('la','Schenkel links',it)}${num('lb','Schenkel vorne',it)}</div>`:''}
+    ${it.pts?`<button type="button" data-act="fedit" class="${mode==='fshape'?'on':''}">${mode==='fshape'?'Ecken fertig':'Ecken bearbeiten'}</button>`:''}
     <div class="r2">${num('dl','Abstand links',it)}${num('dr','Abstand rechts',it)}</div>
     <div class="r2">${num('dt','Abstand oben',it)}${num('db','Abstand unten',it)}</div>
     <div class="btnrow"><button type="button" data-act="cx">↔ horizontal zentrieren</button><button type="button" data-act="cy">↕ vertikal zentrieren</button></div>
@@ -814,7 +859,15 @@ selBox.addEventListener('input',e=>{
   if(k==='wall')v=+v;
   if(it.type==='furn'){const{hx,hy}=ext(it),W=wallsAround(A,it.x,it.y);
     if(k==='dl')it.x=W.L+v+hx;else if(k==='dr')it.x=W.R-v-hx;else if(k==='dt')it.y=W.T+v+hy;else if(k==='db')it.y=W.B-v-hy;
-    else if(k==='w'||k==='d')it[k]=Math.max(1,v);else it[k]=v;
+    else if(k==='w'||k==='d'){const old=it[k];it[k]=Math.max(1,v);
+      if(it.form==='L')it.pts=lPts(it);else if(it.pts){const j=k==='w'?0:1,f=it[k]/old;it.pts=it.pts.map(p=>{const q=[...p];q[j]=r1(q[j]*f);return q})}}
+    else if(k==='la'||k==='lb'){it[k]=Math.max(5,Math.min(v,(k==='la'?it.w:it.d)-5));it.pts=lPts(it)}
+    else if(k==='form'){
+      if(v==='rect'){delete it.pts;delete it.form;delete it.la;delete it.lb;delete it.mir;if(mode==='fshape')mode=null}
+      else if(v==='L'){it.form='L';it.la=it.la||r1(Math.max(20,Math.min(it.w,it.d)*0.45));it.lb=it.lb||it.la;it.mir=!!it.mir;it.pts=lPts(it)}
+      else{if(!it.pts)it.pts=[[-it.w/2,-it.d/2],[it.w/2,-it.d/2],[it.w/2,it.d/2],[-it.w/2,it.d/2]].map(p=>p.map(r1));it.form='free';delete it.la;delete it.lb;delete it.mir}
+      clamp(A,it);render();save();renderPanel();updateModeUI();return}
+    else it[k]=v;
   }else{const L=wallInfo(A,it.wall).L;
     if(k==='ds')it.s=v;else if(k==='de')it.s=L-it.w-v;else if(k==='w')it.w=Math.max(10,v);else it[k]=v;
   }
@@ -829,7 +882,9 @@ selBox.addEventListener('click',e=>{
   else if(a==='cs')it.s=(wallInfo(A,it.wall).L-it.w)/2;
   else if(a==='flip')it.hinge=it.hinge==='start'?'end':'start';
   else if(a==='del'){A.items=A.items.filter(i=>i!==it);sel=null}
-  else if(a==='dup'){const c={...it,id:nid()};if(c.type==='furn'){c.x+=20;c.y+=20}else c.s+=c.w+10;clamp(A,c);A.items.push(c);sel=c.id}
+  else if(a==='mir'&&it.pts){if(it.form==='L'){it.mir=!it.mir;it.pts=lPts(it)}else it.pts=it.pts.map(p=>[-p[0],p[1]]).reverse()}
+  else if(a==='fedit'){setMode(mode==='fshape'?null:'fshape');return}
+  else if(a==='dup'){const c={...it,id:nid()};if(c.pts)c.pts=c.pts.map(p=>[...p]);if(c.type==='furn'){c.x+=20;c.y+=20}else c.s+=c.w+10;clamp(A,c);A.items.push(c);sel=c.id}
   if(byId(sel))clamp(A,byId(sel));
   render();renderPanel();save();
 });
@@ -865,12 +920,13 @@ function updateModeUI(){
   $('#extendShape').classList.toggle('on',mode==='extend');$('#extendShape').textContent=mode==='extend'?'Abbrechen':'＋ Anbau / Ausschnitt';
   $('#hint').textContent=mode==='draw'?'Raum zeichnen: Klick = Ecke setzen · Startpunkt anklicken, Doppelklick oder Enter = fertig · ⌫ = letzte Ecke weg · Esc = abbrechen · rastet am Raster, an Achsen und an Wänden ein'
     :mode==='shape'?'Form bearbeiten: ● Ecke ziehen · ■ Wand verschieben · Doppelklick auf eine Wand = Ecke an dieser Stelle einfügen · Doppelklick auf ● = Ecke löschen · Esc = fertig'
+    :mode==='fshape'?'Möbel-Ecken: ● Ecke ziehen · ■ Kante verschieben · Doppelklick auf ■ = neue Ecke · Doppelklick auf ● = Ecke löschen · Esc = fertig'
     :mode==='extend'?'Anbau / Ausschnitt: auf einer Wand starten · Ecken klicken · auf einer Wand enden (außen = Anbau, innen = Ausschnitt) · ⌫ = letzte Ecke weg · Esc = abbrechen'
     :HINT_DEFAULT;
 }
 function setMode(m){
   mode=m;drawPts=[];drawCur=null;extCur=null;extStart=null;drag=null;
-  if(m)sel=null;
+  if(m&&m!=='fshape')sel=null;
   computeLayout();updateModeUI();renderAll();
 }
 function snapDraw(p){
@@ -905,8 +961,8 @@ function finishDraw(){
   S.rooms.push(r);S.active=r.id;sel=null;setMode(null);save();
   $('#room-name').focus();$('#room-name').select();
 }
-function shapeOk(r){ // keine sich kreuzenden Wände, sinnvolle Fläche
-  const Q=r.pts,n=Q.length;if(n<3||polyArea(Q)<2500)return false;
+function shapeOk(r,minArea=2500){ // keine sich kreuzenden Kanten, sinnvolle Fläche
+  const Q=r.pts,n=Q.length;if(n<3||Math.abs(polyArea(Q))<minArea)return false;
   const X=(a,b,c,d)=>{const o=(p,q,s)=>Math.sign((q[0]-p[0])*(s[1]-p[1])-(q[1]-p[1])*(s[0]-p[0]));
     return o(a,b,c)*o(a,b,d)<0&&o(c,d,a)*o(c,d,b)<0};
   for(let i=0;i<n;i++)for(let j=i+2;j<n;j++){if(i===0&&j===n-1)continue;if(X(Q[i],Q[(i+1)%n],Q[j],Q[(j+1)%n]))return false}
@@ -1006,6 +1062,10 @@ svg.addEventListener('pointerdown',e=>{
   const p=pt(e);
   if(mode==='draw'){drawCur=snapDraw([p.x,p.y]);drawClick(drawCur);e.preventDefault();return}
   if(mode==='extend'){extCur=snapExtend([p.x,p.y]);drawCur=extCur.pt;extendClick();e.preventDefault();return}
+  const fv=e.target.closest('.fvh'),fe=e.target.closest('.feh');
+  if(mode==='fshape'&&(fv||fe)){const A=R(),it=byId(sel);
+    drag={kind:fv?'fvtx':'fedge',r:A,it,i:+(fv?fv.dataset.fv:fe.dataset.fe),start:furnToL(A,it,[p.x,p.y]),orig:it.pts.map(q=>[...q]),moved:false};
+    svg.setPointerCapture(e.pointerId);e.preventDefault();return}
   const vh=e.target.closest('.vh'),eh=e.target.closest('.eh');
   if(mode==='shape'&&(vh||eh)){const A=R();
     drag={kind:vh?'vtx':'edge',r:A,i:+(vh?vh.dataset.v:eh.dataset.e),start:[p.x,p.y],orig:A.pts.map(q=>[...q]),moved:false};
@@ -1016,7 +1076,7 @@ svg.addEventListener('pointerdown',e=>{
     drag={kind:'item',r,it,ox:p.x-r.x-(it.x||0),oy:p.y-r.y-(it.y||0),moved:false};
   }else{
     const nm=e.target.closest('.rname'),fl=nm||e.target.closest('.rm');
-    if(!fl){select(null);startPan(e);return}
+    if(!fl){select(null);if(!e.target.closest('.ehit'))startPan(e);return} // Wand-Trefferfläche: Doppelklick = Ecke einfügen, nicht verschieben
     const r=S.rooms.find(x=>x.id===fl.dataset.room);if(!r)return;
     const wasActive=S.active===r.id;
     if(!wasActive){S.active=r.id;sel=null;renderAll();cacheLocal()}else select(null);
@@ -1033,6 +1093,16 @@ svg.addEventListener('pointermove',e=>{
   if(mode==='draw'){drawCur=snapDraw([p.x,p.y]);render();return}
   if(mode==='extend'){extCur=snapExtend([p.x,p.y]);drawCur=extCur.pt;render();return}
   if(!drag)return;
+  if(drag.kind==='fvtx'||drag.kind==='fedge'){
+    const{r,it,i}=drag,n=it.pts.length,lp=furnToL(r,it,[p.x,p.y]),tol=Math.max(3,layout.fs*0.6);drag.moved=true;
+    if(drag.kind==='fvtx'){let x=snapv(lp[0],5),y=snapv(lp[1],5);
+      for(const nb of [drag.orig[(i-1+n)%n],drag.orig[(i+1)%n]]){if(Math.abs(x-nb[0])<tol)x=nb[0];if(Math.abs(y-nb[1])<tol)y=nb[1]}
+      it.pts[i]=[r1(x),r1(y)];
+    }else{const a=drag.orig[i],b=drag.orig[(i+1)%n],L=Math.hypot(b[0]-a[0],b[1]-a[1])||1,nv=[-(b[1]-a[1])/L,(b[0]-a[0])/L];
+      const d=snapv((lp[0]-drag.start[0])*nv[0]+(lp[1]-drag.start[1])*nv[1],5);
+      it.pts[i]=[r1(a[0]+nv[0]*d),r1(a[1]+nv[1]*d)];it.pts[(i+1)%n]=[r1(b[0]+nv[0]*d),r1(b[1]+nv[1]*d)]}
+    render();return;
+  }
   if(drag.kind==='vtx'||drag.kind==='edge'){
     const r=drag.r,n=r.pts.length,i=drag.i,tol=layout.fs*1.2;drag.moved=true;
     if(drag.kind==='vtx'){
@@ -1060,7 +1130,13 @@ svg.addEventListener('pointermove',e=>{
   }
   render();updateFields();syncSoon();
 });
+function commitFurn(r,it,orig){
+  if(!shapeOk({pts:it.pts},100)){it.pts=orig;msg('Diese Möbelform geht nicht (Kanten überkreuzen sich).')}
+  else{it.form='free';delete it.la;delete it.lb;delete it.mir;fitFurn(r,it)}
+  render();renderPanel();save();
+}
 const endDrag=()=>{if(!drag)return;const d=drag;drag=null;
+  if(d.kind==='fvtx'||d.kind==='fedge'){if(d.moved)commitFurn(d.r,d.it,d.orig);return}
   if(d.kind==='pan'){svg.classList.remove('panning');return}
   if(d.kind==='vtx'||d.kind==='edge'){if(d.moved)commitShape(d.r,d.orig,null);return}
   if(d.moved){render();renderPanel();syncRoomInputs();save()}};
@@ -1068,6 +1144,12 @@ svg.addEventListener('pointerup',endDrag);svg.addEventListener('pointercancel',e
 svg.addEventListener('dblclick',e=>{
   if(mode==='draw'){e.preventDefault();finishDraw();return}
   if(mode==='extend'){e.preventDefault();return}
+  if(mode==='fshape'){const fv=e.target.closest('.fvh'),fe=e.target.closest('.feh'),A=R(),it=byId(sel);if(!it||!it.pts)return;
+    const orig=it.pts.map(q=>[...q]);
+    if(fv){if(it.pts.length<=3){msg('Ein Möbel braucht mindestens 3 Ecken.');return}it.pts.splice(+fv.dataset.fv,1);commitFurn(A,it,orig)}
+    else if(fe){const i=+fe.dataset.fe,a=it.pts[i],b=it.pts[(i+1)%it.pts.length];if(Math.hypot(b[0]-a[0],b[1]-a[1])<10)return;
+      it.pts.splice(i+1,0,[r1((a[0]+b[0])/2),r1((a[1]+b[1])/2)]);commitFurn(A,it,orig)}
+    return}
   if(mode==='shape'){const vh=e.target.closest('.vh'),eh=e.target.closest('.eh'),wh=e.target.closest('.ehit');
     if(vh)deleteCorner(R(),+vh.dataset.v);else if(eh)splitWall(R(),+eh.dataset.e);
     else if(wh){const p=pt(e),A=R();insertCorner(A,+wh.dataset.w,[p.x-A.x,p.y-A.y])}return}
@@ -1084,7 +1166,7 @@ document.addEventListener('keydown',e=>{
     if(e.key==='Escape')setMode('shape');
     else if(e.key==='Backspace'||e.key==='Delete'){drawPts.pop();if(!drawPts.length)extStart=null;render()}else return;
     e.preventDefault();return}
-  if(mode==='shape'&&e.key==='Escape'){setMode(null);e.preventDefault();return}
+  if((mode==='shape'||mode==='fshape')&&e.key==='Escape'){setMode(null);renderPanel();e.preventDefault();return}
   const it=byId(sel),A=R();if(!it)return;
   const st=e.shiftKey?10:1,ar={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[e.key];
   const k=e.key.toLowerCase();
@@ -1098,9 +1180,14 @@ document.addEventListener('keydown',e=>{
 });
 
 /* ---------- Hinzufügen ---------- */
+const PRESETS_L=[['Ecksofa (L)',260,200,90],['Eckschreibtisch (L)',160,140,65],['Küche L-Form',240,180,60],['Eckbank (L)',180,140,50]];
 const PRESETS=[['Bett',140,200],['Einzelbett',90,200],['Schreibtisch',140,70],['Stuhl',45,45],['Kleiderschrank',150,60],['Sofa',220,90],['Sessel',80,80],['Couchtisch',100,60],['Esstisch',160,90],['Regal',80,35],['Kommode',100,45],['Nachttisch',45,40],['Teppich',200,140],['Küchenzeile',240,60],['Kühlschrank',60,65],['Badewanne',170,75],['Dusche',90,90],['WC',40,65],['Waschbecken',60,45]];
 $('#presets').innerHTML=PRESETS.map(([n],i)=>`<button type="button" data-i="${i}">${n}</button>`).join('');
-$('#presets').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const[n,w,d]=PRESETS[b.dataset.i];
+$('#presets').insertAdjacentHTML('beforeend',PRESETS_L.map(([n],i)=>`<button type="button" data-l="${i}">${n}</button>`).join(''));
+$('#a-form').addEventListener('change',()=>{$('#a-arm').disabled=$('#a-form').value!=='L'});
+$('#presets').addEventListener('click',e=>{const b=e.target.closest('button[data-l]');if(!b)return;e.stopImmediatePropagation();const[n,w,d,arm]=PRESETS_L[b.dataset.l];
+  $('#a-name').value=n;$('#a-w').value=w;$('#a-d').value=d;$('#a-form').value='L';$('#a-arm').value=arm;$('#a-arm').disabled=false;$('#a-color').value=COLORS[(+b.dataset.l+5)%COLORS.length]},true);
+$('#presets').addEventListener('click',e=>{const b=e.target.closest('button[data-i]');if(!b)return;$('#a-form').value='rect';$('#a-arm').disabled=true;const[n,w,d]=PRESETS[b.dataset.i];
   $('#a-name').value=n;$('#a-w').value=w;$('#a-d').value=d;$('#a-color').value=COLORS[b.dataset.i%COLORS.length]});
 function setTab(t){tab=t;
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
@@ -1124,6 +1211,7 @@ $('#addForm').addEventListener('submit',e=>{e.preventDefault();const A=R(),W=A.w
     it={id:nid(),type:'furn',name:$('#a-name').value.trim()||'Objekt',w,d,color:$('#a-color').value,rot:0,
       x:hm==='left'?n('#a-hv')+w/2:hm==='right'?W-n('#a-hv')-w/2:W/2,
       y:vm==='top'?n('#a-vv')+d/2:vm==='bottom'?D-n('#a-vv')-d/2:D/2};
+    if($('#a-form').value==='L'){const arm=Math.max(5,n('#a-arm'));it.form='L';it.la=Math.min(arm,w-5);it.lb=Math.min(arm,d-5);it.mir=false;it.pts=lPts(it)}
   }else{
     const wall=+$('#a-wall').value||0,L=wallInfo(A,wall).L,w=Math.max(10,n('#a-ow')),m=$('#a-om').value;
     it={id:nid(),type:tab,name:tab==='door'?'Tür':'Fenster',wall,w,s:m==='start'?n('#a-ov'):m==='end'?L-w-n('#a-ov'):(L-w)/2};
@@ -1235,6 +1323,10 @@ function syncSoon(){if(!syncT)syncT=setTimeout(sync,40)}
    Eine Aktion (bis save()) = ein Schritt. Rückgängig setzt nur die Objekte zurück, die du selbst
    geändert hast – Änderungen deiner Freunde an anderen Objekten bleiben erhalten. */
 const undoStack=[],redoStack=[];let openGroup=null,recTarget='undo',recording=true,lastSeal=0;
+// Nur fortlaufendes Tippen in einem Feld bzw. Pfeiltasten-Schritte werden zusammengefasst – Klicks sind eigene Schritte
+let typing=false;
+document.addEventListener('input',e=>{const t=e.target;if(t.matches&&t.matches('input[type=text],input[type=number],input:not([type])'))typing=true},true);
+document.addEventListener('keydown',e=>{if(/^Arrow/.test(e.key)&&!e.target.closest('input,select,textarea'))typing=true},true);
 function inv(key,ops){if(!recording)return;if(!openGroup)openGroup={keys:new Set(),entries:[]};
   if(openGroup.keys.has(key))return;openGroup.keys.add(key);openGroup.entries.push(ops)}
 function sealUndo(){
@@ -1243,7 +1335,8 @@ function sealUndo(){
   if(recTarget==='undo'){
     const prev=undoStack[undoStack.length-1],now=Date.now();
     // Tippen/Pfeiltasten am selben Objekt kurz hintereinander zu einem Schritt zusammenfassen
-    if(!undoRedoing&&prev&&now-lastSeal<900&&g.keys.size===1&&prev.keys.size===1&&[...g.keys][0]===[...prev.keys][0]){lastSeal=now;updateUndoUI();return}
+    g.typing=typing;typing=false;
+    if(!undoRedoing&&g.typing&&prev&&prev.typing&&now-lastSeal<900&&g.keys.size===1&&prev.keys.size===1&&[...g.keys][0]===[...prev.keys][0]){lastSeal=now;updateUndoUI();return}
     undoStack.push(g);if(undoStack.length>200)undoStack.shift();lastSeal=now;
     if(!undoRedoing)redoStack.length=0;
   }else redoStack.push(g);
@@ -1295,7 +1388,7 @@ function applyRemote(ops,mine){
     if(pend.get(k))continue;
     if(o.t==='room'&&o.r){
       const nr=normRoom(o.r,true);if(drag&&drag.r&&drag.r.id===nr.id)continue;let r=S.rooms.find(x=>x.id===nr.id);
-      if(r){const{items,hidden,...p}=nr;Object.assign(r,p)}else{nr.hidden=hiddenSet.has(nr.id);r=nr;S.rooms.push(r)}
+      if(r){const{items,hidden,...p}=nr;for(const k of Object.keys(r))if(!(k in p)&&k!=='items'&&k!=='hidden')delete r[k];Object.assign(r,p)}else{nr.hidden=hiddenSet.has(nr.id);r=nr;S.rooms.push(r)}
       shadowR.set(r.id,roomKey(r));changed=true;
     }else if(o.t==='roomDel'){
       const r=S.rooms.find(x=>x.id===o.id);if(!r)continue;
@@ -1305,7 +1398,7 @@ function applyRemote(ops,mine){
       if(drag&&drag.it&&drag.it.id===o.it.id)continue;
       const it=normItem(o.it,r,true);if(!it)continue;
       const i=r.items.findIndex(x=>x.id===it.id);
-      if(i>=0)Object.assign(r.items[i],it);else r.items.push(it);
+      if(i>=0){const o=r.items[i];for(const k of Object.keys(o))if(!(k in it))delete o[k];Object.assign(o,it)}else r.items.push(it); // entfernte Felder (z. B. Form) mit übernehmen
       shadowI.set(it.id,{rid:r.id,j:JSON.stringify(i>=0?r.items[i]:it)});changed=true;
     }else if(o.t==='itemDel'){
       const r=S.rooms.find(x=>x.id===o.rid);if(!r)continue;
