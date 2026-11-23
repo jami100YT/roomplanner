@@ -105,6 +105,13 @@ button[data-armed]{background:var(--danger);color:#fff;border-color:var(--danger
 .undo{display:inline-flex;gap:4px}.undo button{min-width:38px;font-size:16px;padding:3px 8px}
 .rarea{paint-order:stroke;stroke:var(--floor);stroke-width:3px;stroke-linejoin:round;fill:var(--muted);font-family:var(--f-mono);pointer-events:none}
 .curs{pointer-events:none}
+.ro-only{display:none!important}
+.ro .ro-only{display:flex!important}
+.ro .edit-only{display:none!important}
+.ro .ro-nobtn{pointer-events:none}
+.ro #rose{cursor:default}
+.ro #plan,.ro #plan *{cursor:grab}
+.robadge{background:var(--accent);color:var(--accent-fg);border-radius:6px;padding:8px 10px;font-size:13px;font-weight:500}
 .compass{position:absolute;top:10px;right:10px;display:flex;flex-direction:column;align-items:center;gap:4px;z-index:5}
 #rose{width:74px;height:74px;cursor:grab;touch-action:none;filter:drop-shadow(0 2px 6px rgba(0,0,0,.12))}
 #rose:active{cursor:grabbing}
@@ -208,7 +215,13 @@ button.on{background:var(--sel);border-color:var(--sel);color:#fff}
   <aside>
     <div class="brand"><h1>Raumplaner</h1><small><span id="verTop"></span> · alle Maße in cm</small></div>
 
-    <section class="card">
+    <section class="card ro-only">
+      <div class="hrow"><h2>Präsentation</h2><span class="meta" id="connRO">verbinde…</span></div>
+      <div class="robadge">👁 Nur ansehen – Änderungen der Planer erscheinen hier live.</div>
+      <div class="meta">Zoomen mit dem Mausrad, Ansicht mit gedrückter Maus verschieben. Räume links ein-/ausblenden.</div>
+    </section>
+
+    <section class="card edit-only">
       <div class="hrow"><h2>Gemeinsam planen</h2><span class="meta" id="conn">verbinde…</span></div>
       <div style="display:grid;grid-template-columns:1fr 64px;gap:8px">
         <label class="f">Dein Name <input id="me-name" maxlength="24"></label>
@@ -218,12 +231,15 @@ button.on{background:var(--sel);border-color:var(--sel);color:#fff}
       <button type="button" id="shareBtn" class="primary">Link zum Plan kopieren</button>
       <div class="meta">Jeder mit dem Link plant live mit.</div>
       <div class="meta" id="shareHint"></div>
+      <button type="button" id="viewLinkBtn">👁 Nur-Ansehen-Link kopieren</button>
+      <div class="meta">Zum Präsentieren: Wer diesen Link hat, sieht alles live, kann aber nichts ändern. Der Plan-Code ist darin nicht enthalten.</div>
+      <div class="meta" id="viewLinkHint" style="overflow-wrap:anywhere"></div>
     </section>
 
     <section class="card">
       <div class="hrow"><h2>Wohnung</h2><span class="meta" id="aptMeta"></span></div>
       <div id="rooms"></div>
-      <div class="btnrow">
+      <div class="btnrow edit-only">
         <button type="button" id="addRoom" class="primary">+ Raum</button>
         <button type="button" id="drawRoom">✎ Raum zeichnen</button>
         <button type="button" id="showAll">Alle einblenden</button>
@@ -231,7 +247,7 @@ button.on{background:var(--sel);border-color:var(--sel);color:#fff}
       </div>
     </section>
 
-    <section class="card" id="roomCard">
+    <section class="card edit-only" id="roomCard">
       <h2>Raum</h2>
       <label class="f">Name <input id="room-name" maxlength="60"></label>
       <div class="r2">
@@ -265,7 +281,7 @@ button.on{background:var(--sel);border-color:var(--sel);color:#fff}
       <div class="meta" id="roomMsg" role="status"></div>
     </section>
 
-    <section class="card">
+    <section class="card edit-only">
       <h2>Hinzufügen in <b id="addTo"></b></h2>
       <div class="tabs" id="tabs">
         <button type="button" data-tab="furn" class="on">Möbel</button>
@@ -313,14 +329,14 @@ button.on{background:var(--sel);border-color:var(--sel);color:#fff}
       </form>
     </section>
 
-    <section class="card" id="selBox" hidden></section>
+    <section class="card edit-only" id="selBox" hidden></section>
 
     <section class="card">
       <h2>Im Raum</h2>
       <div class="list" id="list"></div>
     </section>
 
-    <section class="card">
+    <section class="card edit-only">
       <h2>Speichern &amp; Laden</h2>
       <div class="btnrow">
         <button type="button" id="saveFile" class="primary">Als JSON-Datei speichern</button>
@@ -358,9 +374,9 @@ button.on{background:var(--sel);border-color:var(--sel);color:#fff}
           <div class="meta">Wird in diesem Browser gespeichert.</div>
         </div>
       </details>
-      <label><input type="checkbox" id="lockRooms"> Räume fixieren</label>
-      <span class="undo"><button type="button" id="undoBtn" title="Rückgängig (Strg+Z)" aria-label="Rückgängig" disabled>↶</button><button type="button" id="redoBtn" title="Wiederholen (Strg+Y / Strg+⇧+Z)" aria-label="Wiederholen" disabled>↷</button></span>
-      <button type="button" id="resetBtn">Beispiel laden</button>
+      <label class="edit-only"><input type="checkbox" id="lockRooms"> Räume fixieren</label>
+      <span class="undo edit-only"><button type="button" id="undoBtn" title="Rückgängig (Strg+Z)" aria-label="Rückgängig" disabled>↶</button><button type="button" id="redoBtn" title="Wiederholen (Strg+Y / Strg+⇧+Z)" aria-label="Wiederholen" disabled>↷</button></span>
+      <button type="button" id="resetBtn" class="edit-only">Beispiel laden</button>
       <span class="hint" id="hint">Mausrad = zoomen · leere Fläche / Leertaste ziehen = Ausschnitt verschieben · Raumname oder Boden ziehen = Raum verschieben · Ziehen = verschieben · Doppelklick / R = drehen · Q / E = 45° links / rechts · Pfeiltasten = 1 cm (⇧ 10 cm) · Entf = löschen · Boden anklicken = Raum wählen</span>
     </div>
     <div class="stage"><svg id="plan" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"></svg>
@@ -371,7 +387,7 @@ button.on{background:var(--sel);border-color:var(--sel);color:#fff}
             <text y="-27" class="cl" text-anchor="middle">N</text></g>
           <circle r="3.5" class="cc"/>
         </svg>
-        <button type="button" id="northBtn" title="Norden einstellen">N <span id="northTxt">0°</span></button>
+        <button type="button" id="northBtn" title="Norden einstellen" class="ro-nobtn">N <span id="northTxt">0°</span></button>
         <div class="npop" id="northPop" hidden>
           <div class="hrow"><h2>Himmelsrichtung</h2><button type="button" id="northClose" aria-label="Schließen">×</button></div>
           <div class="meta">Wo ist Norden? Kompass ziehen oder Winkel eingeben (0° = oben im Plan, im Uhrzeigersinn). Gilt für alle in diesem Plan.</div>
@@ -393,8 +409,13 @@ button.on{background:var(--sel);border-color:var(--sel);color:#fff}
 const $=s=>document.querySelector(s);
 const svg=$('#plan'), selBox=$('#selBox');
 const T=12;
-const planId=(()=>{const u=new URL(location.href);let p=(u.searchParams.get('plan')||'').toLowerCase();
+// Nur-Ansehen-Modus: ?view=<Ansichts-Code> – der Plan-Code ist dabei nirgends sichtbar
+const VIEW=(()=>{const v=new URL(location.href).searchParams.get('view');return v&&/^[A-Za-z0-9_-]{24}$/.test(v)?v:null})();
+const RO=!!VIEW;
+document.documentElement.classList.toggle('ro',RO);
+const planId=RO?'view-'+VIEW.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,16):(()=>{const u=new URL(location.href);let p=(u.searchParams.get('plan')||'').toLowerCase();
   if(!/^[a-z0-9-]{1,40}$/.test(p)){p=Math.random().toString(36).slice(2,10);u.searchParams.set('plan',p);history.replaceState(null,'',u)}return p})();
+const ROGUARD=()=>RO; // Schreibschutz in der Oberfläche (der Server erzwingt ihn zusätzlich)
 const KEY='raumplaner-live-'+planId, HKEY='raumplaner-hidden-'+planId;
 const LEGACY=['top','right','bottom','left']; // alte Wandnamen → Kante 0..3 eines Rechtecks
 const COLORS=['#7a9cc6','#b9926a','#8fae7e','#c9877a','#a08bc0','#d0b25c','#7fb3ad'];
@@ -503,7 +524,7 @@ function load(){try{const t=localStorage.getItem(KEY);if(!t)return null;
 function cacheLocal(){try{
   localStorage.setItem(KEY,JSON.stringify({...exportObj(true),active:S.rooms.findIndex(r=>r.id===S.active)}));
   hiddenSet=new Set(S.rooms.filter(r=>r.hidden).map(r=>r.id));localStorage.setItem(HKEY,JSON.stringify([...hiddenSet]))}catch(e){}}
-function save(){cacheLocal();sync();sealUndo()}
+function save(){cacheLocal();if(RO)return;sync();sealUndo()}
 
 let S=load()||example();
 S.rooms.forEach(r=>r.hidden=hiddenSet.has(r.id));
@@ -787,7 +808,7 @@ $('#northPop').addEventListener('click',e=>{const b=e.target.closest('button[dat
 { // Kompassnadel ziehen (rastet auf 5°, mit Shift frei)
   const rose=$('#rose');let rd=null;
   const ang=e=>{const b=rose.getBoundingClientRect();return Math.atan2(e.clientX-(b.left+b.width/2),-(e.clientY-(b.top+b.height/2)))*180/Math.PI};
-  rose.addEventListener('pointerdown',e=>{rd={a0:ang(e),n0:S.north||0};rose.setPointerCapture(e.pointerId);e.preventDefault()});
+  rose.addEventListener('pointerdown',e=>{if(RO)return;rd={a0:ang(e),n0:S.north||0};rose.setPointerCapture(e.pointerId);e.preventDefault()});
   rose.addEventListener('pointermove',e=>{if(!rd)return;let v=rd.n0+ang(e)-rd.a0;if(!e.shiftKey)v=Math.round(v/5)*5;setNorth(v,false)});
   const up=()=>{if(!rd)return;rd=null;save()};rose.addEventListener('pointerup',up);rose.addEventListener('pointercancel',up);
 }
@@ -1231,6 +1252,9 @@ $('#rectShape').addEventListener('click',()=>{const A=R();if(isRect(A))return;co
 svg.addEventListener('pointerdown',e=>{
   // Klick in den Plan beendet die Eingabe in einem Textfeld, damit Strg+Z, Pfeile, Entf usw. auf den Plan wirken
   const ae=document.activeElement;if(ae&&ae.matches&&ae.matches('input,select,textarea'))ae.blur();
+  if(RO){if(pinch)return;const fl=e.target.closest('.rname,.rm');
+    if(fl&&e.button===0){const r=S.rooms.find(x=>x.id===fl.dataset.room);if(r&&S.active!==r.id){S.active=r.id;sel=null;renderAll()}}
+    startPan(e);return}
   if(pinch)return;
   if(e.button===1||spaceDown){startPan(e);return}
   const p=pt(e);
@@ -1333,6 +1357,7 @@ const endDrag=()=>{if(!drag)return;const d=drag;drag=null;
   if(d.moved){render();renderPanel();syncRoomInputs();save()}};
 svg.addEventListener('pointerup',endDrag);svg.addEventListener('pointercancel',endDrag);
 svg.addEventListener('dblclick',e=>{
+  if(RO)return;
   if(mode==='draw'){e.preventDefault();finishDraw();return}
   if(mode==='extend'){e.preventDefault();return}
   if(mode==='fshape'){const fv=e.target.closest('.fvh'),fe=e.target.closest('.feh'),A=R(),it=byId(sel);if(!it||!it.pts)return;
@@ -1348,7 +1373,7 @@ svg.addEventListener('dblclick',e=>{
   rotate(f[0],f[1],S.step);render();renderPanel();save()});
 
 document.addEventListener('keydown',e=>{
-  if(e.target.closest('input,select,textarea'))return;
+  if(RO||e.target.closest('input,select,textarea'))return;
   if(mode==='draw'){
     if(e.key==='Escape')setMode(null);else if(e.key==='Enter')finishDraw();
     else if(e.key==='Backspace'||e.key==='Delete'){drawPts.pop();render()}else return;
@@ -1483,7 +1508,7 @@ const COLORS_ME=['#cf5a17','#1e5c76','#8a3fb0','#2f8a4f','#c0336b','#b08a12','#2
 // Damit kann der Server eine hängende alte Verbindung derselben Seite sofort entfernen.
 const SID=Math.random().toString(36).slice(2,12)+Math.random().toString(36).slice(2,8);
 /* ---------- Version ---------- */
-const APP_VERSION='1.10.0'; // bei jedem Update zusammen mit package.json erhöhen
+const APP_VERSION='1.11.0'; // bei jedem Update zusammen mit package.json erhöhen
 function renderVersion(){$('#verTop').textContent='v'+APP_VERSION;$('#verClient').textContent='v'+APP_VERSION}
 const verCmp=(a,b)=>{const x=String(a).split('.').map(Number),y=String(b).split('.').map(Number);for(let i=0;i<3;i++){const d=(x[i]||0)-(y[i]||0);if(d)return d}return 0};
 const me={n:'',c:'',x:null,y:null,sel:null,sid:SID,v:APP_VERSION};
@@ -1500,7 +1525,7 @@ function resetShadow(){shadowR.clear();shadowI.clear();
 function send(m){if(ws&&ws.readyState===1){ws.send(JSON.stringify(m));return true}return false}
 function sync(){
   clearTimeout(syncT);syncT=null;
-  if(!ready)return;
+  if(!ready||RO)return;
   const ops=[],seenR=new Set(),seenI=new Set(),nv=S.north||0;
   for(const r of S.rooms){
     if(r.north!==nv)r.north=nv; // Himmelsrichtung gilt für den ganzen Plan – in jedem Raum mitgespeichert
@@ -1575,14 +1600,14 @@ function updateUndoUI(){$('#undoBtn').disabled=!undoStack.length;$('#redoBtn').d
 $('#undoBtn').addEventListener('click',()=>undoRedo('undo'));
 $('#redoBtn').addEventListener('click',()=>undoRedo('redo'));
 document.addEventListener('keydown',e=>{
-  if(!(e.ctrlKey||e.metaKey)||e.altKey)return;
+  if(RO||!(e.ctrlKey||e.metaKey)||e.altKey)return;
   const k=e.key.toLowerCase();if(k!=='z'&&k!=='y')return;
   if(e.target.closest('input,textarea'))return; // dort gilt das normale Rückgängig des Feldes
   e.preventDefault();e.stopImmediatePropagation();
   if((mode==='draw'||mode==='extend')&&k==='z'&&!e.shiftKey&&drawPts.length){drawPts.pop();if(!drawPts.length)extStart=null;render();return}
   undoRedo(k==='y'||e.shiftKey?'redo':'undo');
 },true);
-function pres(patch){Object.assign(me,patch);if(!presT)presT=setTimeout(()=>{presT=null;if(ready)send({t:'pres',p:me})},50)}
+function pres(patch){Object.assign(me,patch);if(RO)return;if(!presT)presT=setTimeout(()=>{presT=null;if(ready)send({t:'pres',p:me})},50)}
 
 function applyRemote(ops,mine){
   let changed=false;
@@ -1642,7 +1667,7 @@ function renderPeers(){
     const tip=v?`Version v${v}${old?' – älter als deine, bitte neu laden':''}`:'alte Version ohne Versionsangabe – bitte neu laden';
     return`<span class="peer${old?' old':''}" title="${esc(tip)}"><i style="background:${safeColor(p&&p.c)}"></i>${esc(String((p&&p.n)||'Gast').slice(0,30))} <span class="pv">${old?'⚠ ':''}${v?'v'+esc(v):'alt'}</span></span>`}).join('');
 }
-function setConn(t,cls){const c=$('#conn');c.textContent=t;c.className='meta '+(cls||'')}
+function setConn(t,cls){for(const c of [$('#conn'),$('#connRO')]){c.textContent=t;c.className='meta '+(cls||'')}}
 function handle(m){
   if(m.t==='init'){
     myId=m.you;pend.clear();peers.clear();undoStack.length=redoStack.length=0;openGroup=null;updateUndoUI();
@@ -1653,6 +1678,11 @@ function handle(m){
     if(p){p.rooms.forEach(r=>r.hidden=hiddenSet.has(r.id));S.rooms=p.rooms;S.north=p.north;sel=null;drag=null;resetShadow();renderCompass();remoteRender()}
     else{shadowR.clear();shadowI.clear();shadowM.clear();recording=false;sync();recording=true}   // leerer Plan: eigenen Stand hochladen
     setConn('● live · '+(peers.size+1)+' online','ok');send({t:'pres',p:me});renderPeers();render();
+  }else if(m.t==='viewlink'&&typeof m.token==='string'&&/^[A-Za-z0-9_-]{24}$/.test(m.token)){
+    clearTimeout(viewLinkT);const u=new URL(shareUrl);u.search='?view='+m.token;u.hash='';const url=u.href;
+    $('#viewLinkHint').textContent=url;
+    (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(()=>{const b=$('#viewLinkBtn');b.textContent='Nur-Ansehen-Link kopiert ✓';setTimeout(()=>b.textContent='👁 Nur-Ansehen-Link kopieren',1800)})
+      .catch(()=>window.prompt('Nur-Ansehen-Link (zum Präsentieren):',url));
   }else if(m.t==='ops'&&Array.isArray(m.ops)){
     applyRemote(m.ops,m.from===myId);
   }else if(m.t==='pres'&&m.p){
@@ -1671,11 +1701,14 @@ function connect(){
   clearTimeout(reconnT);reconnT=null;
   setConn('verbinde…');
   let sock;
-  try{sock=new WebSocket(`${location.protocol==='https:'?'wss':'ws'}://${location.host}/ws?plan=${planId}&sid=${SID}`)}catch(e){setConn('keine Verbindung möglich','bad');return}
+  try{sock=new WebSocket(`${location.protocol==='https:'?'wss':'ws'}://${location.host}/ws?${RO?'view='+VIEW:'plan='+planId}&sid=${SID}`)}catch(e){setConn('keine Verbindung möglich','bad');return}
   ws=sock;lastMsg=Date.now();
   sock.onopen=()=>{retry=0;lastMsg=Date.now()};
   sock.onmessage=e=>{if(sock!==ws)return;lastMsg=Date.now();let m;try{m=JSON.parse(e.data)}catch(x){return}if(m.t!=='hb')handle(m)};
-  sock.onclose=()=>{if(sock!==ws)return;dropConnection()};
+  sock.onclose=ev=>{if(sock!==ws)return;
+    if(RO&&(ev.code===4404||ev.code===1008)){ws=null;ready=false;
+      setConn(ev.code===4404?'Link ungültig':'Server unterstützt Nur-Ansehen noch nicht (Server aktualisieren & neu starten)','bad');return}
+    dropConnection()};
 }
 function dropConnection(){ // Verbindung aufgeben und neu verbinden
   const old=ws;ws=null;
@@ -1706,6 +1739,11 @@ if(/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)&&typeof fetch===
 $('#shareBtn').addEventListener('click',async()=>{const b=$('#shareBtn'),url=shareUrl;
   try{await navigator.clipboard.writeText(url);b.textContent='Link kopiert ✓';setTimeout(()=>b.textContent='Link zum Plan kopieren',1800)}
   catch(e){window.prompt('Diesen Link an deine Freunde schicken:',url)}});
+let viewLinkT=null;
+$('#viewLinkBtn').addEventListener('click',()=>{
+  if(!ready){$('#viewLinkHint').textContent='Nicht verbunden – bitte kurz warten.';return}
+  send({t:'viewlink'});clearTimeout(viewLinkT);
+  viewLinkT=setTimeout(()=>{$('#viewLinkHint').textContent='Der Server antwortet nicht auf diese Anfrage – er läuft noch mit einer älteren Version. Bitte auf dem Server aktualisieren und neu starten.'},2500)});
 
 /* ---------- Leiste ---------- */
 function syncSettingsUI(){

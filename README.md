@@ -80,6 +80,15 @@ Der Gratis-Plan schläft nach einer Weile Inaktivität ein (der erste Aufruf dau
 - Die Beschriftung sitzt automatisch im breitesten Teil der Form. Die Vorderkante ist dick markiert.
 - **Mittlere Maustaste gedrückt halten und ziehen** verschiebt die Ansicht, auch über Möbeln.
 
+## Präsentieren: Nur-Ansehen-Link
+
+- In **„Gemeinsam planen“** gibt es **„👁 Nur-Ansehen-Link kopieren“**. Wer diesen Link öffnet, sieht den Plan **live**, mitsamt allen Änderungen und deinem Mauszeiger, kann aber **nichts ändern**.
+- Der Link enthält den **Plan-Code nicht** (`…/?view=…`). Der Ansichts-Code wird mit einem geheimen Server-Schlüssel abgeleitet, daraus lässt sich der Plan-Code nicht ermitteln.
+- Der Schreibschutz wird vom **Server** erzwungen. Selbst manipulierte Anfragen eines Zuschauers werden verworfen.
+- Zuschauer können zoomen, die Ansicht verschieben, Räume ein- und ausblenden und die Ansicht-Einstellungen nutzen.
+- Der Schlüssel liegt in `data/secret.key`. Solange diese Datei bleibt, bleiben alle Ansichts-Links gültig, auch nach Neustarts. Wer `secret.key` löscht, macht alle bisherigen Ansichts-Links ungültig. Das ist praktisch, wenn ein Link nicht mehr funktionieren soll.
+- Voraussetzung: Der Server muss mindestens auf v1.11.0 laufen, also aktualisiert **und neu gestartet** sein.
+
 ## Türen ohne Türblatt (Durchgang)
 
 - Bei jeder Tür gibt es das Häkchen **„Türblatt ausgehängt (nur Durchgang)“**. Dann zeigt der Plan nur die Öffnung in der Wand mit gestrichelter Schwelle, ohne Türblatt und Schwenkbereich. Anschlag und Öffnungsrichtung bleiben gespeichert. Hängst du die Tür wieder ein, ist sie wie vorher.

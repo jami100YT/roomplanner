@@ -18,6 +18,30 @@ fs.mkdirSync(DATA, { recursive: true });
 const INDEX = path.join(__dirname, 'public', 'index.html');
 
 const validId = id => /^[a-z0-9-]{1,40}$/.test(id);
+
+/* ---------- Nur-Ansehen-Links ----------
+   Ansichts-Code = HMAC(Plan-Code, geheimer Server-Schlüssel). Aus dem Ansichts-Code lässt sich der
+   Plan-Code nicht zurückrechnen. Verbindungen über einen Ansichts-Code sind serverseitig schreibgeschützt. */
+const crypto = require('crypto');
+const SECRET_FILE = path.join(DATA, 'secret.key');
+let SECRET;
+try { SECRET = fs.readFileSync(SECRET_FILE); if (SECRET.length < 32) throw 0; }
+catch (e) { SECRET = crypto.randomBytes(32); fs.writeFileSync(SECRET_FILE, SECRET, { mode: 0o600 }); }
+const viewToken = planId => crypto.createHmac('sha256', SECRET).update('view:' + planId).digest('base64url').slice(0, 24);
+const VIEWS_FILE = path.join(DATA, 'views.json');
+let views = {}; try { views = JSON.parse(fs.readFileSync(VIEWS_FILE, 'utf8')) || {}; } catch (e) {}
+function registerView(planId) {
+  const t = viewToken(planId);
+  if (views[t] !== planId) { views[t] = planId; fs.writeFile(VIEWS_FILE, JSON.stringify(views), () => {}); }
+  return t;
+}
+function planForView(token) {
+  if (!/^[A-Za-z0-9_-]{24}$/.test(token)) return null;
+  if (views[token]) return views[token];
+  // Fallback: Pläne im Datenordner durchsuchen (falls views.json verloren ging)
+  try { for (const f of fs.readdirSync(DATA)) { const id = f.replace(/\.json$/, ''); if (f.endsWith('.json') && validId(id) && viewToken(id) === token) { registerView(id); return id; } } } catch (e) {}
+  return null;
+}
 const file = id => path.join(DATA, id + '.json');
 
 const server = http.createServer((req, res) => {
@@ -82,7 +106,10 @@ const wss = new WebSocketServer({ server, path: '/ws', maxPayload: 2 * 1024 * 10
 let cid = 0;
 wss.on('connection', (ws, req) => {
   const q = new URL(req.url, 'http://x').searchParams;
-  const id = (q.get('plan') || '').toLowerCase();
+  const viewTok = q.get('view');
+  const readonly = !!viewTok;
+  const id = readonly ? planForView(viewTok) : (q.get('plan') || '').toLowerCase();
+  if (readonly && !id) { ws.close(4404, 'unknown view'); return; }
   if (!validId(id)) { ws.close(1008, 'bad plan'); return; }
   const sid = /^[a-z0-9]{6,40}$/.test(q.get('sid') || '') ? q.get('sid') : null;
   const p = getPlan(id);
@@ -93,7 +120,7 @@ wss.on('connection', (ws, req) => {
     bcast(p, { t: 'leave', id: c.cid });
     try { c.terminate(); } catch (e) {}
   }
-  ws.cid = 'c' + (++cid); ws.sid = sid; ws.pres = null; ws.alive = true;
+  ws.cid = 'c' + (++cid); ws.sid = sid; ws.readonly = readonly; ws.pres = null; ws.alive = true;
   p.clients.add(ws);
   ws.send(JSON.stringify({
     t: 'init', you: ws.cid, state: p.state,
@@ -104,6 +131,8 @@ wss.on('connection', (ws, req) => {
     ws.alive = true;
     let m; try { m = JSON.parse(buf); } catch (e) { return; }
     if (m.t === 'hb') { if (ws.readyState === 1) ws.send('{"t":"hb"}'); return; }
+    if (ws.readonly) return; // Nur-Ansehen: keine Änderungen, keine Präsenz
+    if (m.t === 'viewlink') { ws.send(JSON.stringify({ t: 'viewlink', token: registerView(p.id) })); return; }
     if (m.t === 'ops' && Array.isArray(m.ops)) {
       const ops = m.ops.filter(o => apply(p.state, o));
       if (!ops.length) return;
