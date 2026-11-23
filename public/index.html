@@ -105,6 +105,12 @@ button[data-armed]{background:var(--danger);color:#fff;border-color:var(--danger
 .undo{display:inline-flex;gap:4px}.undo button{min-width:38px;font-size:16px;padding:3px 8px}
 .rarea{paint-order:stroke;stroke:var(--floor);stroke-width:3px;stroke-linejoin:round;fill:var(--muted);font-family:var(--f-mono);pointer-events:none}
 .curs{pointer-events:none}
+.grpbox{fill:none;stroke:var(--sel);stroke-width:1.5;stroke-dasharray:6 4;vector-effect:non-scaling-stroke;pointer-events:none}
+.grptx{fill:var(--sel);font-family:var(--f-body);font-weight:600;pointer-events:none;paint-order:stroke;stroke:var(--floor);stroke-width:3px}
+.marquee{fill:var(--sel);fill-opacity:.07;stroke:var(--sel);stroke-width:1;stroke-dasharray:4 3;vector-effect:non-scaling-stroke;pointer-events:none}
+.list .ghead{font-weight:600}
+.list .gitem{padding-left:16px!important}
+.ginfo{font-size:12px;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .vgrid{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;font-size:13px}
 .vgrid span{color:var(--muted)}.vgrid b{font-family:var(--f-mono);font-weight:500;font-size:12px;overflow-wrap:anywhere}
 #verState.ok{color:#2f8a4f}#verState.bad{color:var(--danger)}
@@ -401,6 +407,7 @@ function normItem(i,room,keep){
     it={id:okId(i.id,keep),type:'furn',name:String(i.name||'Objekt').slice(0,60),w:N(i.w,100,1,3000),d:N(i.d,50,1,3000),
       color:safeColor(i.color),x:N(i.x,room.w/2,-1e5,1e5),y:N(i.y,room.d/2,-1e5,1e5),
       rot:((Math.round(N(i.rot,0,-1e4,1e4)/45)*45)%360+360)%360};
+    if(typeof i.grp==='string'&&/^[a-z0-9_-]{1,40}$/i.test(i.grp)){it.grp=i.grp;it.gn=String(i.gn||'Gruppe').slice(0,40)}
     // Möbelform: L-Form (Parameter) oder frei (Ecken), sonst Rechteck
     if(i.form==='L'){it.form='L';it.la=N(i.la,60,5,3000);it.lb=N(i.lb,60,5,3000);it.mir=!!i.mir;it.pts=lPts(it)}
     else if(i.form==='free'&&Array.isArray(i.pts)&&i.pts.length>=3&&i.pts.length<=40&&i.pts.every(v=>Array.isArray(v)&&isFinite(+v[0])&&isFinite(+v[1]))){
@@ -480,6 +487,7 @@ function save(){cacheLocal();sync();sealUndo()}
 let S=load()||example();
 S.rooms.forEach(r=>r.hidden=hiddenSet.has(r.id));
 let sel=null, tab='furn', lockRooms=false, showNames=true;
+const extra=new Set(); // weitere ausgewählte Möbel (Mehrfachauswahl / Gruppe); sel = Hauptauswahl
 /* ---------- Persönliche Einstellungen (nur in diesem Browser) ---------- */
 const SET={snap:true,step:90,lock:false,names:true,dims:'smart',total:true,ff:1,fsize:true,df:1,walls:false};
 try{Object.assign(SET,JSON.parse(localStorage.getItem('rp-settings')||'{}'));if(localStorage.getItem('rp-names')==='0'&&!localStorage.getItem('rp-settings'))SET.names=false}catch(e){}
@@ -584,7 +592,8 @@ function computeLayout(){
 }
 function render(){
   const vis=S.rooms.filter(r=>!r.hidden),A=R();
-  if(mode==='fshape'){const it=byId(sel);if(!it||it.type!=='furn'||!it.pts){mode=null;updateModeUI()}}
+  cleanSel();
+  if(mode==='fshape'){const it=byId(sel);if(!it||it.type!=='furn'||!it.pts||extra.size){mode=null;updateModeUI()}}
   svg.classList.toggle('locked',lockRooms);svg.classList.toggle('drawing',mode==='draw'||mode==='extend');
   if(!vis.length&&mode!=='draw'){svg.setAttribute('viewBox','0 0 400 160');
     svg.innerHTML='<text class="dimtxt" x="200" y="84" font-size="14" text-anchor="middle">Alle Räume sind ausgeblendet</text>';return}
@@ -603,8 +612,8 @@ function render(){
   // Möbel
   const psel={};for(const p of peers.values())if(p&&typeof p.sel==='string')psel[p.sel]=safeColor(p.c);
   for(const r of vis)for(const it of r.items.filter(i=>i.type==='furn')){
-    const{w,d}=it,pc=sel!==it.id&&psel[it.id];
-    h+=`<g class="it furn${sel===it.id?' sel':''}" data-id="${it.id}" transform="translate(${r.x+it.x} ${r.y+it.y}) rotate(${it.rot})">
+    const{w,d}=it,pc=!isSel(it.id)&&psel[it.id];
+    h+=`<g class="it furn${isSel(it.id)?' sel':''}" data-id="${it.id}" transform="translate(${r.x+it.x} ${r.y+it.y}) rotate(${it.rot})">
       ${it.pts?`<polygon points="${pts(it.pts)}" fill="${esc(it.color)}"${pc?` style="stroke:${pc};stroke-opacity:1;stroke-width:2.5"`:''}/>`
         +it.pts.map((a,k)=>{const b=it.pts[(k+1)%it.pts.length];return Math.abs(a[1]-d/2)<0.6&&Math.abs(b[1]-d/2)<0.6?`<line class="front" x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}"/>`:''}).join('')
       :`<rect x="${-w/2}" y="${-d/2}" width="${w}" height="${d}" rx="2" fill="${esc(it.color)}"${pc?` style="stroke:${pc};stroke-opacity:1;stroke-width:2.5"`:''}/>
@@ -644,7 +653,10 @@ function render(){
   // Aktiver Raum: Rahmen, Wandlängen, Abstände der Auswahl, Griffe
   if(!A.hidden&&mode!=='draw'){
     h+=`<g transform="translate(${A.x} ${A.y})"><polygon class="actv" points="${pts(A.pts)}"/>`;
-    const s=byId(sel);
+    const s=extra.size?null:byId(sel);
+    if(extra.size&&mode!=='shape'){const b=unionBox(selItems()),pd=fs*.4,its=selItems(),grp=its[0].grp&&its.every(i=>i.grp===its[0].grp);
+      h+=`<rect class="grpbox" x="${r1(b.x0-pd)}" y="${r1(b.y0-pd)}" width="${r1(b.x1-b.x0+2*pd)}" height="${r1(b.y1-b.y0+2*pd)}" rx="${r1(pd)}"/>`
+        +(grp?`<text class="grptx" x="${r1(b.x0-pd)}" y="${r1(b.y0-pd-fs*.3)}" font-size="${r1(fs*.75)}">${esc(its[0].gn||'Gruppe')}</text>`:'')}
     if(s&&s.type==='furn'&&mode!=='shape'){
       const{hx,hy}=ext(s),Wa=wallsAround(A,s.x,s.y);
       h+=dim(Wa.L,s.y,s.x-hx,s.y,fs)+dim(s.x+hx,s.y,Wa.R,s.y,fs)+dim(s.x,Wa.T,s.x,s.y-hy,fs)+dim(s.x,s.y+hy,s.x,Wa.B,fs);
@@ -843,10 +855,24 @@ function getVal(it,k){const A=R();
 }
 function num(k,label,it){return`<label class="f">${label}<input type="number" step="1" data-k="${k}" value="${getVal(it,k)}"></label>`}
 function renderPanel(){
-  const it=byId(sel);renderList();
+  cleanSel();const it=byId(sel);renderList();
   if(!it){selBox.hidden=true;selBox.innerHTML='';return}
   selBox.hidden=false;
+  if(extra.size){ // mehrere Möbel
+    const its=selItems(),grp=its[0].grp&&its.every(i=>i.grp===its[0].grp);
+    selBox.innerHTML=`<h2>${grp?'Gruppe':'Auswahl'} · ${its.length} Möbel</h2>
+    ${grp?`<label class="f">Gruppenname<input data-g="gn" maxlength="40" value="${esc(its[0].gn||'Gruppe')}"></label>`:''}
+    <div class="btnrow">${grp?'<button type="button" data-act="ungroup">Gruppierung aufheben <span class="meta">Strg+⇧+G</span></button>'
+      :'<button type="button" data-act="group" class="primary">Gruppieren <span class="meta" style="color:inherit">Strg+G</span></button>'}</div>
+    <div class="f" style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)">Gemeinsam drehen (um die Mitte)
+      <div class="r4"><button type="button" data-act="rot" data-v="-90">⟲ 90°</button><button type="button" data-act="rot" data-v="-45">⟲ 45°</button><button type="button" data-act="rot" data-v="45">⟳ 45°</button><button type="button" data-act="rot" data-v="90">⟳ 90°</button></div></div>
+    <div class="f" style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)">Ausrichten
+      <div class="r3" style="grid-template-columns:repeat(6,1fr)"><button type="button" data-al="l" title="links bündig">⇤</button><button type="button" data-al="cx" title="waagrecht mittig">↔</button><button type="button" data-al="r" title="rechts bündig">⇥</button><button type="button" data-al="t" title="oben bündig">⤒</button><button type="button" data-al="cy" title="senkrecht mittig">↕</button><button type="button" data-al="b" title="unten bündig">⤓</button></div></div>
+    <div class="btnrow"><button type="button" data-act="dup">Duplizieren</button><button type="button" data-act="del" class="danger">Alle löschen</button></div>
+    <div class="meta">Ziehen, Q/E/R, Pfeiltasten und Entf wirken auf alle. Shift/Strg+Klick: hinzufügen/entfernen · Alt+Klick: einzelnes Möbel einer Gruppe.</div>`;
+    return}
   let h=`<h2>Auswahl</h2><label class="f">Name<input data-k="name" value="${esc(it.name)}"></label>`;
+  if(it.grp)h+=`<div class="ginfo">Teil der Gruppe „${esc(it.gn||'Gruppe')}“<button type="button" data-act="selgrp">Ganze Gruppe wählen</button><button type="button" data-act="leavegrp">Aus Gruppe lösen</button></div>`;
   if(it.type==='furn'){
     h+=`<div class="r3">${num('w','Breite',it)}${num('d','Tiefe',it)}<label class="f">Farbe<input type="color" data-k="color" value="${esc(it.color)}"></label></div>
     <div class="f" style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)">Drehung: <b id="rotv" style="color:var(--fg);font-family:var(--f-mono)">${it.rot}°</b>
@@ -894,17 +920,27 @@ selBox.addEventListener('input',e=>{
   clamp(A,it);render();save();
   if(k==='wall')renderPanel();else{updateFields(e.target);if(k==='name'||k==='color'||k==='w'||k==='d')renderList()}
 });
+selBox.addEventListener('input',e=>{if(e.target.dataset.g!=='gn')return;const v=e.target.value.slice(0,40)||'Gruppe';selItems().forEach(i=>i.gn=v);render();renderList();save()});
 selBox.addEventListener('click',e=>{
+  const al=e.target.closest('button[data-al]');if(al){alignSel(al.dataset.al);render();renderPanel();save();return}
   const b=e.target.closest('button[data-act]'),it=byId(sel),A=R();if(!b||!it)return;
   const a=b.dataset.act;
+  if(extra.size||a==='group'||a==='ungroup'){ // Aktionen für Mehrfachauswahl
+    if(a==='group')groupSel();else if(a==='ungroup')ungroupSel();
+    else if(a==='rot'){rotateSel(A,+b.dataset.v);render();renderPanel();save()}
+    else if(a==='dup'){dupSel();render();renderPanel();save()}
+    else if(a==='del'){deleteSel();render();renderPanel();save()}
+    return}
+  if(a==='selgrp'){selectItem(it.id);render();renderPanel();return}
+  if(a==='leavegrp'){delete it.grp;delete it.gn;cleanGroups(A);render();renderPanel();save();return}
   if(a==='rot')rotate(A,it,+b.dataset.v);
   else if(a==='cx'){const W=wallsAround(A,it.x,it.y);it.x=(W.L+W.R)/2}else if(a==='cy'){const W=wallsAround(A,it.x,it.y);it.y=(W.T+W.B)/2}
   else if(a==='cs')it.s=(wallInfo(A,it.wall).L-it.w)/2;
   else if(a==='flip')it.hinge=it.hinge==='start'?'end':'start';
-  else if(a==='del'){A.items=A.items.filter(i=>i!==it);sel=null}
+  else if(a==='del'){A.items=A.items.filter(i=>i!==it);cleanGroups(A);sel=null}
   else if(a==='mir'&&it.pts){if(it.form==='L'){it.mir=!it.mir;it.pts=lPts(it)}else it.pts=it.pts.map(p=>[-p[0],p[1]]).reverse()}
   else if(a==='fedit'){setMode(mode==='fshape'?null:'fshape');return}
-  else if(a==='dup'){const c={...it,id:nid()};if(c.pts)c.pts=c.pts.map(p=>[...p]);if(c.type==='furn'){c.x+=20;c.y+=20}else c.s+=c.w+10;clamp(A,c);A.items.push(c);sel=c.id}
+  else if(a==='dup'){const c={...it,id:nid()};if(c.pts)c.pts=c.pts.map(p=>[...p]);if(c.type==='furn'){c.x+=20;c.y+=20}else c.s+=c.w+10;delete c.grp;delete c.gn;clamp(A,c);A.items.push(c);sel=c.id;extra.clear()}
   if(byId(sel))clamp(A,byId(sel));
   render();renderPanel();save();
 });
@@ -912,13 +948,76 @@ function renderList(){
   const L=$('#list'),A=R();
   if(!A.items.length){L.innerHTML='<div class="empty">Noch nichts im Raum. Füge oben Möbel, Fenster oder eine Tür hinzu.</div>';return}
   const order={door:0,window:1,furn:2};
-  L.innerHTML=[...A.items].sort((a,b)=>order[a.type]-order[b.type]).map(it=>{
+  const row=(it,cls='')=>{
     const sw=it.type==='furn'?`<i class="dot" style="background:${esc(it.color)}"></i>`:`<i class="dot" style="background:${it.type==='window'?'var(--glass)':'var(--floor)'}"></i>`;
     const sz=it.type==='furn'?`${fmt(it.w)}×${fmt(it.d)}${it.rot?' · '+it.rot+'°':''}`:`${fmt(it.w)} · Wand ${it.wall+1}`;
-    return`<button type="button" data-id="${it.id}" class="${sel===it.id?'on':''}"><span>${sw}${esc(it.name)}</span><span>${sz}</span></button>`}).join('');
+    return`<button type="button" data-id="${it.id}" class="${cls} ${isSel(it.id)?'on':''}"><span>${sw}${esc(it.name)}</span><span>${sz}</span></button>`};
+  const done=new Set();let h='';
+  for(const it of [...A.items].sort((a,b)=>order[a.type]-order[b.type])){
+    if(done.has(it.id))continue;
+    if(it.grp){const g=A.items.filter(i=>i.grp===it.grp),allSel=g.every(i=>isSel(i.id));
+      h+=`<button type="button" data-grp="${esc(it.grp)}" class="ghead ${allSel?'on':''}"><span>▾ ${esc(it.gn||'Gruppe')}</span><span>${g.length} Möbel</span></button>`;
+      g.forEach(i=>{done.add(i.id);h+=row(i,'gitem')})}
+    else{done.add(it.id);h+=row(it)}
+  }
+  L.innerHTML=h;
 }
-$('#list').addEventListener('click',e=>{const b=e.target.closest('button[data-id]');if(b)select(b.dataset.id)});
-function select(id){if(sel===id)return;sel=id;render();renderPanel()}
+$('#list').addEventListener('click',e=>{
+  const gh=e.target.closest('button[data-grp]');
+  if(gh){const g=R().items.filter(i=>i.grp===gh.dataset.grp);if(g.length){selectMany(g.map(i=>i.id));render();renderPanel()}return}
+  const b=e.target.closest('button[data-id]');if(!b)return;
+  if(e.shiftKey||e.ctrlKey||e.metaKey){selectItem(b.dataset.id,{add:true,single:e.altKey});render();renderPanel();return}
+  selectItem(b.dataset.id,{single:e.altKey||!!b.closest('.gitem')&&false});render();renderPanel()});
+function select(id){if(sel===id&&!extra.size)return;selectItem(id);render();renderPanel()}
+
+/* ---------- Mehrfachauswahl & Gruppen ---------- */
+const selIds=()=>sel?[sel,...extra]:[];
+const selItems=()=>selIds().map(id=>byId(id)).filter(Boolean);
+const isSel=id=>id===sel||extra.has(id);
+function groupOf(it){return it&&it.grp?R().items.filter(i=>i.grp===it.grp):(it?[it]:[])}
+function selectItem(id,{add=false,single=false}={}){
+  const it=id?byId(id):null;
+  if(!it){sel=null;extra.clear();return}
+  if(add&&it.type==='furn'){ // hinzufügen / entfernen (ganze Gruppe, außer Alt)
+    const ids=new Set(selItems().filter(i=>i.type==='furn').map(i=>i.id)),grp=single?[it]:groupOf(it),allIn=grp.every(g=>ids.has(g.id));
+    grp.forEach(g=>allIn?ids.delete(g.id):ids.add(g.id));
+    sel=ids.has(id)?id:([...ids][0]||null);extra.clear();ids.forEach(x=>{if(x!==sel)extra.add(x)});return}
+  sel=id;extra.clear();if(!single&&it.type==='furn')groupOf(it).forEach(g=>{if(g.id!==id)extra.add(g.id)});
+}
+function selectMany(ids){const its=ids.map(id=>byId(id)).filter(i=>i&&i.type==='furn');const all=new Set();
+  its.forEach(i=>groupOf(i).forEach(g=>all.add(g.id)));sel=[...all][0]||null;extra.clear();[...all].slice(1).forEach(x=>extra.add(x))}
+function cleanSel(){if(!sel||!byId(sel)){sel=extra.size?[...extra].find(id=>byId(id))||null:null}for(const id of [...extra])if(id===sel||!byId(id)||byId(id).type!=='furn')extra.delete(id);if(!sel)extra.clear()}
+function cleanGroups(A){const n={};A.items.forEach(i=>{if(i.grp)n[i.grp]=(n[i.grp]||0)+1});A.items.forEach(i=>{if(i.grp&&n[i.grp]<2){delete i.grp;delete i.gn}})}
+function unionBox(items){let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
+  for(const i of items){const{hx,hy}=ext(i);x0=Math.min(x0,i.x-hx);x1=Math.max(x1,i.x+hx);y0=Math.min(y0,i.y-hy);y1=Math.max(y1,i.y+hy)}return{x0,y0,x1,y1}}
+function moveItems(A,items,dx,dy){ // gemeinsam verschieben, als Block im Raum halten
+  const b=unionBox(items);
+  if(b.x1-b.x0<=A.w)dx=Math.min(A.w-b.x1,Math.max(-b.x0,dx));else dx=0;
+  if(b.y1-b.y0<=A.d)dy=Math.min(A.d-b.y1,Math.max(-b.y0,dy));else dy=0;
+  items.forEach(i=>{i.x=r1(i.x+dx);i.y=r1(i.y+dy)});
+}
+function rotateSel(A,d){
+  const items=selItems().filter(i=>i.type==='furn');if(!items.length)return;
+  if(items.length===1){rotate(A,items[0],d);return}
+  const b=unionBox(items),cx=(b.x0+b.x1)/2,cy=(b.y0+b.y1)/2,a=d*Math.PI/180,c=Math.cos(a),s=Math.sin(a);
+  items.forEach(i=>{const x=i.x-cx,y=i.y-cy;i.x=r1(cx+c*x-s*y);i.y=r1(cy+s*x+c*y);i.rot=((i.rot+d)%360+360)%360});
+  moveItems(A,items,0,0);
+}
+function groupSel(){const A=R(),items=selItems().filter(i=>i.type==='furn');if(items.length<2){msg('Zum Gruppieren mindestens 2 Möbel auswählen (Shift/Strg+Klick).');return}
+  const g=nid('g'),n=A.items.filter(i=>i.grp).map(i=>i.grp);const name='Gruppe '+(new Set(n).size+1);
+  items.forEach(i=>{i.grp=g;i.gn=name});render();renderPanel();save()}
+function ungroupSel(){const A=R();selItems().forEach(i=>{delete i.grp;delete i.gn});cleanGroups(A);render();renderPanel();save()}
+function deleteSel(){const A=R(),ids=new Set(selIds());A.items=A.items.filter(i=>!ids.has(i.id));cleanGroups(A);sel=null;extra.clear()}
+function dupSel(){const A=R(),items=selItems();if(!items.length)return;const map={},copies=[];
+  items.forEach(i=>{const c={...i,id:nid()};if(c.pts)c.pts=c.pts.map(p=>[...p]);
+    if(c.grp){map[c.grp]=map[c.grp]||nid('g');c.grp=map[c.grp]}
+    if(c.type==='furn'){c.x+=20;c.y+=20}else c.s+=c.w+10;copies.push(c);A.items.push(c)});
+  const f=copies.filter(c=>c.type==='furn');if(f.length>1)moveItems(A,f,0,0);else copies.forEach(c=>clamp(A,c));
+  sel=copies[0].id;extra.clear();copies.slice(1).forEach(c=>extra.add(c.id))}
+function alignSel(how){const A=R(),items=selItems().filter(i=>i.type==='furn');if(items.length<2)return;const b=unionBox(items);
+  items.forEach(i=>{const{hx,hy}=ext(i);
+    if(how==='l')i.x=b.x0+hx;else if(how==='r')i.x=b.x1-hx;else if(how==='cx')i.x=(b.x0+b.x1)/2;
+    else if(how==='t')i.y=b.y0+hy;else if(how==='b')i.y=b.y1-hy;else if(how==='cy')i.y=(b.y0+b.y1)/2;i.x=r1(i.x);i.y=r1(i.y)})}
 
 /* ---------- Ziehen ---------- */
 function pt(e){const p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(svg.getScreenCTM().inverse())}
@@ -933,7 +1032,7 @@ function snapRoom(r,nx,ny){
     for(const c of cy){const d=Math.abs(ny+v[1]-c);if(d<dy){dy=d;by=c-v[1]}}}
   return[r1(bx),r1(by)]}
 /* ---------- Raum zeichnen & Form bearbeiten ---------- */
-const HINT_DEFAULT='Mausrad = zoomen · leere Fläche / Leertaste ziehen = Ausschnitt verschieben · Raumname oder Boden ziehen = Raum verschieben · Strg+Z / Strg+Y = rückgängig / wiederholen · Ziehen = verschieben · Doppelklick / R = drehen · Q / E = 45° links / rechts · Pfeiltasten = 1 cm (⇧ 10 cm) · Entf = löschen · Boden anklicken = Raum wählen';
+const HINT_DEFAULT='Mausrad = zoomen · leere Fläche / Leertaste ziehen = Ausschnitt verschieben · Raumname oder Boden ziehen = Raum verschieben · Strg+Z / Strg+Y = rückgängig / wiederholen · Shift/Strg+Klick oder Shift+Ziehen = mehrere wählen · Strg+G = gruppieren · Ziehen = verschieben · Doppelklick / R = drehen · Q / E = 45° links / rechts · Pfeiltasten = 1 cm (⇧ 10 cm) · Entf = löschen · Boden anklicken = Raum wählen';
 function updateModeUI(){
   $('#drawRoom').classList.toggle('on',mode==='draw');$('#drawRoom').textContent=mode==='draw'?'Zeichnen beenden':'✎ Raum zeichnen';
   $('#editShape').classList.toggle('on',mode==='shape');$('#editShape').textContent=mode==='shape'?'Form fertig':'Form bearbeiten';
@@ -1092,13 +1191,22 @@ svg.addEventListener('pointerdown',e=>{
     svg.setPointerCapture(e.pointerId);e.preventDefault();return}
   const g=e.target.closest('.it');
   if(g){const f=findItem(g.dataset.id);if(!f)return;const[r,it]=f;
-    if(S.active!==r.id){S.active=r.id;sel=it.id;renderAll()}else select(it.id);
-    drag={kind:'item',r,it,ox:p.x-r.x-(it.x||0),oy:p.y-r.y-(it.y||0),moved:false};
+    const add=e.shiftKey||e.ctrlKey||e.metaKey,single=e.altKey;
+    if(S.active!==r.id){S.active=r.id;selectItem(it.id,{single});renderAll()}
+    else if(add){selectItem(it.id,{add:true,single});render();renderPanel();e.preventDefault();return}
+    else if(!isSel(it.id)||single){selectItem(it.id,{single});render();renderPanel()}
+    const grp=it.type==='furn'?selItems().filter(i=>i.type==='furn'):[];
+    drag={kind:'item',r,it,ox:p.x-r.x-(it.x||0),oy:p.y-r.y-(it.y||0),moved:false,
+      group:grp.length>1&&isSel(it.id)?grp.map(i=>({i,x:i.x,y:i.y})):null,x0:it.x,y0:it.y};
   }else{
     const nm=e.target.closest('.rname'),fl=nm||e.target.closest('.rm');
+    if(!fl&&e.shiftKey&&!e.target.closest('.ehit')){ // Auswahlrechteck
+      drag={kind:'marquee',a:[p.x,p.y],b:[p.x,p.y],base:selIds(),moved:false};svg.setPointerCapture(e.pointerId);e.preventDefault();return}
     if(!fl){select(null);if(!e.target.closest('.ehit'))startPan(e);return} // Wand-Trefferfläche: Doppelklick = Ecke einfügen, nicht verschieben
     const r=S.rooms.find(x=>x.id===fl.dataset.room);if(!r)return;
     const wasActive=S.active===r.id;
+    if(e.shiftKey&&!nm){if(!wasActive){S.active=r.id;sel=null;renderAll();cacheLocal()}
+      drag={kind:'marquee',a:[p.x,p.y],b:[p.x,p.y],base:selIds(),moved:false};svg.setPointerCapture(e.pointerId);e.preventDefault();return}
     if(!wasActive){S.active=r.id;sel=null;renderAll();cacheLocal()}else select(null);
     if(lockRooms||(!nm&&!wasActive))return; // Boden zieht nur den schon gewählten Raum, der Name immer
     drag={kind:'room',r,ox:p.x-r.x,oy:p.y-r.y,cx:e.clientX,cy:e.clientY,moved:false};
@@ -1142,8 +1250,15 @@ svg.addEventListener('pointermove',e=>{
     drag.moved=true;const r=drag.r;[r.x,r.y]=snapRoom(r,snapv(p.x-drag.ox,5),snapv(p.y-drag.oy,5));
     render();syncRoomInputs();syncSoon();return;
   }
+  if(drag.kind==='marquee'){drag.b=[p.x,p.y];drag.moved=true;const A=R(),x0=Math.min(drag.a[0],drag.b[0])-A.x,x1=Math.max(drag.a[0],drag.b[0])-A.x,y0=Math.min(drag.a[1],drag.b[1])-A.y,y1=Math.max(drag.a[1],drag.b[1])-A.y;
+    const hit=A.items.filter(i=>i.type==='furn'&&i.x>=x0&&i.x<=x1&&i.y>=y0&&i.y<=y1).map(i=>i.id);
+    selectMany([...new Set([...drag.base,...hit])]);render();
+    svg.insertAdjacentHTML('beforeend',`<rect class="marquee" x="${Math.min(drag.a[0],drag.b[0])}" y="${Math.min(drag.a[1],drag.b[1])}" width="${Math.abs(drag.b[0]-drag.a[0])}" height="${Math.abs(drag.b[1]-drag.a[1])}"/>`);return}
   const{r,it}=drag,lx=p.x-r.x,ly=p.y-r.y;drag.moved=true;
-  if(it.type==='furn'){const{hx,hy}=ext(it);
+  if(it.type==='furn'&&drag.group){const{hx,hy}=ext(it);
+    const nx=snapv(lx-drag.ox-hx,5)+hx,ny=snapv(ly-drag.oy-hy,5)+hy;
+    drag.group.forEach(g=>{g.i.x=g.x;g.i.y=g.y});moveItems(r,drag.group.map(g=>g.i),nx-drag.x0,ny-drag.y0);
+  }else if(it.type==='furn'){const{hx,hy}=ext(it);
     it.x=snapv(lx-drag.ox-hx,5)+hx;it.y=snapv(ly-drag.oy-hy,5)+hy;clampF(r,it);
   }else{
     const{i,t}=nearestWall(r,[lx,ly]);it.wall=i;it.s=snapv(t-it.w/2,5);clampO(r,it);
@@ -1156,6 +1271,7 @@ function commitFurn(r,it,orig){
   render();renderPanel();save();
 }
 const endDrag=()=>{if(!drag)return;const d=drag;drag=null;
+  if(d.kind==='marquee'){render();renderPanel();return}
   if(d.kind==='fvtx'||d.kind==='fedge'){if(d.moved)commitFurn(d.r,d.it,d.orig);return}
   if(d.kind==='pan'){svg.classList.remove('panning');return}
   if(d.kind==='vtx'||d.kind==='edge'){if(d.moved)commitShape(d.r,d.orig,null);return}
@@ -1187,14 +1303,19 @@ document.addEventListener('keydown',e=>{
     else if(e.key==='Backspace'||e.key==='Delete'){drawPts.pop();if(!drawPts.length)extStart=null;render()}else return;
     e.preventDefault();return}
   if((mode==='shape'||mode==='fshape')&&e.key==='Escape'){setMode(null);renderPanel();e.preventDefault();return}
-  const it=byId(sel),A=R();if(!it)return;
+  const k=e.key.toLowerCase(),A=R();
+  if((e.ctrlKey||e.metaKey)&&!e.altKey){
+    if(k==='a'){selectMany(A.items.filter(i=>i.type==='furn').map(i=>i.id));render();renderPanel();e.preventDefault();return}
+    if(k==='g'){e.preventDefault();if(e.shiftKey)ungroupSel();else groupSel();return}
+    return}
+  const it=byId(sel);if(!it)return;
   const st=e.shiftKey?10:1,ar={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[e.key];
-  const k=e.key.toLowerCase();
-  if(k==='r'){if(it.type!=='furn')return;rotate(A,it,(e.shiftKey?-1:1)*S.step)}
-  else if(k==='q'||k==='e'){if(it.type!=='furn'||e.ctrlKey||e.metaKey||e.altKey)return;rotate(A,it,k==='q'?-45:45)}
-  else if(e.key==='Delete'||e.key==='Backspace'){A.items=A.items.filter(i=>i!==it);sel=null}
-  else if(e.key==='Escape')sel=null;
-  else if(ar){if(it.type==='furn'){it.x+=ar[0]*st;it.y+=ar[1]*st}else{const g=wallInfo(A,it.wall);it.s+=(ar[0]*g.u[0]+ar[1]*g.u[1])*st}clamp(A,it)}
+  const multi=extra.size>0;
+  if(k==='r'){if(it.type!=='furn')return;rotateSel(A,(e.shiftKey?-1:1)*S.step)}
+  else if(k==='q'||k==='e'){if(it.type!=='furn'||e.altKey)return;rotateSel(A,k==='q'?-45:45)}
+  else if(e.key==='Delete'||e.key==='Backspace'){if(multi)deleteSel();else{A.items=A.items.filter(i=>i!==it);cleanGroups(A);sel=null}}
+  else if(e.key==='Escape'){sel=null;extra.clear()}
+  else if(ar){if(multi)moveItems(A,selItems(),ar[0]*st,ar[1]*st);else if(it.type==='furn'){it.x+=ar[0]*st;it.y+=ar[1]*st;clamp(A,it)}else{const g=wallInfo(A,it.wall);it.s+=(ar[0]*g.u[0]+ar[1]*g.u[1])*st;clamp(A,it)}}
   else return;
   e.preventDefault();render();renderPanel();save();
 });
@@ -1237,7 +1358,7 @@ $('#addForm').addEventListener('submit',e=>{e.preventDefault();const A=R(),W=A.w
     it={id:nid(),type:tab,name:tab==='door'?'Tür':'Fenster',wall,w,s:m==='start'?n('#a-ov'):m==='end'?L-w-n('#a-ov'):(L-w)/2};
     if(tab==='door'){it.hinge=$('#a-hinge').value;it.swing=$('#a-swing').value}
   }
-  clamp(A,it);A.items.push(it);sel=it.id;render();renderPanel();renderList();save();
+  clamp(A,it);A.items.push(it);sel=it.id;extra.clear();render();renderPanel();renderList();save();
 });
 
 /* ---------- Speichern & Laden ---------- */

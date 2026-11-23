@@ -80,6 +80,14 @@ Der Gratis-Plan schläft nach einer Weile Inaktivität ein (der erste Aufruf dau
 - Die Beschriftung sitzt automatisch im breitesten Teil der Form. Die Vorderkante ist dick markiert.
 - **Mittlere Maustaste gedrückt halten und ziehen** verschiebt die Ansicht, auch über Möbeln.
 
+## Mehrere Möbel auswählen & gruppieren
+
+- **Mehrfachauswahl:** Mit Shift- oder Strg-Klick auf Möbel (auch in der Liste) fügst du hinzu oder entfernst. **Shift + Ziehen** auf freier Fläche zieht ein Auswahlrechteck. **Strg+A** wählt alle Möbel des Raums.
+- **Gruppieren:** **Strg+G** oder der Knopf „Gruppieren“. Der Gruppenname ist frei wählbar, z. B. „Essplatz“. **Strg+⇧+G** hebt die Gruppierung auf.
+- Ein Klick auf ein Gruppenmitglied wählt die **ganze Gruppe**. Ziehen, Drehen um die Gruppenmitte (Q/E/R), Pfeiltasten, Duplizieren und Entf wirken auf alle. **Alt+Klick** wählt ein einzelnes Möbel daraus. Dort gibt es auch „Aus Gruppe lösen“.
+- **Ausrichten** (bei mehreren Möbeln): links, mittig, rechts, oben, mittig oder unten bündig.
+- Die Liste „Im Raum“ zeigt Gruppen als eigenen Block. Ein Klick auf den Gruppenkopf wählt die Gruppe.
+
 ## Räume verschieben, Rückgängig
 
 - **Raumnamen** (Häkchen oben): blendet Namen und Flächen im Plan aus oder ein. Die Einstellung gilt nur für dich und bleibt gespeichert. Ohne Namen ziehst du Räume am Boden des gewählten Raums.
