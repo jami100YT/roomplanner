@@ -51,6 +51,13 @@ Der Gratis-Plan schläft nach einer Weile Inaktivität ein (der erste Aufruf dau
 - **Zu Rechteck** setzt die Form auf das umschließende Rechteck zurück. Fenster und Türen wandern dabei auf die nächstgelegene Wand.
 - Alte Pläne mit Rechteckräumen werden automatisch übernommen.
 
+## Zoomen und Ausschnitt verschieben
+
+- **Mausrad** (oder Pinch-Geste auf dem Touchpad) zoomt zur Mausposition. **Zwei Finger** zoomen auf Handy und Tablet.
+- Den **Ausschnitt verschieben** kannst du so: eine leere Fläche ziehen, mit gedrückter mittlerer Maustaste ziehen, mit **Leertaste + Ziehen** (geht auch über Möbeln und beim Zeichnen) oder auf dem Handy mit einem Finger auf einer leeren Fläche.
+- Unten rechts im Plan: **− / + / Prozentanzeige**. Ein Klick auf die Prozentanzeige passt die ganze Wohnung wieder ein. Auf der Tastatur gehen **+**, **−** und **0** (einpassen).
+- Der Ausschnitt gilt nur für dich, Freunde behalten ihre eigene Ansicht.
+
 ## Räume verschieben, Rückgängig
 
 - **Raumnamen** (Häkchen oben): blendet Namen und Flächen im Plan aus oder ein. Die Einstellung gilt nur für dich und bleibt gespeichert. Ohne Namen ziehst du Räume am Boden des gewählten Raums.

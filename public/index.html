@@ -88,7 +88,7 @@ button[data-armed]{background:var(--danger);color:#fff;border-color:var(--danger
 .bar label{display:flex;align-items:center;gap:6px}
 .bar select{width:auto;padding:4px 6px}
 .bar input[type=checkbox]{width:auto}
-.stage{flex:1;min-height:0;background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.stage{position:relative;flex:1;min-height:0;background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}
 #plan{width:100%;height:100%;display:block;touch-action:none;user-select:none;-webkit-user-select:none}
 .empty{color:var(--muted);font-size:13px}
 /* SVG */
@@ -105,6 +105,11 @@ button[data-armed]{background:var(--danger);color:#fff;border-color:var(--danger
 .undo{display:inline-flex;gap:4px}.undo button{min-width:38px;font-size:16px;padding:3px 8px}
 .rarea{paint-order:stroke;stroke:var(--floor);stroke-width:3px;stroke-linejoin:round;fill:var(--muted);font-family:var(--f-mono);pointer-events:none}
 .curs{pointer-events:none}
+.zoom{position:absolute;right:10px;bottom:10px;display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:4px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.zoom button{min-width:36px;height:34px;padding:0 8px;font-size:16px;font-family:var(--f-mono)}
+.zoom #zoomFit{font-size:12px;min-width:62px}
+#plan.panning,#plan.panning *{cursor:grabbing!important}
+#plan.spacepan{cursor:grab}
 #wallBox summary{cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
 .walls{display:flex;flex-direction:column;gap:4px}
 .wrow{display:grid;grid-template-columns:minmax(0,1fr) 92px;align-items:center;gap:8px;font-size:13px}
@@ -291,9 +296,14 @@ button.on{background:var(--sel);border-color:var(--sel);color:#fff}
       <label><input type="checkbox" id="lockRooms"> Räume fixieren</label>
       <span class="undo"><button type="button" id="undoBtn" title="Rückgängig (Strg+Z)" aria-label="Rückgängig" disabled>↶</button><button type="button" id="redoBtn" title="Wiederholen (Strg+Y / Strg+⇧+Z)" aria-label="Wiederholen" disabled>↷</button></span>
       <button type="button" id="resetBtn">Beispiel laden</button>
-      <span class="hint" id="hint">Raumname oder Boden ziehen = Raum verschieben · Ziehen = verschieben · Doppelklick / R = drehen · Q / E = 45° links / rechts · Pfeiltasten = 1 cm (⇧ 10 cm) · Entf = löschen · Boden anklicken = Raum wählen</span>
+      <span class="hint" id="hint">Mausrad = zoomen · leere Fläche / Leertaste ziehen = Ausschnitt verschieben · Raumname oder Boden ziehen = Raum verschieben · Ziehen = verschieben · Doppelklick / R = drehen · Q / E = 45° links / rechts · Pfeiltasten = 1 cm (⇧ 10 cm) · Entf = löschen · Boden anklicken = Raum wählen</span>
     </div>
-    <div class="stage"><svg id="plan" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"></svg></div>
+    <div class="stage"><svg id="plan" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="zoom" role="group" aria-label="Zoom">
+        <button type="button" id="zoomOut" title="Herauszoomen (−)" aria-label="Herauszoomen">−</button>
+        <button type="button" id="zoomFit" title="Alles einpassen (0)">100 %</button>
+        <button type="button" id="zoomIn" title="Hineinzoomen (+)" aria-label="Hineinzoomen">+</button>
+      </div></div>
   </main>
 </div>
 
@@ -493,7 +503,7 @@ function render(){
     svg.innerHTML='<text class="dimtxt" x="200" y="84" font-size="14" text-anchor="middle">Alle Räume sind ausgeblendet</text>';return}
   if(!drag&&mode!=='draw'&&mode!=='extend')computeLayout();
   const fs=layout.fs;
-  svg.setAttribute('viewBox',layout.vb.join(' '));
+  svg.setAttribute('viewBox',curVB().join(' '));updateZoomUI();
   let h=`<defs><pattern id="g1" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M10 0H0V10" class="gr1"/></pattern>
   <pattern id="g2" width="50" height="50" patternUnits="userSpaceOnUse"><rect width="50" height="50" fill="url(#g1)"/><path d="M50 0H0V50" class="gr2"/></pattern></defs>`;
   if(mode==='draw'||mode==='extend')h+=`<rect x="${layout.vb[0]}" y="${layout.vb[1]}" width="${layout.vb[2]}" height="${layout.vb[3]}" fill="url(#g2)" opacity=".55"/>`;
@@ -586,6 +596,57 @@ function render(){
 }
 function dim(x1,y1,x2,y2,fs){const len=Math.hypot(x2-x1,y2-y1);if(len<0.5)return'';
   return`<line class="dimln" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/><text class="dimtx" font-size="${fs*0.85}" text-anchor="middle" dy="0.35em" x="${(x1+x2)/2}" y="${(y1+y2)/2}">${fmt(len)}</text>`}
+
+/* ---------- Zoom & Ausschnitt ---------- */
+let view=null; // eigener Ausschnitt [x,y,w,h]; null = ganze Wohnung einpassen
+const curVB=()=>view||layout.vb;
+function setView(v){view=v;svg.setAttribute('viewBox',curVB().join(' '));updateZoomUI()}
+function zoomAt(f,px,py){
+  const v=curVB(),base=layout.vb[2],minW=Math.max(40,base*0.03),maxW=base*4;
+  f=Math.min(maxW/v[2],Math.max(minW/v[2],f));
+  setView([px-(px-v[0])*f,py-(py-v[1])*f,v[2]*f,v[3]*f]);
+}
+function zoomCenter(f){const v=curVB();zoomAt(f,v[0]+v[2]/2,v[1]+v[3]/2)}
+function updateZoomUI(){const b=$('#zoomFit');if(b)b.textContent=Math.round(layout.vb[2]/curVB()[2]*100)+' %'}
+$('#zoomIn').addEventListener('click',()=>zoomCenter(1/1.3));
+$('#zoomOut').addEventListener('click',()=>zoomCenter(1.3));
+$('#zoomFit').addEventListener('click',()=>setView(null));
+svg.addEventListener('wheel',e=>{
+  e.preventDefault();const p=pt(e),dy=e.deltaMode===1?e.deltaY*33:e.deltaMode===2?e.deltaY*400:e.deltaY;
+  zoomAt(Math.exp(Math.max(-300,Math.min(300,dy))*(e.ctrlKey?0.01:0.0015)),p.x,p.y);
+},{passive:false});
+let spaceDown=false;
+document.addEventListener('keydown',e=>{
+  if(e.target.closest('input,select,textarea'))return;
+  if(e.code==='Space'){if(!spaceDown){spaceDown=true;svg.classList.add('spacepan');if(document.activeElement&&document.activeElement.tagName==='BUTTON')document.activeElement.blur()}e.preventDefault();return}
+  if(e.ctrlKey||e.metaKey||e.altKey)return;
+  if(e.key==='+'||e.key==='='){zoomCenter(1/1.3);e.preventDefault()}
+  else if(e.key==='-'||e.key==='_'){zoomCenter(1.3);e.preventDefault()}
+  else if(e.key==='0'){setView(null);e.preventDefault()}
+});
+document.addEventListener('keyup',e=>{if(e.code==='Space'){spaceDown=false;svg.classList.remove('spacepan')}});
+function startPan(e){const k=svg.getScreenCTM().a||1;drag={kind:'pan',cx:e.clientX,cy:e.clientY,v:[...curVB()],k,moved:false};
+  svg.classList.add('panning');svg.setPointerCapture(e.pointerId);e.preventDefault()}
+// Touch: zwei Finger = zoomen + verschieben
+const touches=new Map();let pinch=null;
+svg.addEventListener('pointerdown',e=>{
+  if(e.pointerType!=='touch')return;touches.set(e.pointerId,[e.clientX,e.clientY]);
+  if(touches.size===2){
+    if(drag&&drag.moved)endDrag();drag=null;
+    const[a,b]=[...touches.values()];pinch={d:Math.hypot(a[0]-b[0],a[1]-b[1]),m:[(a[0]+b[0])/2,(a[1]+b[1])/2]};
+    e.stopImmediatePropagation();e.preventDefault();
+  }
+},true);
+svg.addEventListener('pointermove',e=>{
+  if(!touches.has(e.pointerId))return;touches.set(e.pointerId,[e.clientX,e.clientY]);
+  if(!pinch||touches.size<2)return;
+  const[a,b]=[...touches.values()],d=Math.hypot(a[0]-b[0],a[1]-b[1])||1,m=[(a[0]+b[0])/2,(a[1]+b[1])/2];
+  const pm=pt({clientX:m[0],clientY:m[1]});zoomAt(pinch.d/d,pm.x,pm.y);
+  const k=svg.getScreenCTM().a||1,v=curVB();setView([v[0]-(m[0]-pinch.m[0])/k,v[1]-(m[1]-pinch.m[1])/k,v[2],v[3]]);
+  pinch={d,m};e.stopImmediatePropagation();e.preventDefault();
+},true);
+const touchEnd=e=>{touches.delete(e.pointerId);if(touches.size<2)pinch=null};
+svg.addEventListener('pointerup',touchEnd,true);svg.addEventListener('pointercancel',touchEnd,true);
 
 /* ---------- Räume ---------- */
 function renderRooms(){
@@ -720,7 +781,7 @@ function snapRoom(r,nx,ny){
     for(const c of cy){const d=Math.abs(ny+v[1]-c);if(d<dy){dy=d;by=c-v[1]}}}
   return[r1(bx),r1(by)]}
 /* ---------- Raum zeichnen & Form bearbeiten ---------- */
-const HINT_DEFAULT='Raumname oder Boden ziehen = Raum verschieben · Strg+Z / Strg+Y = rückgängig / wiederholen · Ziehen = verschieben · Doppelklick / R = drehen · Q / E = 45° links / rechts · Pfeiltasten = 1 cm (⇧ 10 cm) · Entf = löschen · Boden anklicken = Raum wählen';
+const HINT_DEFAULT='Mausrad = zoomen · leere Fläche / Leertaste ziehen = Ausschnitt verschieben · Raumname oder Boden ziehen = Raum verschieben · Strg+Z / Strg+Y = rückgängig / wiederholen · Ziehen = verschieben · Doppelklick / R = drehen · Q / E = 45° links / rechts · Pfeiltasten = 1 cm (⇧ 10 cm) · Entf = löschen · Boden anklicken = Raum wählen';
 function updateModeUI(){
   $('#drawRoom').classList.toggle('on',mode==='draw');$('#drawRoom').textContent=mode==='draw'?'Zeichnen beenden':'✎ Raum zeichnen';
   $('#editShape').classList.toggle('on',mode==='shape');$('#editShape').textContent=mode==='shape'?'Form fertig':'Form bearbeiten';
@@ -861,6 +922,8 @@ $('#rectShape').addEventListener('click',()=>{const A=R();if(isRect(A))return;co
 
 /* ---------- Zeiger ---------- */
 svg.addEventListener('pointerdown',e=>{
+  if(pinch)return;
+  if(e.button===1||spaceDown){startPan(e);return}
   const p=pt(e);
   if(mode==='draw'){drawCur=snapDraw([p.x,p.y]);drawClick(drawCur);e.preventDefault();return}
   if(mode==='extend'){extCur=snapExtend([p.x,p.y]);drawCur=extCur.pt;extendClick();e.preventDefault();return}
@@ -874,7 +937,7 @@ svg.addEventListener('pointerdown',e=>{
     drag={kind:'item',r,it,ox:p.x-r.x-(it.x||0),oy:p.y-r.y-(it.y||0),moved:false};
   }else{
     const nm=e.target.closest('.rname'),fl=nm||e.target.closest('.rm');
-    if(!fl){select(null);return}
+    if(!fl){select(null);startPan(e);return}
     const r=S.rooms.find(x=>x.id===fl.dataset.room);if(!r)return;
     const wasActive=S.active===r.id;
     if(!wasActive){S.active=r.id;sel=null;renderAll();cacheLocal()}else select(null);
@@ -885,6 +948,8 @@ svg.addEventListener('pointerdown',e=>{
 });
 svg.addEventListener('pointerleave',()=>{pres({x:null,y:null});if((mode==='draw'||mode==='extend')&&drawCur){drawCur=null;extCur=null;render()}});
 svg.addEventListener('pointermove',e=>{
+  if(drag&&drag.kind==='pan'){const dx=(e.clientX-drag.cx)/drag.k,dy=(e.clientY-drag.cy)/drag.k;
+    drag.moved=true;setView([drag.v[0]-dx,drag.v[1]-dy,drag.v[2],drag.v[3]]);return}
   const p=pt(e);pres({x:r1(p.x),y:r1(p.y)});
   if(mode==='draw'){drawCur=snapDraw([p.x,p.y]);render();return}
   if(mode==='extend'){extCur=snapExtend([p.x,p.y]);drawCur=extCur.pt;render();return}
@@ -917,6 +982,7 @@ svg.addEventListener('pointermove',e=>{
   render();updateFields();syncSoon();
 });
 const endDrag=()=>{if(!drag)return;const d=drag;drag=null;
+  if(d.kind==='pan'){svg.classList.remove('panning');return}
   if(d.kind==='vtx'||d.kind==='edge'){if(d.moved)commitShape(d.r,d.orig,null);return}
   if(d.moved){render();renderPanel();syncRoomInputs();save()}};
 svg.addEventListener('pointerup',endDrag);svg.addEventListener('pointercancel',endDrag);
