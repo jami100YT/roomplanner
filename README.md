@@ -100,6 +100,16 @@ In der Karte „Raum“:
 
 Nur für dich selbst gelten: welche Räume ausgeblendet sind, welcher Raum gerade aktiv ist, Drehschritt, Einrasten und „Räume verschieben“.
 
+## Version
+
+- In der Karte **„Version“** (unten links) steht, welche Version **diese Seite** und welche der **Server** hat: Versionsnummer, Git-Commit und Build-Kennung. Dazu kommt, seit wann der Server läuft.
+  - **✓ aktuell**: Seite und Server passen zusammen.
+  - **⚠ Neue Version verfügbar**: Oben erscheint ein Hinweis mit Knopf **„Jetzt neu laden“**.
+  - **⚠ Neustart nötig**: Neue Dateien liegen auf dem Server (z. B. nach `git pull`), aber der Server läuft noch mit der alten Version. Dann auf dem Server `pm2 restart raumplaner` ausführen.
+- In **„Gemeinsam planen“** steht bei jeder Person die Version ihrer Seite. Veraltete Seiten sind mit ⚠ rot markiert.
+- Für Admins: `curl http://<server>:3000/version` zeigt die Version als JSON, inklusive `restartNeeded`.
+- Die Versionsnummer steht in `package.json` und wird bei jedem Update erhöht.
+
 ## Dateien
 
 - `server.js`: Webserver und WebSocket-Server. Speichert jeden Plan als `data/<plan>.json`.

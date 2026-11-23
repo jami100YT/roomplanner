@@ -105,6 +105,15 @@ button[data-armed]{background:var(--danger);color:#fff;border-color:var(--danger
 .undo{display:inline-flex;gap:4px}.undo button{min-width:38px;font-size:16px;padding:3px 8px}
 .rarea{paint-order:stroke;stroke:var(--floor);stroke-width:3px;stroke-linejoin:round;fill:var(--muted);font-family:var(--f-mono);pointer-events:none}
 .curs{pointer-events:none}
+.vgrid{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;font-size:13px}
+.vgrid span{color:var(--muted)}.vgrid b{font-family:var(--f-mono);font-weight:500;font-size:12px;overflow-wrap:anywhere}
+#verState.ok{color:#2f8a4f}#verState.bad{color:var(--danger)}
+.updbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#fff4e5;border:1px solid #f0b46b;color:#7a4300;border-radius:8px;padding:10px 12px;font-size:13px}
+:root[data-theme=dark] .updbar{background:#3a2a12;color:#ffd9a6;border-color:#8a5a1f}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .updbar{background:#3a2a12;color:#ffd9a6;border-color:#8a5a1f}}
+.updbar span{flex:1 1 180px}
+.peer .pv{font-family:var(--f-mono);font-size:10px;color:var(--muted)}
+.peer.old{border-color:var(--danger)}.peer.old .pv{color:var(--danger);font-weight:600}
 .viewmenu{position:relative}
 .viewmenu summary{list-style:none;cursor:pointer;border:1px solid var(--line);border-radius:5px;background:var(--floor);padding:6px 10px;font-size:13px}
 .viewmenu summary::-webkit-details-marker{display:none}
@@ -181,7 +190,8 @@ button.on{background:var(--sel);border-color:var(--sel);color:#fff}
 
 <div class="app">
   <aside>
-    <div class="brand"><h1>Raumplaner</h1><small>alle Maße in cm</small></div>
+    <div class="brand"><h1>Raumplaner</h1><small><span id="verTop"></span> · alle Maße in cm</small></div>
+    <div class="updbar" id="updBar" hidden><span id="updTxt"></span><button type="button" id="updBtn" class="primary">Jetzt neu laden</button></div>
 
     <section class="card">
       <div class="hrow"><h2>Gemeinsam planen</h2><span class="meta" id="conn">verbinde…</span></div>
@@ -311,6 +321,15 @@ button.on{background:var(--sel);border-color:var(--sel);color:#fff}
       </div>
       <div class="meta" id="ioMsg" role="status"></div>
     </section>
+    <section class="card">
+      <div class="hrow"><h2>Version</h2><span class="meta" id="verState"></span></div>
+      <div class="vgrid">
+        <span>Diese Seite</span><b id="verClient"></b>
+        <span>Server</span><b id="verServer">–</b>
+        <span>Server läuft seit</span><b id="verStarted">–</b>
+      </div>
+      <div class="meta" id="verHint"></div>
+    </section>
   </aside>
 
   <main>
@@ -343,6 +362,7 @@ button.on{background:var(--sel);border-color:var(--sel);color:#fff}
   </main>
 </div>
 
+<script type="application/json" id="buildinfo">{"version":"dev","commit":null,"build":"dev"}</script>
 <script>
 {
 const $=s=>document.querySelector(s);
@@ -1285,7 +1305,31 @@ const COLORS_ME=['#cf5a17','#1e5c76','#8a3fb0','#2f8a4f','#c0336b','#b08a12','#2
 // Kennung dieser geöffneten Seite: gleich bei jedem Wiederverbinden, neu bei jedem Laden.
 // Damit kann der Server eine hängende alte Verbindung derselben Seite sofort entfernen.
 const SID=Math.random().toString(36).slice(2,12)+Math.random().toString(36).slice(2,8);
-const me={n:'',c:'',x:null,y:null,sel:null,sid:SID};
+/* ---------- Version ---------- */
+let CLIENT={version:'dev',commit:null,build:'dev'};try{CLIENT=JSON.parse($('#buildinfo').textContent)}catch(e){}
+let SERVER=null;
+const verStr=v=>v?`v${v.version||'?'}${v.commit?' · '+v.commit:''}`:'–';
+function renderVersion(){
+  $('#verTop').textContent='v'+CLIENT.version;$('#verClient').textContent=`${verStr(CLIENT)} · Build ${CLIENT.build}`;
+  if(!SERVER){$('#verState').textContent='';return}
+  $('#verServer').textContent=`${verStr(SERVER)} · Build ${SERVER.build}`;
+  $('#verStarted').textContent=new Date(SERVER.started).toLocaleString('de-DE',{dateStyle:'short',timeStyle:'short'});
+  const same=CLIENT.build===SERVER.build,dev=CLIENT.build==='dev';
+  $('#verState').textContent=same?'✓ aktuell':dev?'Entwicklungsversion':'⚠ unterschiedlich';
+  $('#verState').className='meta '+(same?'ok':'bad');
+  let hint='',bar='';
+  if(!same&&!dev){
+    // Seite aus derselben Quelle wie der laufende Server? Sonst wurden Dateien aktualisiert, aber nicht neu gestartet.
+    fetch('/version',{cache:'no-store'}).then(r=>r.json()).then(v=>{
+      if(v.restartNeeded){$('#verHint').textContent='Auf dem Server liegen neue Dateien, der Server läuft aber noch mit der alten Version. Auf dem Server: pm2 restart raumplaner';
+        if(v.page&&v.page.build!==CLIENT.build)showUpd('Neue Version verfügbar. Bitte neu laden.')}
+      else{$('#verHint').textContent='Deine Seite ist veraltet. Bitte neu laden, damit alles zusammenpasst.';showUpd(`Neue Version ${verStr(SERVER)}${SERVER.version===CLIENT.version?' (Build '+SERVER.build+')':''} verfügbar – du hast noch Build ${CLIENT.build}. Bitte neu laden.`)}
+    }).catch(()=>{$('#verHint').textContent='Seite und Server haben unterschiedliche Versionen.';showUpd('Neue Version verfügbar. Bitte neu laden.')});
+  }else{$('#verHint').textContent='';$('#updBar').hidden=true}
+}
+function showUpd(t){$('#updTxt').textContent=t;$('#updBar').hidden=false}
+$('#updBtn').addEventListener('click',()=>{cacheLocal();location.reload()});
+const me={n:'',c:'',x:null,y:null,sel:null,sid:SID,v:CLIENT.version,b:CLIENT.build};
 try{me.n=localStorage.getItem('rp-name')||'';me.c=localStorage.getItem('rp-color')||''}catch(e){}
 if(!me.n)me.n='Gast '+(100+Math.floor(Math.random()*900));
 if(!/^#[0-9a-f]{6}$/i.test(me.c))me.c=COLORS_ME[Math.floor(Math.random()*COLORS_ME.length)];
@@ -1427,12 +1471,17 @@ function renderCursors(){
   g.innerHTML=h;
 }
 function renderPeers(){
-  const list=[{n:me.n+' (du)',c:me.c},...peers.values()];
-  $('#peers').innerHTML=list.map(p=>`<span class="peer"><i style="background:${safeColor(p&&p.c)}"></i>${esc(String((p&&p.n)||'Gast').slice(0,30))}</span>`).join('');
+  const list=[{...me,n:me.n+' (du)'},...peers.values()];
+  $('#peers').innerHTML=list.map(p=>{
+    const v=p&&typeof p.v==='string'?p.v.slice(0,12):null,b=p&&typeof p.b==='string'?p.b.slice(0,12):null;
+    const old=SERVER&&SERVER.build!=='dev'&&b!==SERVER.build;
+    const tip=v?`Version v${v} · Build ${b}${old?' – veraltet, bitte neu laden':''}`:'alte Version ohne Versionsangabe – bitte neu laden';
+    return`<span class="peer${old?' old':''}" title="${esc(tip)}"><i style="background:${safeColor(p&&p.c)}"></i>${esc(String((p&&p.n)||'Gast').slice(0,30))} <span class="pv">${old?'⚠ ':''}${v?'v'+esc(v):'alt'}</span></span>`}).join('');
 }
 function setConn(t,cls){const c=$('#conn');c.textContent=t;c.className='meta '+(cls||'')}
 function handle(m){
   if(m.t==='init'){
+    if(m.server&&typeof m.server==='object'){SERVER={version:String(m.server.version||'?').slice(0,20),commit:m.server.commit?String(m.server.commit).slice(0,12):null,build:String(m.server.build||'?').slice(0,12),started:m.server.started};renderVersion()}
     myId=m.you;pend.clear();peers.clear();undoStack.length=redoStack.length=0;openGroup=null;updateUndoUI();
     for(const p of m.peers||[])if(p&&p.p&&p.p.sid!==SID)peers.set(p.id,p.p);
     const srv=m.state&&Array.isArray(m.state.rooms)?m.state.rooms:[];
@@ -1518,7 +1567,7 @@ $('#wallBox').addEventListener('toggle',()=>{SET.walls=$('#wallBox').open;saveSe
 document.addEventListener('pointerdown',e=>{const m=$('#viewMenu');if(m.open&&!m.contains(e.target))m.open=false});
 syncSettingsUI();
 
-wallLabels();renderAll();renderPeers();cacheLocal();connect();
+wallLabels();renderAll();renderVersion();renderPeers();cacheLocal();connect();
 }
 </script>
 </body></html>

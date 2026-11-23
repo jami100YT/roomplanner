@@ -16,6 +16,31 @@ const DATA = process.env.DATA_DIR || path.join(__dirname, 'data');
 fs.mkdirSync(DATA, { recursive: true });
 
 const INDEX = path.join(__dirname, 'public', 'index.html');
+
+/* ---------- Version ----------
+   version = package.json, commit = Git-Commit (falls vorhanden), build = Kennung von index.html.
+   Jede ausgelieferte Seite bekommt ihre Version eingebettet; der Server schickt seine beim Verbinden mit.
+   So sieht jeder, ob seine Seite oder der Server veraltet ist. */
+const crypto = require('crypto');
+const { execSync } = require('child_process');
+const hash = buf => crypto.createHash('sha1').update(buf).digest('hex').slice(0, 7);
+function pkgVersion() { try { return JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8')).version; } catch (e) { return '?'; } }
+function gitCommit() {
+  try { return execSync('git rev-parse --short HEAD', { cwd: __dirname, stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim() || null; }
+  catch (e) { return null; }
+}
+const SERVER_INFO = { version: pkgVersion(), commit: gitCommit(), build: hash(fs.readFileSync(INDEX)), code: hash(fs.readFileSync(__filename)), started: new Date().toISOString(), node: process.version };
+let pageCache = { mtime: 0, html: '', info: null };
+function page() { // index.html mit eingebetteter Version (neu gelesen, wenn sich die Datei ändert)
+  const st = fs.statSync(INDEX);
+  if (st.mtimeMs !== pageCache.mtime) {
+    const raw = fs.readFileSync(INDEX, 'utf8'), build = hash(Buffer.from(raw));
+    const info = build === SERVER_INFO.build ? { version: SERVER_INFO.version, commit: SERVER_INFO.commit, build } : { version: pkgVersion(), commit: gitCommit(), build };
+    const json = JSON.stringify(info).replace(/</g, '\\u003c');
+    pageCache = { mtime: st.mtimeMs, info, html: raw.replace('{"version":"dev","commit":null,"build":"dev"}', json) };
+  }
+  return pageCache.html;
+}
 const validId = id => /^[a-z0-9-]{1,40}$/.test(id);
 const file = id => path.join(DATA, id + '.json');
 
@@ -23,7 +48,11 @@ const server = http.createServer((req, res) => {
   const u = new URL(req.url, 'http://x');
   if (u.pathname === '/' || u.pathname === '/index.html') {
     res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-cache' });
-    fs.createReadStream(INDEX).pipe(res);
+    res.end(page());
+  } else if (u.pathname === '/version') {
+    res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-cache' });
+    page();
+    res.end(JSON.stringify({ server: SERVER_INFO, page: pageCache.info, restartNeeded: pageCache.info.build !== SERVER_INFO.build || hash(fs.readFileSync(__filename)) !== SERVER_INFO.code }, null, 2));
   } else if (u.pathname === '/lan') {
     res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-cache' });
     res.end(JSON.stringify({ ips: lanIPs(), port: PORT }));
@@ -93,7 +122,7 @@ wss.on('connection', (ws, req) => {
   ws.cid = 'c' + (++cid); ws.sid = sid; ws.pres = null; ws.alive = true;
   p.clients.add(ws);
   ws.send(JSON.stringify({
-    t: 'init', you: ws.cid, state: p.state,
+    t: 'init', you: ws.cid, state: p.state, server: SERVER_INFO,
     peers: [...p.clients].filter(c => c !== ws && c.pres).map(c => ({ id: c.cid, p: c.pres }))
   }));
   ws.on('pong', () => { ws.alive = true; });
@@ -123,7 +152,7 @@ setInterval(() => {
 }, 10000);
 
 server.listen(PORT, HOST, () => {
-  console.log('\nRaumplaner live läuft:');
+  console.log(`\nRaumplaner live v${SERVER_INFO.version}${SERVER_INFO.commit ? ' (' + SERVER_INFO.commit + ')' : ''} · Build ${SERVER_INFO.build} läuft:`);
   console.log(`  Auf diesem Rechner:   http://localhost:${PORT}`);
   const ips = lanIPs();
   for (const ip of ips) console.log(`  Im lokalen Netzwerk: http://${ip}:${PORT}`);
