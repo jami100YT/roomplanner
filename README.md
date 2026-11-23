@@ -1,0 +1,55 @@
+# Raumplaner live
+
+Der Raumplaner als eigene Web-App, mit dem du zusammen mit anderen in Echtzeit planen kannst. Es gibt keinen Login: Wer den Link zum Plan hat, plant mit.
+
+## Starten (lokal)
+
+Du brauchst Node.js ab Version 18 (https://nodejs.org).
+
+```bash
+npm install
+npm start
+```
+
+Danach http://localhost:3000 öffnen. Die Adresse bekommt automatisch einen Plan-Code, zum Beispiel `?plan=k3v6q2rt`. Dieser Link führt genau zu diesem Plan.
+
+## Im lokalen Netzwerk (WLAN/LAN)
+
+Der Server ist automatisch im ganzen lokalen Netzwerk erreichbar. Beim Start zeigt er die Adresse an, zum Beispiel `http://192.168.1.23:3000`. Andere Geräte im selben WLAN öffnen diese Adresse. Wenn du die App selbst über `localhost` geöffnet hast, kopiert „Link zum Plan kopieren“ automatisch die LAN-Adresse.
+
+Wenn andere Geräte die Seite nicht erreichen:
+- **Windows:** Beim ersten Start fragt die Firewall nach. Dort „Private Netzwerke“ erlauben. Alternativ freigeben mit: `netsh advfirewall firewall add rule name="Raumplaner" dir=in action=allow protocol=TCP localport=3000`
+- **macOS:** Die Frage, ob „node“ eingehende Verbindungen annehmen darf, mit „Erlauben“ beantworten.
+- **Linux (ufw):** `sudo ufw allow 3000/tcp`
+- Gast-WLANs blockieren oft den Kontakt zwischen Geräten. Alle Geräte müssen im selben, normalen WLAN sein.
+- Anderen Port verwenden: `PORT=8080 npm start` (unter Windows PowerShell: `$env:PORT=8080; npm start`)
+
+## Für Freunde erreichbar machen
+
+**Variante A: am schnellsten, ohne Konto.** Lass den Server auf deinem Rechner laufen und öffne in einem zweiten Terminal einen Tunnel:
+
+```bash
+npx cloudflared tunnel --url http://localhost:3000
+```
+
+Der Tunnel zeigt eine Adresse wie `https://irgendwas.trycloudflare.com`. Öffne sie, und schick deinen Freunden den Link mit dem `?plan=…`-Teil (dafür gibt es den Knopf „Link zum Plan kopieren“). Das funktioniert, solange dein Rechner und der Tunnel laufen. Die Adresse ist bei jedem Start eine neue.
+
+**Variante B: dauerhaft online.** Zum Beispiel bei Render.com:
+1. Den Ordner in ein GitHub-Repository hochladen.
+2. Auf render.com unter „New → Web Service“ das Repository wählen.
+3. Build Command `npm install`, Start Command `npm start`, Plan „Free“.
+
+Der Gratis-Plan schläft nach einer Weile Inaktivität ein (der erste Aufruf dauert dann etwa 30 Sekunden), und Dateien bleiben nicht dauerhaft erhalten. Pläne können also nach einem Neustart weg sein. Deshalb solltest du ab und zu „Als JSON-Datei speichern“ nutzen. Dauerhaft gespeichert wird mit einer „Persistent Disk“ (kostenpflichtig): als Mount-Pfad `/data` einhängen und die Umgebungsvariable `DATA_DIR=/data` setzen.
+
+## Was live geteilt wird
+
+- Räume, Möbel, Fenster und Türen: jede Änderung, auch während du ziehst
+- Die Mauszeiger der anderen, mit Namen und Farbe
+- Das Objekt, das gerade jemand anderes ausgewählt hat: Es bekommt einen Rahmen in seiner Farbe
+
+Nur für dich selbst gelten: welche Räume ausgeblendet sind, welcher Raum gerade aktiv ist, Drehschritt, Einrasten und „Räume verschieben“.
+
+## Dateien
+
+- `server.js`: Webserver und WebSocket-Server. Speichert jeden Plan als `data/<plan>.json`.
+- `public/index.html`: die App
