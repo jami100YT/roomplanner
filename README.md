@@ -53,6 +53,7 @@ Der Gratis-Plan schläft nach einer Weile Inaktivität ein (der erste Aufruf dau
 
 ## Räume verschieben, Rückgängig
 
+- **Raumnamen** (Häkchen oben): blendet Namen und Flächen im Plan aus oder ein. Die Einstellung gilt nur für dich und bleibt gespeichert. Ohne Namen ziehst du Räume am Boden des gewählten Raums.
 - **Räume per Drag'n'Drop:** Den Raumnamen im Plan ziehen, das geht bei jedem Raum. Oder den Boden des gerade gewählten Raums ziehen. Beim Loslassen rastet der Raum an den Innen- und Außenecken der Nachbarräume ein, Nachbarn teilen sich dann eine Wand. Mit dem Häkchen **„Räume fixieren“** sperrst du das Verschieben.
 - **Strg+Z / Strg+Y** (Mac: ⌘+Z / ⌘+⇧+Z) oder die Knöpfe ↶ ↷: Damit machst du **deine eigenen** Änderungen rückgängig oder wiederholst sie. Was deine Freunde an anderen Objekten ändern, bleibt erhalten. Ein Ziehvorgang oder ein umbenannter Name zählt als ein Schritt. Auch „Beispiel laden“ und „Raum löschen“ lassen sich so zurücknehmen. Beim Zeichnen entfernt Strg+Z die letzte Ecke.
 

@@ -287,6 +287,7 @@ button.on{background:var(--sel);border-color:var(--sel);color:#fff}
     <div class="bar">
       <label>Drehschritt <select id="step"><option value="45">45°</option><option value="90">90°</option></select></label>
       <label><input type="checkbox" id="snap"> am 5-cm-Raster einrasten</label>
+      <label><input type="checkbox" id="showNames" checked> Raumnamen</label>
       <label><input type="checkbox" id="lockRooms"> Räume fixieren</label>
       <span class="undo"><button type="button" id="undoBtn" title="Rückgängig (Strg+Z)" aria-label="Rückgängig" disabled>↶</button><button type="button" id="redoBtn" title="Wiederholen (Strg+Y / Strg+⇧+Z)" aria-label="Wiederholen" disabled>↷</button></span>
       <button type="button" id="resetBtn">Beispiel laden</button>
@@ -407,7 +408,8 @@ function save(){cacheLocal();sync();sealUndo()}
 
 let S=load()||example();
 S.rooms.forEach(r=>r.hidden=hiddenSet.has(r.id));
-let sel=null, tab='furn', lockRooms=false;
+let sel=null, tab='furn', lockRooms=false, showNames=true;
+try{showNames=localStorage.getItem('rp-names')!=='0'}catch(e){}
 const R=()=>S.rooms.find(r=>r.id===S.active)||S.rooms[0];
 const byId=id=>id?R().items.find(i=>i.id===id):null;
 function findItem(id){for(const r of S.rooms)for(const it of r.items)if(it.id===id)return[r,it];return null}
@@ -514,8 +516,8 @@ function render(){
     if(lf<3)continue;
     h+=`<text class="lbl" font-size="${lf}" text-anchor="middle" x="${X}" y="${Y}"><tspan x="${X}" dy="-0.15em">${esc(it.name)}</tspan><tspan class="sz" x="${X}" dy="1.2em" font-size="${lf*0.8}">${fmt(it.w)}×${fmt(it.d)}</tspan></text>`;
   }
-  // Raumnamen über den Möbeln (zum Ziehen des Raums)
-  for(const r of vis){const c=r.pts.reduce((m,p)=>(p[1]<m[1]||(p[1]===m[1]&&p[0]<m[0]))?p:m,r.pts[0]),X=r.x+c[0]+fs*.5,Y=r.y+c[1];
+  // Raumnamen über den Möbeln (zum Ziehen des Raums) – abschaltbar
+  if(showNames)for(const r of vis){const c=r.pts.reduce((m,p)=>(p[1]<m[1]||(p[1]===m[1]&&p[0]<m[0]))?p:m,r.pts[0]),X=r.x+c[0]+fs*.5,Y=r.y+c[1];
     h+=`<text class="rname" data-room="${r.id}" x="${X}" y="${Y+fs*1.25}" font-size="${fs*.9}"><title>Ziehen = Raum verschieben</title>${esc(r.name)}</text><text class="rarea" x="${X}" y="${Y+fs*2.3}" font-size="${fs*.7}">${area(r)} m²</text>`}
   // Fenster & Türen
   for(const r of vis){
@@ -1207,6 +1209,8 @@ $('#shareBtn').addEventListener('click',async()=>{const b=$('#shareBtn'),url=sha
 $('#step').value=S.step;$('#step').addEventListener('change',e=>{S.step=+e.target.value;save()});
 $('#snap').checked=S.snap;$('#snap').addEventListener('change',e=>{S.snap=e.target.checked;save()});
 $('#lockRooms').addEventListener('change',e=>{lockRooms=e.target.checked;render()});
+$('#showNames').checked=showNames;
+$('#showNames').addEventListener('change',e=>{showNames=e.target.checked;try{localStorage.setItem('rp-names',showNames?'1':'0')}catch(x){}render()});
 
 wallLabels();renderAll();renderPeers();cacheLocal();connect();
 }
