@@ -51,6 +51,18 @@ Der Gratis-Plan schläft nach einer Weile Inaktivität ein (der erste Aufruf dau
 - **Zu Rechteck** setzt die Form auf das umschließende Rechteck zurück. Fenster und Türen wandern dabei auf die nächstgelegene Wand.
 - Alte Pläne mit Rechteckräumen werden automatisch übernommen.
 
+## Ansicht & Maße (Menü „Ansicht ▾“)
+
+- **Maße: alle Räume (intelligent)** – Jede Wand jedes Raums wird beschriftet:
+  - Außenwand → Maß außen
+  - Wand grenzt an einen Nachbarraum → Maß **innen** im jeweiligen Raum, so sieht man die Maße jedes Raums
+  - Zwei deckungsgleiche Nachbarwände gleicher Länge → **ein gemeinsames Maß** auf der Wand
+  - Maße des aktiven Raums sind farbig hervorgehoben
+  - Alternativ: „nur aktiver Raum“ oder „aus“
+- **Gesamtmaße der Wohnung** (außen über alles), sobald mehr als ein Raum sichtbar ist
+- **Schrift Möbel** (50–250 %), **Möbelmaße anzeigen** (z. B. „140×200“) und **Schrift Maße**
+- Alle persönlichen Einstellungen werden im Browser gespeichert: Raster, Drehschritt, Räume fixieren, Raumnamen, alle Ansichtsoptionen, die aufgeklappte Wandliste und der Zoom-Ausschnitt (pro Plan).
+
 ## Zoomen und Ausschnitt verschieben
 
 - **Mausrad** (oder Pinch-Geste auf dem Touchpad) zoomt zur Mausposition. **Zwei Finger** zoomen auf Handy und Tablet.

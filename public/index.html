@@ -105,6 +105,20 @@ button[data-armed]{background:var(--danger);color:#fff;border-color:var(--danger
 .undo{display:inline-flex;gap:4px}.undo button{min-width:38px;font-size:16px;padding:3px 8px}
 .rarea{paint-order:stroke;stroke:var(--floor);stroke-width:3px;stroke-linejoin:round;fill:var(--muted);font-family:var(--f-mono);pointer-events:none}
 .curs{pointer-events:none}
+.viewmenu{position:relative}
+.viewmenu summary{list-style:none;cursor:pointer;border:1px solid var(--line);border-radius:5px;background:var(--floor);padding:6px 10px;font-size:13px}
+.viewmenu summary::-webkit-details-marker{display:none}
+.viewmenu[open] summary{border-color:var(--accent)}
+.vm{position:absolute;z-index:20;top:calc(100% + 6px);left:0;width:300px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:10px;box-shadow:0 6px 24px rgba(0,0,0,.14)}
+.vrow{display:flex;align-items:center;gap:8px;font-size:13px}
+.vrow select{flex:1}
+.vrow input[type=range]{flex:1;padding:0}
+.vrow output{font-family:var(--f-mono);font-size:12px;min-width:44px;text-align:right;color:var(--muted)}
+.dimtxt.in{fill:var(--fg);opacity:.75}
+.dimtxt.sh{fill:var(--fg);font-weight:600}
+.dimtxt.act{fill:var(--accent);opacity:1}
+.dimtxt.in,.dimtxt.sh,.dimtxt.ext{paint-order:stroke;stroke:var(--floor);stroke-width:3px;stroke-linejoin:round}
+.dimtot{stroke:var(--muted);stroke-width:1;vector-effect:non-scaling-stroke;opacity:.8}
 .zoom{position:absolute;right:10px;bottom:10px;display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:4px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
 .zoom button{min-width:36px;height:34px;padding:0 8px;font-size:16px;font-family:var(--f-mono)}
 .zoom #zoomFit{font-size:12px;min-width:62px}
@@ -297,7 +311,18 @@ button.on{background:var(--sel);border-color:var(--sel);color:#fff}
     <div class="bar">
       <label>Drehschritt <select id="step"><option value="45">45°</option><option value="90">90°</option></select></label>
       <label><input type="checkbox" id="snap"> am 5-cm-Raster einrasten</label>
-      <label><input type="checkbox" id="showNames" checked> Raumnamen</label>
+      <details class="viewmenu" id="viewMenu"><summary>Ansicht ▾</summary>
+        <div class="vm">
+          <label class="vrow"><input type="checkbox" id="showNames" checked> Raumnamen</label>
+          <label class="vrow">Maße
+            <select id="dimsMode"><option value="smart">alle Räume (intelligent)</option><option value="active">nur aktiver Raum</option><option value="off">aus</option></select></label>
+          <label class="vrow"><input type="checkbox" id="showTotal" checked> Gesamtmaße der Wohnung</label>
+          <label class="vrow">Schrift Möbel <input type="range" id="furnFont" min="0.5" max="2.5" step="0.1" value="1"><output id="furnFontV">100 %</output></label>
+          <label class="vrow"><input type="checkbox" id="furnSize" checked> Möbelmaße anzeigen (z. B. 140×200)</label>
+          <label class="vrow">Schrift Maße <input type="range" id="dimFont" min="0.5" max="2" step="0.1" value="1"><output id="dimFontV">100 %</output></label>
+          <div class="meta">Wird in diesem Browser gespeichert.</div>
+        </div>
+      </details>
       <label><input type="checkbox" id="lockRooms"> Räume fixieren</label>
       <span class="undo"><button type="button" id="undoBtn" title="Rückgängig (Strg+Z)" aria-label="Rückgängig" disabled>↶</button><button type="button" id="redoBtn" title="Wiederholen (Strg+Y / Strg+⇧+Z)" aria-label="Wiederholen" disabled>↷</button></span>
       <button type="button" id="resetBtn">Beispiel laden</button>
@@ -424,7 +449,12 @@ function save(){cacheLocal();sync();sealUndo()}
 let S=load()||example();
 S.rooms.forEach(r=>r.hidden=hiddenSet.has(r.id));
 let sel=null, tab='furn', lockRooms=false, showNames=true;
-try{showNames=localStorage.getItem('rp-names')!=='0'}catch(e){}
+/* ---------- Persönliche Einstellungen (nur in diesem Browser) ---------- */
+const SET={snap:true,step:90,lock:false,names:true,dims:'smart',total:true,ff:1,fsize:true,df:1,walls:false};
+try{Object.assign(SET,JSON.parse(localStorage.getItem('rp-settings')||'{}'));if(localStorage.getItem('rp-names')==='0'&&!localStorage.getItem('rp-settings'))SET.names=false}catch(e){}
+SET.ff=N(SET.ff,1,0.5,2.5);SET.df=N(SET.df,1,0.5,2);if(!['smart','active','off'].includes(SET.dims))SET.dims='smart';SET.step=SET.step==45?45:90;
+function saveSettings(){try{localStorage.setItem('rp-settings',JSON.stringify(SET))}catch(e){}}
+S.snap=!!SET.snap;S.step=SET.step;lockRooms=!!SET.lock;showNames=!!SET.names;
 const R=()=>S.rooms.find(r=>r.id===S.active)||S.rooms[0];
 const byId=id=>id?R().items.find(i=>i.id===id):null;
 function findItem(id){for(const r of S.rooms)for(const it of r.items)if(it.id===id)return[r,it];return null}
@@ -497,7 +527,7 @@ function computeLayout(){
   const vis=S.rooms.filter(r=>!r.hidden);
   const B=vis.length?bounds(vis):{x:0,y:0,w:600,h:400},fs=Math.max(8,Math.max(B.w,B.h)/45);
   const outDoor=Math.max(0,...vis.flatMap(r=>r.items.filter(i=>i.type==='door'&&i.swing==='out').map(i=>i.w)));
-  let M=Math.max(T+fs*3.2,outDoor+T+8);
+  let M=Math.max(T+fs*3.2*Math.max(1,SET.df),outDoor+T+8);
   if(mode==='draw'||mode==='extend')M+=Math.max(300,Math.max(B.w,B.h)*0.45); // Platz zum Zeichnen neben der Wohnung
   layout={vb:[B.x-M,B.y-M,B.w+2*M,B.h+2*M],fs};
 }
@@ -527,9 +557,10 @@ function render(){
       <line class="front" x1="${-w/2+2}" y1="${d/2}" x2="${w/2-2}" y2="${d/2}"/></g>`;
   }
   for(const r of vis)for(const it of r.items.filter(i=>i.type==='furn')){
-    const{hx,hy}=ext(it),lf=Math.min(fs,Math.min(hx,hy)/1.6),X=r.x+it.x,Y=r.y+it.y;
+    const{hx,hy}=ext(it),lf=Math.min(fs,Math.min(hx,hy)/1.6)*SET.ff,X=r.x+it.x,Y=r.y+it.y;
     if(lf<3)continue;
-    h+=`<text class="lbl" font-size="${lf}" text-anchor="middle" x="${X}" y="${Y}"><tspan x="${X}" dy="-0.15em">${esc(it.name)}</tspan><tspan class="sz" x="${X}" dy="1.2em" font-size="${lf*0.8}">${fmt(it.w)}×${fmt(it.d)}</tspan></text>`;
+    h+=SET.fsize?`<text class="lbl" font-size="${r1(lf)}" text-anchor="middle" x="${X}" y="${Y}"><tspan x="${X}" dy="-0.15em">${esc(it.name)}</tspan><tspan class="sz" x="${X}" dy="1.2em" font-size="${r1(lf*0.8)}">${fmt(it.w)}×${fmt(it.d)}</tspan></text>`
+      :`<text class="lbl" font-size="${r1(lf)}" text-anchor="middle" dy="0.35em" x="${X}" y="${Y}">${esc(it.name)}</text>`;
   }
   // Raumnamen über den Möbeln (zum Ziehen des Raums) – abschaltbar
   if(showNames)for(const r of vis){const c=r.pts.reduce((m,p)=>(p[1]<m[1]||(p[1]===m[1]&&p[0]<m[0]))?p:m,r.pts[0]),X=r.x+c[0]+fs*.5,Y=r.y+c[1];
@@ -558,9 +589,6 @@ function render(){
   // Aktiver Raum: Rahmen, Wandlängen, Abstände der Auswahl, Griffe
   if(!A.hidden&&mode!=='draw'){
     h+=`<g transform="translate(${A.x} ${A.y})"><polygon class="actv" points="${pts(A.pts)}"/>`;
-    for(let i=0;i<A.pts.length;i++){const g=wallInfo(A,i);if(g.L<fs*1.5)continue;
-      const m=P(P(g.p,g.u,g.L/2),g.n,-(T+fs*0.8));let ang=Math.atan2(g.u[1],g.u[0])*180/Math.PI;if(ang>90)ang-=180;if(ang<=-90)ang+=180;
-      h+=`<text class="dimtxt" font-size="${fs*.85}" text-anchor="middle" dy="0.35em" transform="translate(${r1(m[0])} ${r1(m[1])}) rotate(${r1(ang)})">${fmt(g.L)}</text>`}
     const s=byId(sel);
     if(s&&s.type==='furn'&&mode!=='shape'){
       const{hx,hy}=ext(s),Wa=wallsAround(A,s.x,s.y);
@@ -580,6 +608,7 @@ function render(){
     }
     h+='</g>';
   }
+  if(mode!=='draw')h+=wallDims(vis,A,fs);
   // Vorschau beim Raum-Zeichnen / Anbau
   if(mode==='draw'||mode==='extend'){
     const q=drawCur?[...drawPts,drawCur]:drawPts;
@@ -599,13 +628,56 @@ function render(){
   renderCursors();
   if(me.sel!==sel)pres({sel});
 }
+/* ---------- Intelligente Wandmaße ----------
+   Außenwand → Maß außen. Wand grenzt an einen Nachbarraum → Maß innen im eigenen Raum.
+   Zwei deckungsgleiche Nachbarwände gleicher Länge → ein gemeinsames Maß auf der Wand. */
+function wallDims(vis,A,fs){
+  if(SET.dims==='off')return'';
+  const rooms=SET.dims==='active'?(A.hidden?[]:[A]):vis,tf=fs*.85*SET.df;
+  const W=[];for(const r of vis)for(let i=0;i<r.pts.length;i++){const g=wallInfo(r,i);
+    W.push({r,i,L:g.L,u:g.u,n:g.n,a:[r.x+g.p[0],r.y+g.p[1]],b:[r.x+g.b[0],r.y+g.b[1]],adj:false,pair:null})}
+  const near=T+Math.max(fs*1.8,tf*2);
+  for(const w of W)for(const v of W){
+    if(v.r===w.r||w.u[0]*v.u[0]+w.u[1]*v.u[1]>-0.999)continue;
+    const dOut=-((v.a[0]-w.a[0])*w.n[0]+(v.a[1]-w.a[1])*w.n[1]);if(dOut<-1||dOut>near)continue;
+    const t1=(v.a[0]-w.a[0])*w.u[0]+(v.a[1]-w.a[1])*w.u[1],t2=(v.b[0]-w.a[0])*w.u[0]+(v.b[1]-w.a[1])*w.u[1];
+    const lo=Math.max(0,Math.min(t1,t2)),hi=Math.min(w.L,Math.max(t1,t2));if(hi-lo<1)continue;
+    w.adj=true;
+    if(Math.abs(dOut-T)<1.5&&Math.abs(Math.min(t1,t2))<1&&Math.abs(Math.max(t1,t2)-w.L)<1)w.pair=v;
+  }
+  const show=new Set(rooms);let h='';
+  const label=(cx,cy,u,txt,cls)=>{let ang=Math.atan2(u[1],u[0])*180/Math.PI;if(ang>90)ang-=180;if(ang<=-90)ang+=180;
+    return`<text class="dimtxt ${cls}" font-size="${r1(tf)}" text-anchor="middle" dy="0.35em" transform="translate(${r1(cx)} ${r1(cy)}) rotate(${r1(ang)})">${txt}</text>`};
+  for(const w of W){
+    if(!show.has(w.r)||w.L<tf*1.6)continue;
+    const mx=(w.a[0]+w.b[0])/2,my=(w.a[1]+w.b[1])/2,act=w.r===A?' act':'';
+    if(w.pair&&SET.dims==='smart'){ // gemeinsames Maß, nur einmal (vom Raum mit der kleineren Kennung)
+      if(!show.has(w.pair.r)||w.r.id>w.pair.r.id)continue;
+      h+=label(mx-w.n[0]*T/2,my-w.n[1]*T/2,w.u,fmt(w.L),'sh'+(w.r===A||w.pair.r===A?' act':''));continue}
+    if(w.adj){h+=label(mx+w.n[0]*tf*0.9,my+w.n[1]*tf*0.9,w.u,fmt(w.L),'in'+act);continue}
+    h+=label(mx-w.n[0]*(T+tf*0.8),my-w.n[1]*(T+tf*0.8),w.u,fmt(w.L),'ext'+act);
+  }
+  // Gesamtmaße (außen, über alles) bei mehreren Räumen
+  if(SET.total&&SET.dims!=='off'&&vis.length>1){
+    const o=vis.flatMap(r=>outerPts(r.pts,T).map(p=>[r.x+p[0],r.y+p[1]]));
+    const x0=Math.min(...o.map(p=>p[0])),x1=Math.max(...o.map(p=>p[0])),y0=Math.min(...o.map(p=>p[1])),y1=Math.max(...o.map(p=>p[1]));
+    const oy=y0-tf*2.6,ox=x0-tf*2.6,tk=tf*.35;
+    h+=`<path class="dimtot" d="M${x0} ${oy}H${x1}M${x0} ${oy-tk}V${oy+tk}M${x1} ${oy-tk}V${oy+tk}M${ox} ${y0}V${y1}M${ox-tk} ${y0}H${ox+tk}M${ox-tk} ${y1}H${ox+tk}"/>`
+      +`<text class="dimtxt ext" font-size="${r1(tf)}" text-anchor="middle" x="${r1((x0+x1)/2)}" y="${r1(oy-tf*.45)}">gesamt ${fmt(x1-x0)}</text>`
+      +`<text class="dimtxt ext" font-size="${r1(tf)}" text-anchor="middle" transform="translate(${r1(ox-tf*.45)} ${r1((y0+y1)/2)}) rotate(-90)">gesamt ${fmt(y1-y0)}</text>`;
+  }
+  return h;
+}
 function dim(x1,y1,x2,y2,fs){const len=Math.hypot(x2-x1,y2-y1);if(len<0.5)return'';
   return`<line class="dimln" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/><text class="dimtx" font-size="${fs*0.85}" text-anchor="middle" dy="0.35em" x="${(x1+x2)/2}" y="${(y1+y2)/2}">${fmt(len)}</text>`}
 
 /* ---------- Zoom & Ausschnitt ---------- */
 let view=null; // eigener Ausschnitt [x,y,w,h]; null = ganze Wohnung einpassen
 const curVB=()=>view||layout.vb;
-function setView(v){view=v;svg.setAttribute('viewBox',curVB().join(' '));updateZoomUI()}
+let viewSaveT=null;
+function setView(v){view=v;svg.setAttribute('viewBox',curVB().join(' '));updateZoomUI();
+  clearTimeout(viewSaveT);viewSaveT=setTimeout(()=>{try{v?localStorage.setItem('rp-view-'+planId,JSON.stringify(v.map(r1))):localStorage.removeItem('rp-view-'+planId)}catch(e){}},300)}
+try{const v=JSON.parse(localStorage.getItem('rp-view-'+planId)||'null');if(Array.isArray(v)&&v.length===4&&v.every(x=>isFinite(x))&&v[2]>0&&v[3]>0)view=v}catch(e){}
 function zoomAt(f,px,py){
   const v=curVB(),base=layout.vb[2],minW=Math.max(40,base*0.03),maxW=base*4;
   f=Math.min(maxW/v[2],Math.max(minW/v[2],f));
@@ -701,7 +773,7 @@ function armed(btn,fn){btn.addEventListener('click',()=>{
   btn._t=setTimeout(()=>{delete btn.dataset.armed;btn.textContent=btn._l},3000)})}
 armed($('#delRoom'),()=>{if(S.rooms.length<2)return;const A=R();S.rooms=S.rooms.filter(r=>r!==A);S.active=S.rooms[0].id;sel=null;renderAll();save()});
 armed($('#clearRoom'),()=>{R().items=[];sel=null;renderAll();save()});
-armed($('#resetBtn'),()=>{S=example();sel=null;$('#step').value=S.step;$('#snap').checked=S.snap;renderAll();save()});
+armed($('#resetBtn'),()=>{const keep={snap:S.snap,step:S.step};S=example();Object.assign(S,keep);sel=null;renderAll();save()});
 
 /* ---------- Auswahl-Panel ---------- */
 function getVal(it,k){const A=R();
@@ -1106,7 +1178,7 @@ function doImport(text,src){
   if($('#appendImp').checked){
     const B=bounds(S.rooms),IB=bounds(p.rooms),dx=B.x+B.w+T-IB.x,dy=B.y-IB.y;
     p.rooms.forEach(r=>{r.x+=dx;r.y+=dy});S.rooms.push(...p.rooms);
-  }else{S.rooms=p.rooms;S.snap=p.snap;S.step=p.step;$('#step').value=S.step;$('#snap').checked=S.snap}
+  }else{S.rooms=p.rooms}
   S.active=p.rooms[0].id;sel=null;renderAll();save();
   msg(`${p.rooms.length} ${p.rooms.length===1?'Raum':'Räume'} aus ${src} importiert.`);
 }
@@ -1331,11 +1403,27 @@ $('#shareBtn').addEventListener('click',async()=>{const b=$('#shareBtn'),url=sha
   catch(e){window.prompt('Diesen Link an deine Freunde schicken:',url)}});
 
 /* ---------- Leiste ---------- */
-$('#step').value=S.step;$('#step').addEventListener('change',e=>{S.step=+e.target.value;save()});
-$('#snap').checked=S.snap;$('#snap').addEventListener('change',e=>{S.snap=e.target.checked;save()});
-$('#lockRooms').addEventListener('change',e=>{lockRooms=e.target.checked;render()});
-$('#showNames').checked=showNames;
-$('#showNames').addEventListener('change',e=>{showNames=e.target.checked;try{localStorage.setItem('rp-names',showNames?'1':'0')}catch(x){}render()});
+function syncSettingsUI(){
+  $('#step').value=S.step;$('#snap').checked=S.snap;$('#lockRooms').checked=lockRooms;$('#showNames').checked=showNames;
+  $('#dimsMode').value=SET.dims;$('#showTotal').checked=SET.total;$('#furnSize').checked=SET.fsize;
+  $('#furnFont').value=SET.ff;$('#furnFontV').textContent=Math.round(SET.ff*100)+' %';
+  $('#dimFont').value=SET.df;$('#dimFontV').textContent=Math.round(SET.df*100)+' %';
+  $('#wallBox').open=!!SET.walls;
+}
+const setting=(id,ev,fn)=>$(id).addEventListener(ev,e=>{fn(e.target);saveSettings();syncSettingsUI();render()});
+setting('#step','change',t=>{S.step=SET.step=+t.value;cacheLocal()});
+setting('#snap','change',t=>{S.snap=SET.snap=t.checked;cacheLocal()});
+setting('#lockRooms','change',t=>{lockRooms=SET.lock=t.checked});
+setting('#showNames','change',t=>{showNames=SET.names=t.checked});
+setting('#dimsMode','change',t=>{SET.dims=t.value});
+setting('#showTotal','change',t=>{SET.total=t.checked});
+setting('#furnSize','change',t=>{SET.fsize=t.checked});
+setting('#furnFont','input',t=>{SET.ff=+t.value});
+setting('#dimFont','input',t=>{SET.df=+t.value});
+$('#wallBox').addEventListener('toggle',()=>{SET.walls=$('#wallBox').open;saveSettings()});
+// Ansicht-Menü schließen, wenn man daneben klickt
+document.addEventListener('pointerdown',e=>{const m=$('#viewMenu');if(m.open&&!m.contains(e.target))m.open=false});
+syncSettingsUI();
 
 wallLabels();renderAll();renderPeers();cacheLocal();connect();
 }
