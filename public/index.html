@@ -122,7 +122,6 @@ button[data-armed]{background:var(--danger);color:#fff;border-color:var(--danger
 .ginfo{font-size:12px;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .vgrid{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px;font-size:13px}
 .vgrid span{color:var(--muted)}.vgrid b{font-family:var(--f-mono);font-weight:500;font-size:12px;overflow-wrap:anywhere}
-#verState.ok{color:#2f8a4f}#verState.bad{color:var(--danger)}
 .updbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#fff4e5;border:1px solid #f0b46b;color:#7a4300;border-radius:8px;padding:10px 12px;font-size:13px}
 :root[data-theme=dark] .updbar{background:#3a2a12;color:#ffd9a6;border-color:#8a5a1f}
 @media (prefers-color-scheme:dark){:root:not([data-theme=light]) .updbar{background:#3a2a12;color:#ffd9a6;border-color:#8a5a1f}}
@@ -182,6 +181,8 @@ button.on{background:var(--sel);border-color:var(--sel);color:#fff}
 .lbl .sz{font-family:var(--f-mono);font-weight:400;fill:var(--muted)}
 .glass{fill:var(--glass);stroke:var(--fg);stroke-width:1;vector-effect:non-scaling-stroke}
 .pane{stroke:var(--fg);stroke-width:1;vector-effect:non-scaling-stroke}
+.sill{stroke:var(--accent);stroke-width:1.5;stroke-dasharray:4 3;vector-effect:non-scaling-stroke}
+.sel .sill{stroke:var(--sel)}
 .gap{fill:var(--floor);stroke:var(--fg);stroke-width:1;vector-effect:non-scaling-stroke}
 .hit{stroke:transparent;stroke-width:16;fill:none;vector-effect:non-scaling-stroke}
 .swing{fill:var(--swing);stroke:var(--accent);stroke-width:1;stroke-dasharray:4 3;vector-effect:non-scaling-stroke;pointer-events:none}
@@ -206,7 +207,6 @@ button.on{background:var(--sel);border-color:var(--sel);color:#fff}
 <div class="app">
   <aside>
     <div class="brand"><h1>Raumplaner</h1><small><span id="verTop"></span> · alle Maße in cm</small></div>
-    <div class="updbar" id="updBar" hidden><span id="updTxt"></span><button type="button" id="updBtn" class="primary">Jetzt neu laden</button></div>
 
     <section class="card">
       <div class="hrow"><h2>Gemeinsam planen</h2><span class="meta" id="conn">verbinde…</span></div>
@@ -307,6 +307,7 @@ button.on{background:var(--sel);border-color:var(--sel);color:#fff}
             <label class="f">Anschlag <select id="a-hinge"><option value="start">links</option><option value="end">rechts</option></select></label>
             <label class="f">Öffnet <select id="a-swing"><option value="in">nach innen</option><option value="out">nach außen</option></select></label>
           </div>
+          <label class="chk" data-show="door" hidden><input type="checkbox" id="a-noleaf"> ohne Türblatt (nur Durchgang)</label>
         </div>
         <button type="submit" class="primary" id="addBtn">Möbel hinzufügen</button>
       </form>
@@ -337,13 +338,7 @@ button.on{background:var(--sel);border-color:var(--sel);color:#fff}
       <div class="meta" id="ioMsg" role="status"></div>
     </section>
     <section class="card">
-      <div class="hrow"><h2>Version</h2><span class="meta" id="verState"></span></div>
-      <div class="vgrid">
-        <span>Diese Seite</span><b id="verClient"></b>
-        <span>Server</span><b id="verServer">–</b>
-        <span>Server läuft seit</span><b id="verStarted">–</b>
-      </div>
-      <div class="meta" id="verHint"></div>
+      <div class="hrow"><h2>Version</h2><b class="meta" id="verClient"></b></div>
     </section>
   </aside>
 
@@ -393,7 +388,6 @@ button.on{background:var(--sel);border-color:var(--sel);color:#fff}
   </main>
 </div>
 
-<script type="application/json" id="buildinfo">{"version":"dev","commit":null,"build":"dev"}</script>
 <script>
 {
 const $=s=>document.querySelector(s);
@@ -420,7 +414,7 @@ function normRoom(r,keep){
   const w=N(r.w,400,50,3000),d=N(r.d,300,50,3000);
   const okPts=Array.isArray(r.pts)&&r.pts.length>=3&&r.pts.length<=64&&r.pts.every(v=>Array.isArray(v)&&isFinite(+v[0])&&isFinite(+v[1]));
   const room={id:okId(r.id,keep,'r'),name:String(r.name||'Raum').slice(0,60),x:N(r.x,0,-1e5,1e5),y:N(r.y,0,-1e5,1e5),
-    w,d,hidden:!!r.hidden,items:[],pts:okPts?r.pts.map(v=>[N(v[0],0,-1e5,1e5),N(v[1],0,-1e5,1e5)]):rectPts(w,d)};
+    w,d,hidden:!!r.hidden,items:[],...(isFinite(+r.north)&&r.north!==null&&r.north!==''?{north:((+r.north%360)+360)%360}:{}),pts:okPts?r.pts.map(v=>[N(v[0],0,-1e5,1e5),N(v[1],0,-1e5,1e5)]):rectPts(w,d)};
   if(Math.abs(polyArea(room.pts))<100)room.pts=rectPts(w,d);
   if(polyArea(room.pts)<0)room.pts.reverse();
   normalizeRoom(room);
@@ -444,7 +438,7 @@ function normItem(i,room,keep){
       if(k>=2){s=wallInfo(room,k).L-s-w;hinge=hinge==='start'?'end':'start'}
     }else wall=Math.round(N(wall,0,0,999))%room.pts.length;
     it={id:okId(i.id,keep),type:i.type,name:String(i.name||(i.type==='door'?'Tür':'Fenster')).slice(0,60),wall,w,s};
-    if(i.type==='door'){it.hinge=hinge;it.swing=i.swing==='out'?'out':'in'}
+    if(i.type==='door'){it.hinge=hinge;it.swing=i.swing==='out'?'out':'in';if(i.noleaf)it.noleaf=true} // noleaf = Türblatt ausgehängt
   }else return null;
   clamp(room,it);return it;
 }
@@ -462,7 +456,8 @@ function parsePlan(o,keep){
     out.push(room);
   }
   if(!out.length)throw new Error('Keine Räume in der Datei gefunden');
-  const nn=+(o.north!==undefined?o.north:o.meta&&o.meta.north);
+  const fromRoom=out.find(r=>r.north!==undefined);
+  const nn=+(o.north!==undefined?o.north:fromRoom?fromRoom.north:o.meta&&o.meta.north);
   return{rooms:out,snap:o.snap===undefined?true:!!o.snap,step:o.step==45?45:90,north:isFinite(nn)?((nn%360)+360)%360:0};
 }
 function exportObj(withIds){return{app:'raumplaner',version:2,snap:S.snap,step:S.step,north:S.north||0,
@@ -617,7 +612,7 @@ let mode=null, drawPts=[], drawCur=null; // mode: null | 'draw' (Raum zeichnen) 
 function computeLayout(){
   const vis=S.rooms.filter(r=>!r.hidden);
   const B=vis.length?bounds(vis):{x:0,y:0,w:600,h:400},fs=Math.max(8,Math.max(B.w,B.h)/45);
-  const outDoor=Math.max(0,...vis.flatMap(r=>r.items.filter(i=>i.type==='door'&&i.swing==='out').map(i=>i.w)));
+  const outDoor=Math.max(0,...vis.flatMap(r=>r.items.filter(i=>i.type==='door'&&i.swing==='out'&&!i.noleaf).map(i=>i.w)));
   let M=Math.max(T+fs*3.2*Math.max(1,SET.df),outDoor+T+8);
   if(mode==='draw'||mode==='extend')M+=Math.max(300,Math.max(B.w,B.h)*0.45); // Platz zum Zeichnen neben der Wohnung
   layout={vb:[B.x-M,B.y-M,B.w+2*M,B.h+2*M],fs};
@@ -670,6 +665,10 @@ function render(){
       if(it.type==='window'){
         const m0=P(P0,g.n,-T/2),m1=P(P1,g.n,-T/2);
         h+=`<g class="${cls}" data-id="${it.id}"><polygon class="glass" points="${pts([P0,P1,Q1,Q0])}"/><line class="pane" x1="${m0[0]}" y1="${m0[1]}" x2="${m1[0]}" y2="${m1[1]}"/><polygon class="hit" points="${pts([P0,P1,Q1,Q0])}"/></g>`;
+      }else if(it.noleaf){ // ausgehängt: nur Öffnung + Schwelle
+        const m0=P(P0,g.n,-T/2),m1=P(P1,g.n,-T/2);
+        h+=`<g class="${cls}" data-id="${it.id}"><polygon class="gap" points="${pts([P0,P1,Q1,Q0])}"/>
+          <line class="sill" x1="${m0[0]}" y1="${m0[1]}" x2="${m1[0]}" y2="${m1[1]}"/><polygon class="hit" points="${pts([P0,P1,Q1,Q0])}"/></g>`;
       }else{
         const out=it.swing==='out',H=it.hinge==='start'?(out?Q0:P0):(out?Q1:P1),O=it.hinge==='start'?(out?Q1:P1):(out?Q0:P0);
         const dir=out?[-g.n[0],-g.n[1]]:g.n,Tp=P(H,dir,it.w);
@@ -943,9 +942,10 @@ function renderPanel(){
     h+=`<div class="r2"><label class="f">Wand<select data-k="wall">${A.pts.map((_,i)=>`<option value="${i}"${it.wall===i?' selected':''}>${esc(wallName(A,i))}</option>`).join('')}</select></label>${num('w','Breite',it)}</div>
     <div class="r2">${num('ds','Abstand von '+a,it)}${num('de','Abstand von '+b,it)}</div>
     <div class="meta">${it.type==='window'?'Fenster blickt nach':'Tür liegt in der Wand nach'} <b style="color:var(--fg)">${(()=>{const b=wallFacing(wallInfo(A,it.wall));return WINDS[windOf(b)]+' ('+Math.round(b)+'°)'})()}</b></div>`;
-    if(it.type==='door')h+=`<div class="r2"><label class="f">Anschlag<select data-k="hinge"><option value="start"${it.hinge==='start'?' selected':''}>${a}</option><option value="end"${it.hinge==='end'?' selected':''}>${b}</option></select></label>
+    if(it.type==='door')h+=`<label class="chk"><input type="checkbox" data-k="noleaf"${it.noleaf?' checked':''}> Türblatt ausgehängt (nur Durchgang)</label>`;
+    if(it.type==='door'&&!it.noleaf)h+=`<div class="r2"><label class="f">Anschlag<select data-k="hinge"><option value="start"${it.hinge==='start'?' selected':''}>${a}</option><option value="end"${it.hinge==='end'?' selected':''}>${b}</option></select></label>
       <label class="f">Öffnet<select data-k="swing"><option value="in"${it.swing==='in'?' selected':''}>nach innen</option><option value="out"${it.swing==='out'?' selected':''}>nach außen</option></select></label></div>`;
-    h+=`<div class="btnrow"><button type="button" data-act="cs">↔ auf Wand zentrieren</button>${it.type==='door'?'<button type="button" data-act="flip">Anschlag tauschen</button>':''}</div>
+    h+=`<div class="btnrow"><button type="button" data-act="cs">↔ auf Wand zentrieren</button>${it.type==='door'&&!it.noleaf?'<button type="button" data-act="flip">Anschlag tauschen</button>':''}</div>
     <div class="btnrow"><button type="button" data-act="dup">Duplizieren</button><button type="button" data-act="del" class="danger">Löschen</button></div>`;
   }
   selBox.innerHTML=h;
@@ -956,6 +956,7 @@ function updateFields(except){const it=byId(sel);if(!it)return;
 selBox.addEventListener('input',e=>{
   const k=e.target.dataset.k,it=byId(sel),A=R();if(!k||!it)return;
   let v=e.target.value;if(e.target.type==='number'){v=parseFloat(v);if(!isFinite(v))return}
+  if(k==='noleaf'){if(e.target.checked)it.noleaf=true;else delete it.noleaf;render();renderPanel();renderList();save();return}
   if(k==='wall')v=+v;
   if(it.type==='furn'){const{hx,hy}=ext(it),W=wallsAround(A,it.x,it.y);
     if(k==='dl')it.x=W.L+v+hx;else if(k==='dr')it.x=W.R-v-hx;else if(k==='dt')it.y=W.T+v+hy;else if(k==='db')it.y=W.B-v-hy;
@@ -1004,7 +1005,7 @@ function renderList(){
   const order={door:0,window:1,furn:2};
   const row=(it,cls='')=>{
     const sw=it.type==='furn'?`<i class="dot" style="background:${esc(it.color)}"></i>`:`<i class="dot" style="background:${it.type==='window'?'var(--glass)':'var(--floor)'}"></i>`;
-    const sz=it.type==='furn'?`${fmt(it.w)}×${fmt(it.d)}${it.rot?' · '+it.rot+'°':''}`:`${fmt(it.w)} · Wand ${it.wall+1} · ${WINDS_S[windOf(wallFacing(wallInfo(A,it.wall)))]}`;
+    const sz=it.type==='furn'?`${fmt(it.w)}×${fmt(it.d)}${it.rot?' · '+it.rot+'°':''}`:`${it.noleaf?'ohne Blatt · ':''}${fmt(it.w)} · Wand ${it.wall+1} · ${WINDS_S[windOf(wallFacing(wallInfo(A,it.wall)))]}`;
     return`<button type="button" data-id="${it.id}" class="${cls} ${isSel(it.id)?'on':''}"><span>${sw}${esc(it.name)}</span><span>${sz}</span></button>`};
   const done=new Set();let h='';
   for(const it of [...A.items].sort((a,b)=>order[a.type]-order[b.type])){
@@ -1398,6 +1399,7 @@ function wallLabels(){const[a,b]=endLabels(wallInfo(R(),+$('#a-wall').value||0))
   $('#a-om').options[0].text='Abstand von '+a;$('#a-om').options[1].text='Abstand von '+b;
   $('#a-hinge').options[0].text=a;$('#a-hinge').options[1].text=b}
 $('#a-wall').addEventListener('change',wallLabels);
+$('#a-noleaf').addEventListener('change',e=>{$('#a-hinge').disabled=$('#a-swing').disabled=e.target.checked});
 [['#a-hm','#a-hv'],['#a-vm','#a-vv'],['#a-om','#a-ov']].forEach(([m,v])=>$(m).addEventListener('change',()=>$(v).disabled=$(m).value==='center'));
 $('#addForm').addEventListener('submit',e=>{e.preventDefault();const A=R(),W=A.w,D=A.d,n=v=>Math.max(0,parseFloat($(v).value)||0);
   let it;
@@ -1410,7 +1412,7 @@ $('#addForm').addEventListener('submit',e=>{e.preventDefault();const A=R(),W=A.w
   }else{
     const wall=+$('#a-wall').value||0,L=wallInfo(A,wall).L,w=Math.max(10,n('#a-ow')),m=$('#a-om').value;
     it={id:nid(),type:tab,name:tab==='door'?'Tür':'Fenster',wall,w,s:m==='start'?n('#a-ov'):m==='end'?L-w-n('#a-ov'):(L-w)/2};
-    if(tab==='door'){it.hinge=$('#a-hinge').value;it.swing=$('#a-swing').value}
+    if(tab==='door'){it.hinge=$('#a-hinge').value;it.swing=$('#a-swing').value;if($('#a-noleaf').checked){it.noleaf=true;it.name='Durchgang'}}
   }
   clamp(A,it);A.items.push(it);sel=it.id;extra.clear();render();renderPanel();renderList();save();
 });
@@ -1481,35 +1483,10 @@ const COLORS_ME=['#cf5a17','#1e5c76','#8a3fb0','#2f8a4f','#c0336b','#b08a12','#2
 // Damit kann der Server eine hängende alte Verbindung derselben Seite sofort entfernen.
 const SID=Math.random().toString(36).slice(2,12)+Math.random().toString(36).slice(2,8);
 /* ---------- Version ---------- */
-let CLIENT={version:'dev',commit:null,build:'dev'};try{CLIENT=JSON.parse($('#buildinfo').textContent)}catch(e){}
-let SERVER=null;
-const verStr=v=>v?`v${v.version||'?'}${v.commit?' · '+v.commit:''}`:'–';
-function renderVersion(){
-  $('#verTop').textContent='v'+CLIENT.version;$('#verClient').textContent=`${verStr(CLIENT)} · Build ${CLIENT.build}`;
-  if(!SERVER){
-    if(ready){ // verbunden, aber der Server schickt keine Version → Server älter als v1.7.0
-      $('#verServer').textContent='älter als v1.7.0';$('#verState').textContent='⚠ Server veraltet';$('#verState').className='meta bad';
-      $('#verHint').textContent='Der Server läuft noch mit einer alten Version (Dateien neu, Prozess alt?). Auf dem Server: fuser -k 3000/tcp && pm2 restart raumplaner – danach hier neu laden.';
-    }else $('#verState').textContent='';
-    return}
-  $('#verServer').textContent=`${verStr(SERVER)} · Build ${SERVER.build}`;
-  $('#verStarted').textContent=new Date(SERVER.started).toLocaleString('de-DE',{dateStyle:'short',timeStyle:'short'});
-  const same=CLIENT.build===SERVER.build,dev=CLIENT.build==='dev';
-  $('#verState').textContent=same?'✓ aktuell':dev?'Entwicklungsversion':'⚠ unterschiedlich';
-  $('#verState').className='meta '+(same?'ok':'bad');
-  let hint='',bar='';
-  if(!same&&!dev){
-    // Seite aus derselben Quelle wie der laufende Server? Sonst wurden Dateien aktualisiert, aber nicht neu gestartet.
-    fetch('/version',{cache:'no-store'}).then(r=>r.json()).then(v=>{
-      if(v.restartNeeded){$('#verHint').textContent='Auf dem Server liegen neue Dateien, der Server läuft aber noch mit der alten Version. Auf dem Server: pm2 restart raumplaner';
-        if(v.page&&v.page.build!==CLIENT.build)showUpd('Neue Version verfügbar. Bitte neu laden.')}
-      else{$('#verHint').textContent='Deine Seite ist veraltet. Bitte neu laden, damit alles zusammenpasst.';showUpd(`Neue Version ${verStr(SERVER)}${SERVER.version===CLIENT.version?' (Build '+SERVER.build+')':''} verfügbar – du hast noch Build ${CLIENT.build}. Bitte neu laden.`)}
-    }).catch(()=>{$('#verHint').textContent='Seite und Server haben unterschiedliche Versionen.';showUpd('Neue Version verfügbar. Bitte neu laden.')});
-  }else{$('#verHint').textContent='';$('#updBar').hidden=true}
-}
-function showUpd(t){$('#updTxt').textContent=t;$('#updBar').hidden=false}
-$('#updBtn').addEventListener('click',()=>{cacheLocal();location.reload()});
-const me={n:'',c:'',x:null,y:null,sel:null,sid:SID,v:CLIENT.version,b:CLIENT.build};
+const APP_VERSION='1.10.0'; // bei jedem Update zusammen mit package.json erhöhen
+function renderVersion(){$('#verTop').textContent='v'+APP_VERSION;$('#verClient').textContent='v'+APP_VERSION}
+const verCmp=(a,b)=>{const x=String(a).split('.').map(Number),y=String(b).split('.').map(Number);for(let i=0;i<3;i++){const d=(x[i]||0)-(y[i]||0);if(d)return d}return 0};
+const me={n:'',c:'',x:null,y:null,sel:null,sid:SID,v:APP_VERSION};
 try{me.n=localStorage.getItem('rp-name')||'';me.c=localStorage.getItem('rp-color')||''}catch(e){}
 if(!me.n)me.n='Gast '+(100+Math.floor(Math.random()*900));
 if(!/^#[0-9a-f]{6}$/i.test(me.c))me.c=COLORS_ME[Math.floor(Math.random()*COLORS_ME.length)];
@@ -1518,14 +1495,15 @@ $('#me-name').value=me.n;$('#me-color').value=me.c;
 const roomKey=r=>{const{items,hidden,...p}=r;return JSON.stringify(p)};
 const opKey=o=>(o.t==='meta'?'m:'+o.k:o.t==='room'?'r:'+o.r.id:o.t==='roomDel'?'r:'+o.id:'i:'+(o.t==='item'?o.it.id:o.id));
 const shadowM=new Map();
-function resetShadow(){shadowR.clear();shadowI.clear();shadowM.set('north',S.north||0);
+function resetShadow(){shadowR.clear();shadowI.clear();
   for(const r of S.rooms){shadowR.set(r.id,roomKey(r));for(const it of r.items)shadowI.set(it.id,{rid:r.id,j:JSON.stringify(it)})}}
 function send(m){if(ws&&ws.readyState===1){ws.send(JSON.stringify(m));return true}return false}
 function sync(){
   clearTimeout(syncT);syncT=null;
   if(!ready)return;
-  const ops=[],seenR=new Set(),seenI=new Set();
+  const ops=[],seenR=new Set(),seenI=new Set(),nv=S.north||0;
   for(const r of S.rooms){
+    if(r.north!==nv)r.north=nv; // Himmelsrichtung gilt für den ganzen Plan – in jedem Raum mitgespeichert
     seenR.add(r.id);const k=roomKey(r);
     const old=shadowR.get(r.id);
     if(old!==k){ops.push({t:'room',r:JSON.parse(k)});inv('r:'+r.id,old?[{t:'room',r:JSON.parse(old)}]:[{t:'roomDel',id:r.id}]);shadowR.set(r.id,k)}
@@ -1537,7 +1515,6 @@ function sync(){
     inv('r:'+id,[{t:'room',r:JSON.parse(shadowR.get(id))},...[...shadowI].filter(([,s])=>s.rid===id).map(([,s])=>({t:'item',rid:id,it:JSON.parse(s.j)}))]);
     shadowR.delete(id)}
   for(const[id,s] of [...shadowI])if(!seenI.has(id)){if(seenR.has(s.rid)){ops.push({t:'itemDel',rid:s.rid,id});inv('i:'+id,[{t:'item',rid:s.rid,it:JSON.parse(s.j)}])}shadowI.delete(id)}
-  const nv=S.north||0;if(shadowM.get('north')!==nv){const old=shadowM.has('north')?shadowM.get('north'):0;ops.push({t:'meta',k:'north',v:nv});inv('m:north',[{t:'meta',k:'north',v:old}]);shadowM.set('north',nv)}
   if(!ops.length)return;
   for(const o of ops){const k=opKey(o);pend.set(k,(pend.get(k)||0)+1)}
   send({t:'ops',ops});
@@ -1588,6 +1565,7 @@ function undoRedo(which){
   if(!S.rooms.length)S.rooms=[{id:nid('r'),name:'Raum 1',x:0,y:0,w:400,d:300,pts:rectPts(400,300),hidden:false,items:[]}];
   if(!S.rooms.find(r=>r.id===S.active))S.active=S.rooms[0].id;
   if(sel&&!byId(sel))sel=null;
+  {const q=S.rooms.find(r=>r.north!==undefined);if(q){S.north=q.north;renderCompass()}}
   undoRedoing=true;recTarget=which==='undo'?'redo':'undo';
   cacheLocal();sync();sealUndo();
   recTarget='undo';undoRedoing=false;
@@ -1616,6 +1594,7 @@ function applyRemote(ops,mine){
     if(o.t==='room'&&o.r){
       const nr=normRoom(o.r,true);if(drag&&drag.r&&drag.r.id===nr.id)continue;let r=S.rooms.find(x=>x.id===nr.id);
       if(r){const{items,hidden,...p}=nr;for(const k of Object.keys(r))if(!(k in p)&&k!=='items'&&k!=='hidden')delete r[k];Object.assign(r,p)}else{nr.hidden=hiddenSet.has(nr.id);r=nr;S.rooms.push(r)}
+      if(r.north!==undefined&&r.north!==S.north){S.north=r.north;renderCompass();S.rooms.forEach(q=>{if(q!==r&&!pend.get('r:'+q.id)){q.north=S.north;shadowR.set(q.id,roomKey(q))}})}
       shadowR.set(r.id,roomKey(r));changed=true;
     }else if(o.t==='roomDel'){
       const r=S.rooms.find(x=>x.id===o.id);if(!r)continue;
@@ -1658,22 +1637,20 @@ function renderCursors(){
 function renderPeers(){
   const list=[{...me,n:me.n+' (du)'},...peers.values()];
   $('#peers').innerHTML=list.map(p=>{
-    const v=p&&typeof p.v==='string'?p.v.slice(0,12):null,b=p&&typeof p.b==='string'?p.b.slice(0,12):null;
-    const old=SERVER&&SERVER.build!=='dev'&&b!==SERVER.build;
-    const tip=v?`Version v${v} · Build ${b}${old?' – veraltet, bitte neu laden':''}`:'alte Version ohne Versionsangabe – bitte neu laden';
+    const v=p&&typeof p.v==='string'&&/^\d+(\.\d+){0,2}$/.test(p.v)?p.v:null;
+    const old=!v||verCmp(v,APP_VERSION)<0;
+    const tip=v?`Version v${v}${old?' – älter als deine, bitte neu laden':''}`:'alte Version ohne Versionsangabe – bitte neu laden';
     return`<span class="peer${old?' old':''}" title="${esc(tip)}"><i style="background:${safeColor(p&&p.c)}"></i>${esc(String((p&&p.n)||'Gast').slice(0,30))} <span class="pv">${old?'⚠ ':''}${v?'v'+esc(v):'alt'}</span></span>`}).join('');
 }
 function setConn(t,cls){const c=$('#conn');c.textContent=t;c.className='meta '+(cls||'')}
 function handle(m){
   if(m.t==='init'){
-    if(!m.server){SERVER=null;ready=true;renderVersion()}
-    if(m.server&&typeof m.server==='object'){SERVER={version:String(m.server.version||'?').slice(0,20),commit:m.server.commit?String(m.server.commit).slice(0,12):null,build:String(m.server.build||'?').slice(0,12),started:m.server.started};renderVersion()}
     myId=m.you;pend.clear();peers.clear();undoStack.length=redoStack.length=0;openGroup=null;updateUndoUI();
     for(const p of m.peers||[])if(p&&p.p&&p.p.sid!==SID)peers.set(p.id,p.p);
     const srv=m.state&&Array.isArray(m.state.rooms)?m.state.rooms:[];
-    let p=null;if(srv.length){try{p=parsePlan({rooms:srv},true)}catch(e){}}
+    let p=null;if(srv.length){try{p=parsePlan({rooms:srv,meta:m.state.meta},true)}catch(e){}}
     ready=true;
-    if(p){p.rooms.forEach(r=>r.hidden=hiddenSet.has(r.id));S.rooms=p.rooms;S.north=m.state.meta&&isFinite(m.state.meta.north)?m.state.meta.north:0;sel=null;drag=null;resetShadow();renderCompass();remoteRender()}
+    if(p){p.rooms.forEach(r=>r.hidden=hiddenSet.has(r.id));S.rooms=p.rooms;S.north=p.north;sel=null;drag=null;resetShadow();renderCompass();remoteRender()}
     else{shadowR.clear();shadowI.clear();shadowM.clear();recording=false;sync();recording=true}   // leerer Plan: eigenen Stand hochladen
     setConn('● live · '+(peers.size+1)+' online','ok');send({t:'pres',p:me});renderPeers();render();
   }else if(m.t==='ops'&&Array.isArray(m.ops)){

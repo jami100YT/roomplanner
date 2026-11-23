@@ -80,10 +80,15 @@ Der Gratis-Plan schläft nach einer Weile Inaktivität ein (der erste Aufruf dau
 - Die Beschriftung sitzt automatisch im breitesten Teil der Form. Die Vorderkante ist dick markiert.
 - **Mittlere Maustaste gedrückt halten und ziehen** verschiebt die Ansicht, auch über Möbeln.
 
+## Türen ohne Türblatt (Durchgang)
+
+- Bei jeder Tür gibt es das Häkchen **„Türblatt ausgehängt (nur Durchgang)“**. Dann zeigt der Plan nur die Öffnung in der Wand mit gestrichelter Schwelle, ohne Türblatt und Schwenkbereich. Anschlag und Öffnungsrichtung bleiben gespeichert. Hängst du die Tür wieder ein, ist sie wie vorher.
+- Beim Hinzufügen einer Tür: **„ohne Türblatt (nur Durchgang)“**. Die neue Öffnung heißt dann „Durchgang“.
+
 ## Himmelsrichtungen
 
 - Oben rechts im Plan sitzt eine **Kompassrose**. Die rote Nadel zeigt nach Norden. Du kannst die Nadel **ziehen** (rastet auf 5° ein, mit Shift frei) oder auf **„N 0°“** klicken. Dort gibt es Winkel eingeben, ±15°, ±90° und „Norden = oben/rechts/unten/links“.
-- Die Richtung gilt für den **ganzen Plan und alle Personen**, sie wird live geteilt und auf dem Server gespeichert. Strg+Z funktioniert auch hier.
+- Die Richtung gilt für den **ganzen Plan und alle Personen**. Sie wird live geteilt und mit den Räumen gespeichert, funktioniert also auch mit älteren Server-Versionen. Strg+Z funktioniert auch hier.
 - Angezeigt wird die Himmelsrichtung bei
   - **Wänden** (Wandlängen-Liste und Wandauswahl), z. B. „Wand 1 · oben · SO“
   - **Fenstern und Türen** (Liste „Im Raum“ und Auswahl: „Fenster blickt nach Süd (180°)“)
@@ -120,13 +125,7 @@ Nur für dich selbst gelten: welche Räume ausgeblendet sind, welcher Raum gerad
 
 ## Version
 
-- In der Karte **„Version“** (unten links) steht, welche Version **diese Seite** und welche der **Server** hat: Versionsnummer, Git-Commit und Build-Kennung. Dazu kommt, seit wann der Server läuft.
-  - **✓ aktuell**: Seite und Server passen zusammen.
-  - **⚠ Neue Version verfügbar**: Oben erscheint ein Hinweis mit Knopf **„Jetzt neu laden“**.
-  - **⚠ Neustart nötig**: Neue Dateien liegen auf dem Server (z. B. nach `git pull`), aber der Server läuft noch mit der alten Version. Dann auf dem Server `pm2 restart raumplaner` ausführen.
-- In **„Gemeinsam planen“** steht bei jeder Person die Version ihrer Seite. Veraltete Seiten sind mit ⚠ rot markiert.
-- Für Admins: `curl http://<server>:3000/version` zeigt die Version als JSON, inklusive `restartNeeded`.
-- Die Versionsnummer steht in `package.json` und wird bei jedem Update erhöht.
+Oben neben dem Titel und in der Karte **„Version“** steht die Version der geöffneten Seite, z. B. `v1.10.0`. Unter „Gemeinsam planen“ steht bei jeder Person die Version ihrer Seite. Ist sie älter als deine, erscheint ein ⚠, dann sollte diese Person neu laden. Die Versionsnummer steht in `package.json` und in `public/index.html` (`APP_VERSION`) und wird bei jedem Update erhöht.
 
 ## Dateien
 
