@@ -101,6 +101,14 @@ button[data-armed]{background:var(--danger);color:#fff;border-color:var(--danger
 .rname{fill:var(--muted);font-family:var(--f-body);font-weight:600;pointer-events:none}
 .rarea{fill:var(--muted);font-family:var(--f-mono);pointer-events:none}
 .curs{pointer-events:none}
+#wallBox summary{cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.walls{display:flex;flex-direction:column;gap:4px}
+.wrow{display:grid;grid-template-columns:minmax(0,1fr) 92px;align-items:center;gap:8px;font-size:13px}
+.wrow span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wrow.hl span{color:var(--sel);font-weight:600}
+.ehit{stroke:transparent;stroke-width:14;fill:none;vector-effect:non-scaling-stroke;cursor:copy}
+.ehit:hover{stroke:var(--sel);stroke-opacity:.25}
+.wallhl{stroke:var(--sel);stroke-width:5;vector-effect:non-scaling-stroke;pointer-events:none;opacity:.8}
 button.on{background:var(--sel);border-color:var(--sel);color:#fff}
 #plan.drawing{cursor:crosshair}
 .vh{fill:var(--floor);stroke:var(--sel);stroke-width:2.5;vector-effect:non-scaling-stroke;cursor:move}
@@ -187,8 +195,14 @@ button.on{background:var(--sel);border-color:var(--sel);color:#fff}
       <div class="meta" id="roomMeta"></div>
       <div class="btnrow">
         <button type="button" id="editShape">Form bearbeiten</button>
+        <button type="button" id="extendShape">＋ Anbau / Ausschnitt</button>
         <button type="button" id="rectShape">Zu Rechteck</button>
       </div>
+      <details id="wallBox">
+        <summary>Wandlängen</summary>
+        <div class="meta" style="margin:6px 0 4px">Ändert die Länge; die folgende Wand (im Uhrzeigersinn) wandert parallel mit.</div>
+        <div id="wallList" class="walls"></div>
+      </details>
       <div class="btnrow">
         <button type="button" id="dupRoom">Duplizieren</button>
         <button type="button" id="clearRoom" class="danger">Leeren</button>
@@ -435,7 +449,7 @@ function wallsAround(r,x,y){ // nächste Wand links/rechts/oben/unten von (x,y)
 function nearestWall(r,p){let bi=0,bd=Infinity,bt=0;
   for(let i=0;i<r.pts.length;i++){const g=wallInfo(r,i),t=Math.max(0,Math.min(g.L,(p[0]-g.p[0])*g.u[0]+(p[1]-g.p[1])*g.u[1]));
     const d=Math.hypot(p[0]-g.p[0]-g.u[0]*t,p[1]-g.p[1]-g.u[1]*t);if(d<bd){bd=d;bi=i;bt=t}}
-  return{i:bi,t:bt}}
+  return{i:bi,t:bt,d:bd}}
 // Fenster/Türen vor einer Formänderung global merken und danach auf die nächste Wand setzen
 function openingCenters(r){return r.items.filter(i=>i.type!=='furn').map(it=>{const g=wallInfo(r,it.wall),t=it.s+it.w/2;
   return[it,[r.x+g.p[0]+g.u[0]*t,r.y+g.p[1]+g.u[1]*t]]})}
@@ -462,20 +476,20 @@ function computeLayout(){
   const B=vis.length?bounds(vis):{x:0,y:0,w:600,h:400},fs=Math.max(8,Math.max(B.w,B.h)/45);
   const outDoor=Math.max(0,...vis.flatMap(r=>r.items.filter(i=>i.type==='door'&&i.swing==='out').map(i=>i.w)));
   let M=Math.max(T+fs*3.2,outDoor+T+8);
-  if(mode==='draw')M+=Math.max(300,Math.max(B.w,B.h)*0.45); // Platz zum Zeichnen neben der Wohnung
+  if(mode==='draw'||mode==='extend')M+=Math.max(300,Math.max(B.w,B.h)*0.45); // Platz zum Zeichnen neben der Wohnung
   layout={vb:[B.x-M,B.y-M,B.w+2*M,B.h+2*M],fs};
 }
 function render(){
   const vis=S.rooms.filter(r=>!r.hidden),A=R();
-  svg.classList.toggle('mv',moveRooms);svg.classList.toggle('drawing',mode==='draw');
+  svg.classList.toggle('mv',moveRooms);svg.classList.toggle('drawing',mode==='draw'||mode==='extend');
   if(!vis.length&&mode!=='draw'){svg.setAttribute('viewBox','0 0 400 160');
     svg.innerHTML='<text class="dimtxt" x="200" y="84" font-size="14" text-anchor="middle">Alle Räume sind ausgeblendet</text>';return}
-  if(!drag&&mode!=='draw')computeLayout();
+  if(!drag&&mode!=='draw'&&mode!=='extend')computeLayout();
   const fs=layout.fs;
   svg.setAttribute('viewBox',layout.vb.join(' '));
   let h=`<defs><pattern id="g1" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M10 0H0V10" class="gr1"/></pattern>
   <pattern id="g2" width="50" height="50" patternUnits="userSpaceOnUse"><rect width="50" height="50" fill="url(#g1)"/><path d="M50 0H0V50" class="gr2"/></pattern></defs>`;
-  if(mode==='draw')h+=`<rect x="${layout.vb[0]}" y="${layout.vb[1]}" width="${layout.vb[2]}" height="${layout.vb[3]}" fill="url(#g2)" opacity=".55"/>`;
+  if(mode==='draw'||mode==='extend')h+=`<rect x="${layout.vb[0]}" y="${layout.vb[1]}" width="${layout.vb[2]}" height="${layout.vb[3]}" fill="url(#g2)" opacity=".55"/>`;
   for(const r of vis){
     const pp=pts(r.pts),c=r.pts.reduce((m,p)=>(p[1]<m[1]||(p[1]===m[1]&&p[0]<m[0]))?p:m,r.pts[0]);
     h+=`<g transform="translate(${r.x} ${r.y})"><polygon points="${pp}" class="floor rm" data-room="${r.id}"/><polygon points="${pp}" fill="url(#g2)" pointer-events="none"/>
@@ -531,19 +545,25 @@ function render(){
       const g=wallInfo(A,s.wall),off=Math.min(fs*1.6,30),a=P(g.p,g.n,off),b=P(a,g.u,s.s),c=P(b,g.u,s.w),e=P(a,g.u,g.L);
       h+=dim(...a,...b,fs)+dim(...c,...e,fs);
     }
+    if(wallHL!==null&&wallHL<A.pts.length){const g=wallInfo(A,wallHL),a=P(g.p,g.n,-T/2),b=P(g.b,g.n,-T/2);
+      h+=`<line class="wallhl" x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}"/>`}
     if(mode==='shape'){const hs=fs*.42;
+      for(let i=0;i<A.pts.length;i++){const g=wallInfo(A,i),a=P(g.p,g.n,-T/2),b=P(g.b,g.n,-T/2);
+        h+=`<line class="ehit" data-w="${i}" x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}"><title>Doppelklick = hier eine Ecke einfügen</title></line>`}
       for(let i=0;i<A.pts.length;i++){const g=wallInfo(A,i),m=P(g.p,g.u,g.L/2);
         h+=`<rect class="eh" data-e="${i}" x="${r1(m[0]-hs)}" y="${r1(m[1]-hs)}" width="${r1(hs*2)}" height="${r1(hs*2)}" rx="${r1(hs*.3)}"><title>Wand ${i+1} verschieben · Doppelklick = teilen</title></rect>`}
       A.pts.forEach((p,i)=>h+=`<circle class="vh" data-v="${i}" cx="${p[0]}" cy="${p[1]}" r="${r1(fs*.5)}"><title>Ecke ziehen · Doppelklick = löschen</title></circle>`);
     }
     h+='</g>';
   }
-  // Vorschau beim Raum-Zeichnen
-  if(mode==='draw'){
+  // Vorschau beim Raum-Zeichnen / Anbau
+  if(mode==='draw'||mode==='extend'){
     const q=drawCur?[...drawPts,drawCur]:drawPts;
     if(q.length>1)h+=`<polyline class="drawln" points="${pts(q)}"/>`;
-    if(drawPts.length>=3&&drawCur)h+=`<line class="drawln ghost" x1="${drawCur[0]}" y1="${drawCur[1]}" x2="${drawPts[0][0]}" y2="${drawPts[0][1]}"/>`;
-    drawPts.forEach((p,i)=>h+=`<circle class="drawpt${i===0&&drawPts.length>=3?' close':''}" cx="${p[0]}" cy="${p[1]}" r="${r1(fs*(i===0&&drawPts.length>=3?.7:.4))}"/>`);
+    if(mode==='draw'&&drawPts.length>=3&&drawCur)h+=`<line class="drawln ghost" x1="${drawCur[0]}" y1="${drawCur[1]}" x2="${drawPts[0][0]}" y2="${drawPts[0][1]}"/>`;
+    const cl=mode==='draw'&&drawPts.length>=3;
+    drawPts.forEach((p,i)=>h+=`<circle class="drawpt${i===0&&cl?' close':''}" cx="${p[0]}" cy="${p[1]}" r="${r1(fs*(i===0&&cl?.7:.4))}"/>`);
+    if(mode==='extend'&&extCur&&extCur.wall)h+=`<circle class="drawpt close" cx="${drawCur[0]}" cy="${drawCur[1]}" r="${r1(fs*.6)}"/>`;
     if(drawCur){
       h+=`<circle class="drawcur" cx="${drawCur[0]}" cy="${drawCur[1]}" r="${r1(fs*.35)}"/>`;
       const l=drawPts[drawPts.length-1];
@@ -571,7 +591,7 @@ function renderRooms(){
   $('#addTo').textContent=A.name;
   $('#delRoom').disabled=S.rooms.length<2;
   $('#rectShape').disabled=rect;
-  fillWallSelect();
+  fillWallSelect();renderWalls();
 }
 function syncRoomInputs(){const A=R(),rect=isRect(A);$('#room-name').value=A.name;$('#room-w').value=A.w;$('#room-d').value=A.d;$('#room-x').value=r1(A.x);$('#room-y').value=r1(A.y);
   $('#room-w').disabled=$('#room-d').disabled=!rect;$('#room-w').title=$('#room-d').title=rect?'':'Freie Form: Größe über „Form bearbeiten“ ändern'}
@@ -692,12 +712,14 @@ const HINT_DEFAULT='Ziehen = verschieben · Doppelklick / R = drehen · Q / E = 
 function updateModeUI(){
   $('#drawRoom').classList.toggle('on',mode==='draw');$('#drawRoom').textContent=mode==='draw'?'Zeichnen beenden':'✎ Raum zeichnen';
   $('#editShape').classList.toggle('on',mode==='shape');$('#editShape').textContent=mode==='shape'?'Form fertig':'Form bearbeiten';
+  $('#extendShape').classList.toggle('on',mode==='extend');$('#extendShape').textContent=mode==='extend'?'Abbrechen':'＋ Anbau / Ausschnitt';
   $('#hint').textContent=mode==='draw'?'Raum zeichnen: Klick = Ecke setzen · Startpunkt anklicken, Doppelklick oder Enter = fertig · ⌫ = letzte Ecke weg · Esc = abbrechen · rastet am Raster, an Achsen und an Wänden ein'
-    :mode==='shape'?'Form bearbeiten: ● Ecke ziehen · ■ Wand verschieben · Doppelklick auf ■ = Wand teilen (neue Ecke) · Doppelklick auf ● = Ecke löschen · Esc = fertig'
+    :mode==='shape'?'Form bearbeiten: ● Ecke ziehen · ■ Wand verschieben · Doppelklick auf eine Wand = Ecke an dieser Stelle einfügen · Doppelklick auf ● = Ecke löschen · Esc = fertig'
+    :mode==='extend'?'Anbau / Ausschnitt: auf einer Wand starten · Ecken klicken · auf einer Wand enden (außen = Anbau, innen = Ausschnitt) · ⌫ = letzte Ecke weg · Esc = abbrechen'
     :HINT_DEFAULT;
 }
 function setMode(m){
-  mode=m;drawPts=[];drawCur=null;drag=null;
+  mode=m;drawPts=[];drawCur=null;extCur=null;extStart=null;drag=null;
   if(m)sel=null;
   computeLayout();updateModeUI();renderAll();
 }
@@ -749,6 +771,78 @@ function splitWall(r,i){const orig=r.pts.map(p=>[...p]),c=openingCenters(r),g=wa
   if(g.L<20)return;r.pts.splice(g.i+1,0,[r1(g.p[0]+g.u[0]*g.L/2),r1(g.p[1]+g.u[1]*g.L/2)]);commitShape(r,orig,c)}
 function deleteCorner(r,i){if(r.pts.length<=3){msg('Ein Raum braucht mindestens 3 Ecken.');return}
   const orig=r.pts.map(p=>[...p]),c=openingCenters(r);r.pts.splice(i,1);commitShape(r,orig,c)}
+function insertCorner(r,i,lp){ // Ecke an beliebiger Stelle einer Wand
+  const g=wallInfo(r,i);let t=snapv((lp[0]-g.p[0])*g.u[0]+(lp[1]-g.p[1])*g.u[1],5);
+  if(t<5||t>g.L-5){msg('Zu nah an einer vorhandenen Ecke.');return}
+  const orig=r.pts.map(p=>[...p]),c=openingCenters(r);
+  r.pts.splice(g.i+1,0,[r1(g.p[0]+g.u[0]*t),r1(g.p[1]+g.u[1]*t)]);commitShape(r,orig,c);
+}
+function setWallLength(r,i,L2){ // Wand i auf Länge L2: Endecke wandert entlang der Wand, Folgewand bleibt parallel
+  const n=r.pts.length,g=wallInfo(r,i);if(!(L2>=5)||Math.abs(L2-g.L)<0.05)return;
+  const orig=r.pts.map(p=>[...p]),c=openingCenters(r);
+  const v1=[g.p[0]+g.u[0]*L2,g.p[1]+g.u[1]*L2],g1=wallInfo(r,i+1),g2=wallInfo(r,i+2);
+  const den=g1.u[0]*g2.u[1]-g1.u[1]*g2.u[0];let v2;
+  if(Math.abs(den)<1e-9||n===3){const dx=v1[0]-g1.p[0],dy=v1[1]-g1.p[1];v2=n===3?g1.b:[g1.b[0]+dx,g1.b[1]+dy]}
+  else{const q=g2.b,k=((q[0]-v1[0])*g2.u[1]-(q[1]-v1[1])*g2.u[0])/den;v2=[v1[0]+g1.u[0]*k,v1[1]+g1.u[1]*k]}
+  r.pts[(i+1)%n]=[r1(v1[0]),r1(v1[1])];
+  if(n>3)r.pts[(i+2)%n]=[r1(v2[0]),r1(v2[1])];
+  commitShape(r,orig,c);
+}
+function renderWalls(){
+  const A=R(),ae=document.activeElement,box=$('#wallList');
+  if(ae&&box.contains(ae))return; // nicht beim Tippen überschreiben
+  box.innerHTML=A.pts.map((_,i)=>{const g=wallInfo(A,i);
+    return`<label class="wrow${wallHL===i?' hl':''}" data-wi="${i}"><span>Wand ${i+1} · ${wallDir(g)}</span><input type="number" min="5" step="1" data-wl="${i}" value="${r1(g.L)}"></label>`}).join('');
+}
+let wallHL=null;
+$('#wallList').addEventListener('change',e=>{const i=e.target.dataset.wl;if(i===undefined)return;
+  const v=parseFloat(e.target.value);e.target.blur();if(isFinite(v))setWallLength(R(),+i,v);renderWalls()});
+$('#wallList').addEventListener('focusin',e=>{const i=e.target.dataset.wl;if(i!==undefined){wallHL=+i;render()}});
+$('#wallList').addEventListener('focusout',()=>{wallHL=null;render()});
+$('#wallList').addEventListener('mouseover',e=>{const l=e.target.closest('[data-wi]');const v=l?+l.dataset.wi:null;if(v!==wallHL&&!$('#wallList').contains(document.activeElement)){wallHL=v;render()}});
+$('#wallList').addEventListener('mouseleave',()=>{if(!$('#wallList').contains(document.activeElement)){wallHL=null;render()}});
+
+/* Anbau / Ausschnitt: Linienzug von Wand zu Wand ersetzt das Wandstück dazwischen */
+let extCur=null, extStart=null;
+function snapExtend(p){
+  const A=R(),lp=[p[0]-A.x,p[1]-A.y],nw=nearestWall(A,lp),tol=layout.fs*0.8;
+  if(!drawPts.length||nw.d<tol){
+    if(!drawPts.length&&nw.d>layout.fs*3)return{pt:[r1(p[0]),r1(p[1])],wall:null};
+    const g=wallInfo(A,nw.i);let t=snapv(nw.t,5);
+    const l=drawPts[drawPts.length-1];
+    if(l){const ta=(l[0]-A.x-g.p[0])*g.u[0]+(l[1]-A.y-g.p[1])*g.u[1];if(Math.abs(ta-nw.t)<tol)t=r1(ta)} // gerade zur letzten Ecke
+    if(t<tol)t=0;if(g.L-t<tol)t=g.L;t=Math.max(0,Math.min(g.L,t));
+    return{pt:[r1(A.x+g.p[0]+g.u[0]*t),r1(A.y+g.p[1]+g.u[1]*t)],wall:{i:nw.i,t}};
+  }
+  return{pt:snapDraw(p),wall:null};
+}
+function extendClick(){
+  const c=extCur;if(!c)return;
+  if(!drawPts.length){if(!c.wall){msg('Starte auf einer Wand des aktiven Raums.');return}drawPts.push(c.pt);extStart=c.wall;render();return}
+  const l=drawPts[drawPts.length-1];if(Math.hypot(l[0]-c.pt[0],l[1]-c.pt[1])<0.5)return;
+  if(c.wall){finishExtend(c);return}
+  drawPts.push(c.pt);render();
+}
+function finishExtend(endC){
+  const A=R(),S0=extStart,E0=endC.wall,loc=p=>[r1(p[0]-A.x),r1(p[1]-A.y)];
+  const sP=loc(drawPts[0]),eP=loc(endC.pt),mid=drawPts.slice(1).map(loc);
+  if(!mid.length&&(S0.i===E0.i||Math.hypot(sP[0]-eP[0],sP[1]-eP[1])<1)){msg('Zeichne mindestens eine Ecke zwischen Start und Ende.');return}
+  const n=A.pts.length,cum=[0];for(let i=0;i<n;i++)cum.push(cum[i]+wallInfo(A,i).L);const per=cum[n];
+  const pos=w=>cum[w.i]+w.t,ps=pos(S0),pe=pos(E0);
+  const between=(from,to)=>{const span=((to-from)%per+per)%per,out=[];
+    for(let k=0;k<n;k++){const d=((cum[k]-from)%per+per)%per;if(d>1e-6&&d<span-1e-6)out.push([d,A.pts[k]])}
+    return out.sort((a,b)=>a[0]-b[0]).map(x=>[...x[1]])};
+  const cands=[[sP,...mid,eP,...between(pe,ps)],[eP,...mid.slice().reverse(),sP,...between(ps,pe)]]
+    .map(c=>cleanPts(c)).filter(q=>q.length>=3&&shapeOk({pts:q}));
+  if(!cands.length){msg('Das ergibt keine gültige Form (Linien kreuzen die Wände?). Nochmal versuchen.');drawPts=[];extStart=null;render();return}
+  const best=cands.sort((a,b)=>Math.abs(polyArea(b))-Math.abs(polyArea(a)))[0];
+  const before=Math.abs(polyArea(A.pts)),orig=A.pts.map(p=>[...p]),c=openingCenters(A);
+  A.pts=best;mode='shape';drawPts=[];drawCur=null;extCur=null;extStart=null;updateModeUI();computeLayout();
+  commitShape(A,orig,c);
+  const diff=(Math.abs(polyArea(A.pts))-before)/1e4;
+  msg(`${diff>=0?'Anbau':'Ausschnitt'}: ${diff>=0?'+':'−'}${Math.abs(diff).toLocaleString('de-DE',{maximumFractionDigits:2})} m²`);
+}
+$('#extendShape').addEventListener('click',()=>{if(mode==='extend'){setMode('shape');return}if(R().hidden)R().hidden=false;setMode('extend')});
 $('#drawRoom').addEventListener('click',()=>setMode(mode==='draw'?null:'draw'));
 $('#editShape').addEventListener('click',()=>{if(R().hidden&&mode!=='shape'){R().hidden=false}setMode(mode==='shape'?null:'shape')});
 $('#rectShape').addEventListener('click',()=>{const A=R();if(isRect(A))return;const orig=A.pts.map(p=>[...p]),c=openingCenters(A);A.pts=rectPts(A.w,A.d);commitShape(A,orig,c)});
@@ -757,6 +851,7 @@ $('#rectShape').addEventListener('click',()=>{const A=R();if(isRect(A))return;co
 svg.addEventListener('pointerdown',e=>{
   const p=pt(e);
   if(mode==='draw'){drawCur=snapDraw([p.x,p.y]);drawClick(drawCur);e.preventDefault();return}
+  if(mode==='extend'){extCur=snapExtend([p.x,p.y]);drawCur=extCur.pt;extendClick();e.preventDefault();return}
   const vh=e.target.closest('.vh'),eh=e.target.closest('.eh');
   if(mode==='shape'&&(vh||eh)){const A=R();
     drag={kind:vh?'vtx':'edge',r:A,i:+(vh?vh.dataset.v:eh.dataset.e),start:[p.x,p.y],orig:A.pts.map(q=>[...q]),moved:false};
@@ -775,10 +870,11 @@ svg.addEventListener('pointerdown',e=>{
   }
   svg.setPointerCapture(e.pointerId);e.preventDefault();
 });
-svg.addEventListener('pointerleave',()=>{pres({x:null,y:null});if(mode==='draw'&&drawCur){drawCur=null;render()}});
+svg.addEventListener('pointerleave',()=>{pres({x:null,y:null});if((mode==='draw'||mode==='extend')&&drawCur){drawCur=null;extCur=null;render()}});
 svg.addEventListener('pointermove',e=>{
   const p=pt(e);pres({x:r1(p.x),y:r1(p.y)});
   if(mode==='draw'){drawCur=snapDraw([p.x,p.y]);render();return}
+  if(mode==='extend'){extCur=snapExtend([p.x,p.y]);drawCur=extCur.pt;render();return}
   if(!drag)return;
   if(drag.kind==='vtx'||drag.kind==='edge'){
     const r=drag.r,n=r.pts.length,i=drag.i,tol=layout.fs*1.2;drag.moved=true;
@@ -813,8 +909,10 @@ const endDrag=()=>{if(!drag)return;const d=drag;drag=null;
 svg.addEventListener('pointerup',endDrag);svg.addEventListener('pointercancel',endDrag);
 svg.addEventListener('dblclick',e=>{
   if(mode==='draw'){e.preventDefault();finishDraw();return}
-  if(mode==='shape'){const vh=e.target.closest('.vh'),eh=e.target.closest('.eh');
-    if(vh)deleteCorner(R(),+vh.dataset.v);else if(eh)splitWall(R(),+eh.dataset.e);return}
+  if(mode==='extend'){e.preventDefault();return}
+  if(mode==='shape'){const vh=e.target.closest('.vh'),eh=e.target.closest('.eh'),wh=e.target.closest('.ehit');
+    if(vh)deleteCorner(R(),+vh.dataset.v);else if(eh)splitWall(R(),+eh.dataset.e);
+    else if(wh){const p=pt(e),A=R();insertCorner(A,+wh.dataset.w,[p.x-A.x,p.y-A.y])}return}
   const g=e.target.closest('.furn');if(!g)return;const f=findItem(g.dataset.id);if(!f)return;
   rotate(f[0],f[1],S.step);render();renderPanel();save()});
 
@@ -823,6 +921,10 @@ document.addEventListener('keydown',e=>{
   if(mode==='draw'){
     if(e.key==='Escape')setMode(null);else if(e.key==='Enter')finishDraw();
     else if(e.key==='Backspace'||e.key==='Delete'){drawPts.pop();render()}else return;
+    e.preventDefault();return}
+  if(mode==='extend'){
+    if(e.key==='Escape')setMode('shape');
+    else if(e.key==='Backspace'||e.key==='Delete'){drawPts.pop();if(!drawPts.length)extStart=null;render()}else return;
     e.preventDefault();return}
   if(mode==='shape'&&e.key==='Escape'){setMode(null);e.preventDefault();return}
   const it=byId(sel),A=R();if(!it)return;

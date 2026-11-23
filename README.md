@@ -45,6 +45,9 @@ Der Gratis-Plan schläft nach einer Weile Inaktivität ein (der erste Aufruf dau
 
 - **✎ Raum zeichnen** (Karte „Wohnung“): Klicke Ecke für Ecke. Zum Abschließen den Startpunkt anklicken, doppelklicken oder Enter drücken. ⌫ entfernt die letzte Ecke, Esc bricht ab. Die Punkte rasten am 5-cm-Raster ein, an waagrechten und senkrechten Linien zur letzten Ecke und zum Startpunkt sowie an den Innen- und Außenecken der anderen Räume. So teilen sich Nachbarräume automatisch eine Wand.
 - **Form bearbeiten** (Karte „Raum“): ● Ecken ziehen, ■ Wände parallel verschieben. Doppelklick auf ■ teilt eine Wand (neue Ecke), Doppelklick auf ● löscht eine Ecke. Formen, deren Wände sich überkreuzen, werden automatisch zurückgenommen.
+- **＋ Anbau / Ausschnitt** (Karte „Raum“): Auf einer Wand des Raums starten, Ecken klicken, auf einer Wand enden. Liegt der Linienzug außen, wird der Raum erweitert, liegt er innen, wird das Stück herausgeschnitten. Die Statuszeile zeigt, wie viele m² dazukommen oder wegfallen.
+- **Ecke an beliebiger Stelle:** Im Modus „Form bearbeiten“ irgendwo doppelt auf eine Wand klicken.
+- **Wandlängen** (Karte „Raum“ → „Wandlängen“): Jede Wand hat ein Zahlenfeld. Ändert sich eine Länge, wandert die folgende Wand (im Uhrzeigersinn) parallel mit. Fährst du mit der Maus über eine Zeile, wird die Wand im Plan hervorgehoben.
 - **Zu Rechteck** setzt die Form auf das umschließende Rechteck zurück. Fenster und Türen wandern dabei auf die nächstgelegene Wand.
 - Alte Pläne mit Rechteckräumen werden automatisch übernommen.
 
