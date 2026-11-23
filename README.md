@@ -64,6 +64,12 @@ Der Gratis-Plan schläft nach einer Weile Inaktivität ein (der erste Aufruf dau
 - **Räume per Drag'n'Drop:** Den Raumnamen im Plan ziehen, das geht bei jedem Raum. Oder den Boden des gerade gewählten Raums ziehen. Beim Loslassen rastet der Raum an den Innen- und Außenecken der Nachbarräume ein, Nachbarn teilen sich dann eine Wand. Mit dem Häkchen **„Räume fixieren“** sperrst du das Verschieben.
 - **Strg+Z / Strg+Y** (Mac: ⌘+Z / ⌘+⇧+Z) oder die Knöpfe ↶ ↷: Damit machst du **deine eigenen** Änderungen rückgängig oder wiederholst sie. Was deine Freunde an anderen Objekten ändern, bleibt erhalten. Ein Ziehvorgang oder ein umbenannter Name zählt als ein Schritt. Auch „Beispiel laden“ und „Raum löschen“ lassen sich so zurücknehmen. Beim Zeichnen entfernt Strg+Z die letzte Ecke.
 
+## Einzelne Räume exportieren / importieren
+
+In der Karte „Raum“:
+- **Raum exportieren** speichert den gewählten Raum mit Form, Fenstern, Türen und Möbeln als `raum-<Name>.json`.
+- **Raum importieren** fügt die Räume aus einer Datei zum aktuellen Plan **hinzu**, ohne etwas zu ersetzen. Sie erscheinen rechts neben der Wohnung und lassen sich am Namen an ihren Platz ziehen. Gibt es den Namen schon, wird „(2)“ angehängt. Das funktioniert auch mit einer ganzen Wohnungsdatei oder einem Zimmer aus der alten Version. Mit Strg+Z nimmst du den Import zurück.
+
 ## Was live geteilt wird
 
 - Räume, Möbel, Fenster und Türen: jede Änderung, auch während du ziehst

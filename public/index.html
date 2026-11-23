@@ -217,6 +217,11 @@ button.on{background:var(--sel);border-color:var(--sel);color:#fff}
         <button type="button" id="clearRoom" class="danger">Leeren</button>
         <button type="button" id="delRoom" class="danger">Löschen</button>
       </div>
+      <div class="btnrow">
+        <button type="button" id="expRoom">Raum exportieren</button>
+        <label class="btnlike" tabindex="0" id="impRoomLbl">Raum importieren<input type="file" id="impRoomIn" accept=".json,application/json,text/plain" hidden></label>
+      </div>
+      <div class="meta" id="roomMsg" role="status"></div>
     </section>
 
     <section class="card">
@@ -922,6 +927,8 @@ $('#rectShape').addEventListener('click',()=>{const A=R();if(isRect(A))return;co
 
 /* ---------- Zeiger ---------- */
 svg.addEventListener('pointerdown',e=>{
+  // Klick in den Plan beendet die Eingabe in einem Textfeld, damit Strg+Z, Pfeile, Entf usw. auf den Plan wirken
+  const ae=document.activeElement;if(ae&&ae.matches&&ae.matches('input,select,textarea'))ae.blur();
   if(pinch)return;
   if(e.button===1||spaceDown){startPan(e);return}
   const p=pt(e);
@@ -1056,12 +1063,38 @@ $('#addForm').addEventListener('submit',e=>{e.preventDefault();const A=R(),W=A.w
 /* ---------- Speichern & Laden ---------- */
 const msg=t=>{$('#ioMsg').textContent=t};
 const json=()=>JSON.stringify(exportObj(),null,2);
+function download(name,text){
+  const url=URL.createObjectURL(new Blob([text],{type:'application/json'})),a=document.createElement('a');
+  a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);
+}
 $('#saveFile').addEventListener('click',()=>{
   const d=new Date(),name=`wohnung-${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}.json`;
-  const url=URL.createObjectURL(new Blob([json()],{type:'application/json'})),a=document.createElement('a');
-  a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);
-  msg('Gespeichert als '+name+'.');
+  download(name,json());msg('Gespeichert als '+name+'.');
 });
+
+/* ---------- Einzelne Räume exportieren / importieren ---------- */
+const roomMsg=t=>{$('#roomMsg').textContent=t};
+$('#expRoom').addEventListener('click',()=>{
+  const A=R(),{id,hidden,items,...r}=A;
+  const obj={app:'raumplaner',version:2,kind:'room',rooms:[{...r,pts:r.pts.map(p=>[...p]),items:items.map(({id,...i})=>i)}]};
+  const name='raum-'+(A.name.trim().replace(/[^\wäöüÄÖÜß-]+/g,'-').replace(/^-+|-+$/g,'')||'raum')+'.json';
+  download(name,JSON.stringify(obj,null,2));roomMsg(`„${A.name}“ exportiert als ${name}.`);
+});
+function importRooms(text,src){
+  let p;try{p=parsePlan(JSON.parse(text))}catch(e){roomMsg('Import fehlgeschlagen: '+(e instanceof SyntaxError?'kein gültiges JSON.':e.message));return}
+  // rechts neben die Wohnung setzen (mehrere Räume behalten ihre Lage zueinander)
+  const B=bounds(S.rooms),IB=bounds(p.rooms),dx=B.x+B.w+T*4-IB.x,dy=B.y-IB.y;
+  const names=new Set(S.rooms.map(r=>r.name));
+  for(const r of p.rooms){r.x=r1(r.x+dx);r.y=r1(r.y+dy);r.hidden=false;
+    if(names.has(r.name)){let k=2;while(names.has(`${r.name} (${k})`))k++;r.name=`${r.name} (${k})`}names.add(r.name)}
+  S.rooms.push(...p.rooms);S.active=p.rooms[0].id;sel=null;setView(null);renderAll();save();
+  const n=p.rooms.length;
+  roomMsg(n===1?`„${p.rooms[0].name}“ aus ${src} hinzugefügt – rechts neben der Wohnung. Zum Platzieren am Namen ziehen.`
+    :`${n} Räume aus ${src} hinzugefügt – rechts neben der Wohnung.`);
+}
+$('#impRoomIn').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;
+  f.text().then(t=>importRooms(t,'„'+f.name+'“')).catch(()=>roomMsg('Datei konnte nicht gelesen werden.'));e.target.value=''});
+$('#impRoomLbl').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();$('#impRoomIn').click()}});
 function showText(fill){$('#txtBox').hidden=false;if(fill)$('#jsonTxt').value=json()}
 $('#copyJson').addEventListener('click',async()=>{
   try{await navigator.clipboard.writeText(json());msg('JSON in die Zwischenablage kopiert.')}
@@ -1089,7 +1122,10 @@ $('#impTxt').addEventListener('click',()=>doImport($('#jsonTxt').value,'Text'));
 const shadowR=new Map(), shadowI=new Map(), pend=new Map(), peers=new Map();
 let ws=null, ready=false, myId=null, retry=0, syncT=null, presT=null;
 const COLORS_ME=['#cf5a17','#1e5c76','#8a3fb0','#2f8a4f','#c0336b','#b08a12','#2a7bbf'];
-const me={n:'',c:'',x:null,y:null,sel:null};
+// Kennung dieser geöffneten Seite: gleich bei jedem Wiederverbinden, neu bei jedem Laden.
+// Damit kann der Server eine hängende alte Verbindung derselben Seite sofort entfernen.
+const SID=Math.random().toString(36).slice(2,12)+Math.random().toString(36).slice(2,8);
+const me={n:'',c:'',x:null,y:null,sel:null,sid:SID};
 try{me.n=localStorage.getItem('rp-name')||'';me.c=localStorage.getItem('rp-color')||''}catch(e){}
 if(!me.n)me.n='Gast '+(100+Math.floor(Math.random()*900));
 if(!/^#[0-9a-f]{6}$/i.test(me.c))me.c=COLORS_ME[Math.floor(Math.random()*COLORS_ME.length)];
@@ -1233,7 +1269,7 @@ function setConn(t,cls){const c=$('#conn');c.textContent=t;c.className='meta '+(
 function handle(m){
   if(m.t==='init'){
     myId=m.you;pend.clear();peers.clear();undoStack.length=redoStack.length=0;openGroup=null;updateUndoUI();
-    for(const p of m.peers||[])if(p&&p.p)peers.set(p.id,p.p);
+    for(const p of m.peers||[])if(p&&p.p&&p.p.sid!==SID)peers.set(p.id,p.p);
     const srv=m.state&&Array.isArray(m.state.rooms)?m.state.rooms:[];
     let p=null;if(srv.length){try{p=parsePlan({rooms:srv},true)}catch(e){}}
     ready=true;
@@ -1243,6 +1279,8 @@ function handle(m){
   }else if(m.t==='ops'&&Array.isArray(m.ops)){
     applyRemote(m.ops,m.from===myId);
   }else if(m.t==='pres'&&m.p){
+    if(m.p.sid===SID)return; // eigener Geist – ignorieren
+    for(const[k,q] of peers)if(k!==m.id&&q&&q.sid&&q.sid===m.p.sid)peers.delete(k); // gleiche Seite, neue Verbindung
     const old=peers.get(m.id);peers.set(m.id,m.p);
     if(!old||old.sel!==m.p.sel)render();else renderCursors();
     if(!old||old.n!==m.p.n||old.c!==m.p.c)renderPeers();
@@ -1251,14 +1289,35 @@ function handle(m){
     if(peers.delete(m.id)){render();renderPeers();setConn('● live · '+(peers.size+1)+' online','ok')}
   }
 }
+let lastMsg=0,reconnT=null;
 function connect(){
+  clearTimeout(reconnT);reconnT=null;
   setConn('verbinde…');
-  try{ws=new WebSocket(`${location.protocol==='https:'?'wss':'ws'}://${location.host}/ws?plan=${planId}`)}catch(e){setConn('keine Verbindung möglich','bad');return}
-  ws.onopen=()=>{retry=0};
-  ws.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch(x){return}handle(m)};
-  ws.onclose=()=>{ready=false;pend.clear();peers.clear();renderPeers();render();
-    setConn('offline – verbinde neu…','bad');setTimeout(connect,Math.min(10000,600*2**retry++))};
+  let sock;
+  try{sock=new WebSocket(`${location.protocol==='https:'?'wss':'ws'}://${location.host}/ws?plan=${planId}&sid=${SID}`)}catch(e){setConn('keine Verbindung möglich','bad');return}
+  ws=sock;lastMsg=Date.now();
+  sock.onopen=()=>{retry=0;lastMsg=Date.now()};
+  sock.onmessage=e=>{if(sock!==ws)return;lastMsg=Date.now();let m;try{m=JSON.parse(e.data)}catch(x){return}if(m.t!=='hb')handle(m)};
+  sock.onclose=()=>{if(sock!==ws)return;dropConnection()};
 }
+function dropConnection(){ // Verbindung aufgeben und neu verbinden
+  const old=ws;ws=null;
+  if(old){old.onclose=old.onmessage=old.onopen=null;try{old.close()}catch(e){}}
+  ready=false;pend.clear();peers.clear();renderPeers();render();
+  setConn('offline – verbinde neu…','bad');
+  if(!reconnT)reconnT=setTimeout(connect,Math.min(10000,600*2**retry++));
+}
+// Herzschlag: alle 10 s ein Lebenszeichen; kommt 30 s nichts zurück, hängt die Verbindung → neu verbinden
+setInterval(()=>{
+  if(!ws||ws.readyState!==1)return;
+  if(Date.now()-lastMsg>30000){dropConnection();return}
+  send({t:'hb'});
+},10000);
+// Seite wird geschlossen/neu geladen → sofort sauber abmelden, damit kein Geist zurückbleibt
+addEventListener('pagehide',()=>{if(ws){ws.onclose=null;try{ws.close()}catch(e){}}});
+// Seite kommt aus dem Hintergrund/Cache zurück → Verbindung prüfen
+addEventListener('pageshow',e=>{if(e.persisted&&(!ws||ws.readyState>1))connect()});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&ws&&ws.readyState===1&&Date.now()-lastMsg>15000)send({t:'hb'})});
 $('#me-name').addEventListener('input',e=>{const n=e.target.value.trim().slice(0,24)||'Gast';pres({n});renderPeers();try{localStorage.setItem('rp-name',n)}catch(x){}});
 $('#me-color').addEventListener('input',e=>{pres({c:e.target.value});renderPeers();try{localStorage.setItem('rp-color',e.target.value)}catch(x){}});
 // Über localhost geöffnet? Dann für andere Geräte die LAN-Adresse des Servers teilen.

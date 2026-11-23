@@ -78,10 +78,19 @@ function bcast(p, msg, except) {
 const wss = new WebSocketServer({ server, path: '/ws', maxPayload: 2 * 1024 * 1024 });
 let cid = 0;
 wss.on('connection', (ws, req) => {
-  const id = (new URL(req.url, 'http://x').searchParams.get('plan') || '').toLowerCase();
+  const q = new URL(req.url, 'http://x').searchParams;
+  const id = (q.get('plan') || '').toLowerCase();
   if (!validId(id)) { ws.close(1008, 'bad plan'); return; }
+  const sid = /^[a-z0-9]{6,40}$/.test(q.get('sid') || '') ? q.get('sid') : null;
   const p = getPlan(id);
-  ws.cid = 'c' + (++cid); ws.pres = null; ws.alive = true;
+  // Dieselbe Browser-Seite verbindet sich neu → alte (hängende) Verbindung sofort entfernen,
+  // sonst taucht man doppelt auf.
+  if (sid) for (const c of [...p.clients]) if (c.sid === sid) {
+    p.clients.delete(c); c.gone = true;
+    bcast(p, { t: 'leave', id: c.cid });
+    try { c.terminate(); } catch (e) {}
+  }
+  ws.cid = 'c' + (++cid); ws.sid = sid; ws.pres = null; ws.alive = true;
   p.clients.add(ws);
   ws.send(JSON.stringify({
     t: 'init', you: ws.cid, state: p.state,
@@ -89,7 +98,9 @@ wss.on('connection', (ws, req) => {
   }));
   ws.on('pong', () => { ws.alive = true; });
   ws.on('message', buf => {
+    ws.alive = true;
     let m; try { m = JSON.parse(buf); } catch (e) { return; }
+    if (m.t === 'hb') { if (ws.readyState === 1) ws.send('{"t":"hb"}'); return; }
     if (m.t === 'ops' && Array.isArray(m.ops)) {
       const ops = m.ops.filter(o => apply(p.state, o));
       if (!ops.length) return;
@@ -101,13 +112,15 @@ wss.on('connection', (ws, req) => {
     }
   });
   ws.on('close', () => {
+    if (ws.gone) return; // schon als ersetzt gemeldet
     p.clients.delete(ws);
     bcast(p, { t: 'leave', id: ws.cid });
   });
 });
+// Tote Verbindungen (z. B. Handy im Standby, WLAN weg) nach spätestens ~20 s entfernen
 setInterval(() => {
-  for (const c of wss.clients) { if (!c.alive) { c.terminate(); continue; } c.alive = false; c.ping(); }
-}, 30000);
+  for (const c of wss.clients) { if (!c.alive) { c.terminate(); continue; } c.alive = false; try { c.ping(); } catch (e) {} }
+}, 10000);
 
 server.listen(PORT, HOST, () => {
   console.log('\nRaumplaner live läuft:');
