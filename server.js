@@ -115,6 +115,12 @@ const SECURITY_HEADERS = {
     "img-src 'self' data: blob:; font-src 'self'; connect-src 'self' ws: wss:; object-src 'none'; base-uri 'none'; " +
     "form-action 'none'; frame-ancestors 'none'"
 };
+const STATIC = {
+  '/icon.svg': 'image/svg+xml', '/favicon.svg': 'image/svg+xml', '/favicon-32.png': 'image/png',
+  '/apple-touch-icon.png': 'image/png', '/icon-192.png': 'image/png', '/icon-512.png': 'image/png',
+  '/manifest.webmanifest': 'application/manifest+json'
+};
+STATIC['/favicon.ico'] = 'image/png'; // alte Browser fragen ohne Link danach
 let FONTS = new Set();
 try { FONTS = new Set(fs.readdirSync(path.join(__dirname, 'public', 'fonts')).filter(f => /^[a-z0-9-]+\.woff2$/.test(f))); } catch (e) { /* ohne Schriften: Systemschrift */ }
 function lanIPs() {
@@ -134,6 +140,10 @@ const server = http.createServer((req, res) => {
     res.writeHead(200, { ...SECURITY_HEADERS, 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-cache' });
     if (req.method === 'HEAD') return res.end();
     fs.createReadStream(INDEX).on('error', () => res.end()).pipe(res);
+  } else if (STATIC[u.pathname]) { // Logo, Favicons, Web-App-Manifest (feste Liste, keine Pfade von außen)
+    res.writeHead(200, { ...SECURITY_HEADERS, 'content-type': STATIC[u.pathname], 'cache-control': 'public, max-age=86400' });
+    if (req.method === 'HEAD') return res.end();
+    fs.createReadStream(path.join(__dirname, 'public', u.pathname === '/favicon.ico' ? 'favicon-32.png' : u.pathname.slice(1))).on('error', () => res.end()).pipe(res);
   } else if (u.pathname.startsWith('/fonts/') && FONTS.has(u.pathname.slice(7))) {
     res.writeHead(200, { ...SECURITY_HEADERS, 'content-type': 'font/woff2', 'cache-control': 'public, max-age=31536000, immutable' });
     if (req.method === 'HEAD') return res.end();

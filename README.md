@@ -1,3 +1,5 @@
+<img src="public/icon.svg" width="72" height="72" alt="Raumplaner logo">
+
 # Raumplaner
 
 Plan apartments together, live in the browser. No accounts, no login: anyone with the link can plan along.
@@ -86,6 +88,7 @@ No timeout tuning is needed, because the app sends a heartbeat every 10 seconds.
 |---|---|
 | `server.js` | web and WebSocket server (one dependency: `ws`) |
 | `public/index.html` | the entire app, including the translations |
+| `public/icon.svg`, `favicon*`, `*.png`, `manifest.webmanifest` | logo, favicons and home-screen icon |
 | `public/fonts/` | bundled IBM Plex fonts (SIL Open Font License) |
 | `tools/i18n-table.tsv` | all UI texts (German → en, fr, es, it, nl); run `python3 tools/build-i18n.py` after editing |
 | `test/security.js` | security checks (`npm test`) |
