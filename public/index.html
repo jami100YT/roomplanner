@@ -1657,7 +1657,7 @@ const COLORS_ME=['#cf5a17','#1e5c76','#8a3fb0','#2f8a4f','#c0336b','#b08a12','#2
 // Damit kann der Server eine hängende alte Verbindung derselben Seite sofort entfernen.
 const SID=Math.random().toString(36).slice(2,12)+Math.random().toString(36).slice(2,8);
 /* ---------- Version ---------- */
-const APP_VERSION='2.1.0'; // bei jedem Update zusammen mit package.json erhöhen
+const APP_VERSION='2.1.1'; // bei jedem Update zusammen mit package.json erhöhen
 let updShown=false,updLast=0;
 async function checkUpdate(force){
   if(updShown||(!force&&Date.now()-updLast<5*60*1000))return;updLast=Date.now();

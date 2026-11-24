@@ -19,6 +19,11 @@ const HOST = process.env.HOST || '0.0.0.0'; // alle Netzwerkschnittstellen → a
 const DATA = process.env.DATA_DIR || path.join(__dirname, 'data');
 const INDEX = path.join(__dirname, 'public', 'index.html');
 fs.mkdirSync(DATA, { recursive: true });
+try { fs.accessSync(DATA, fs.constants.W_OK); } catch (e) {
+  console.error(`Datenordner ${DATA} ist nicht beschreibbar (Benutzer-ID ${process.getuid ? process.getuid() : '?'}).\n` +
+    `Docker mit Ordner vom Host: sudo chown -R 1000:1000 <ordner>  ·  sonst: Rechte von ${DATA} prüfen.`);
+  process.exit(1);
+}
 
 // Grenzen – großzügig für normale Nutzung, schützen vor Fehlern und Missbrauch
 const LIMITS = {
