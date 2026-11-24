@@ -84,13 +84,21 @@ function registerView(planId) {
   if (views[t] !== planId) { views[t] = planId; try { writeAtomic(VIEWS_FILE, JSON.stringify(views)); } catch (e) { log('views.json:', e.message); } }
   return t;
 }
+function forgetViews(planId) { // alle Ansichts-Codes eines Plans ungültig machen
+  let changed = false;
+  for (const k of Object.keys(views)) if (views[k] === planId) { delete views[k]; changed = true; }
+  if (changed) try { writeAtomic(VIEWS_FILE, JSON.stringify(views)); fs.rmSync(VIEWS_FILE + '.bak', { force: true }); } catch (e) { log('views.json:', e.message); }
+}
 function planForView(token) {
   if (!/^[A-Za-z0-9_-]{24}$/.test(token || '')) return null;
   if (views[token]) return views[token];
   try { // Fallback, falls views.json verloren ging
     for (const f of fs.readdirSync(DATA)) {
       const id = f.replace(/\.json$/, '');
-      if (f.endsWith('.json') && validId(id) && viewToken(id) === token) { registerView(id); return id; }
+      if (f.endsWith('.json') && validId(id) && viewToken(id) === token) {
+        const st = readJSON(file(id)); if (st && !st.revoked) registerView(id); // gesperrte Pläne nicht wieder eintragen
+        return id;
+      }
     }
   } catch (e) { /* ignorieren */ }
   return null;
@@ -200,6 +208,27 @@ function apply(p, o) {
   if (grows) p.bytes += size; // grobe Schätzung bis zum nächsten Speichern (dort exakt)
   return true;
 }
+/* ---------- Link erneuern ----------
+   Der Plan zieht unter einen neuen, zufälligen Code um. Der alte Code wird zum Grabstein
+   ({ revoked: true }, ohne Inhalt, ohne .bak), alte Ansehen-Links verfallen mit.
+   Alle anderen Verbindungen werden getrennt – nur wer erneuert hat, bekommt den neuen Code. */
+const REVOKED = 4410;
+const newPlanId = () => Array.from(crypto.randomBytes(16), b => 'abcdefghijklmnopqrstuvwxyz0123456789'[b % 36]).join('');
+function rotate(p, by) {
+  let id; do { id = newPlanId(); } while (fs.existsSync(file(id)) || plans.has(id));
+  const text = JSON.stringify(p.state);
+  writeAtomic(file(id), text);
+  fs.writeFileSync(file(p.id), JSON.stringify({ rooms: [], revoked: true }));
+  for (const ext of ['.bak', '.tmp']) fs.rmSync(file(p.id) + ext, { force: true });
+  forgetViews(p.id);
+  clearTimeout(p.timer); p.dirty = false;
+  p.state = { rooms: [], revoked: true }; p.bytes = 0;
+  log('Link erneuert (alter Plan gesperrt)');
+  if (by.readyState === 1) by.send(JSON.stringify({ t: 'rotated', plan: id }));
+  for (const c of [...p.clients]) { c.gone = true; try { c.close(REVOKED, 'revoked'); } catch (e) { /* zu */ } }
+  p.clients.clear(); plans.delete(p.id);
+}
+
 function bcast(p, msg, except) {
   const t = JSON.stringify(msg);
   for (const c of p.clients) if (c !== except && c.readyState === 1) c.send(t);
@@ -218,6 +247,7 @@ wss.on('connection', (ws, req) => {
   if (wss.clients.size > LIMITS.maxClients) { ws.close(1013, 'busy'); return; }
   const sid = /^[a-z0-9]{6,40}$/.test(q.get('sid') || '') ? q.get('sid') : null;
   const p = getPlan(id);
+  if (p.state.revoked) { ws.close(REVOKED, 'revoked'); releaseIfIdle(p); return; } // Link wurde erneuert
   // Dieselbe Seite verbindet sich neu → hängende alte Verbindung sofort entfernen (sonst „doppelt da“).
   // Nur gleiche Art (Ansehen/Bearbeiten), damit ein Zuschauer niemanden hinauswerfen kann.
   if (sid) for (const c of [...p.clients]) if (c.sid === sid && c.readonly === readonly) {
@@ -245,6 +275,7 @@ wss.on('connection', (ws, req) => {
     if (!isObj(m)) return;
     if (m.t === 'hb') { if (ws.readyState === 1) ws.send('{"t":"hb"}'); return; }
     if (ws.readonly) return; // Nur-Ansehen: keine Änderungen, keine Präsenz
+    if (m.t === 'rotate') { if (p.clients.has(ws)) rotate(p, ws); return; }
     if (m.t === 'viewlink') { ws.send(JSON.stringify({ t: 'viewlink', token: registerView(p.id) })); return; }
     if (m.t === 'ops' && Array.isArray(m.ops)) {
       if (!p.onDisk && !p.dirty && planCount >= LIMITS.maxPlans) return; // keine neuen Pläne mehr

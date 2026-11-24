@@ -72,6 +72,9 @@ function conn(q) {
     const s2 = JSON.parse(fs.readFileSync(path.join(DATA, 'sectest-aaaa.json'), 'utf8'));
     ok(s2.rooms.length === 1, 'Zuschauer kann nichts ändern');
     ok(!ro.msgs.some(m => m.t === 'viewlink'), 'Zuschauer kann keine Links erzeugen');
+    ro.send(JSON.stringify({ t: 'rotate' })); await sleep(300);
+    ok(a.readyState === 1 && fs.existsSync(path.join(DATA, 'sectest-aaaa.json')) && !JSON.parse(fs.readFileSync(path.join(DATA, 'sectest-aaaa.json'), 'utf8')).revoked,
+      'Zuschauer kann den Link nicht erneuern');
     const bad = await conn('view=AAAAAAAAAAAAAAAAAAAAAAAA');
     ok(bad.closeCode === 4404, 'ungültiger Ansehen-Link abgelehnt');
 

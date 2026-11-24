@@ -68,6 +68,7 @@ No timeout tuning is needed, because the app sends a heartbeat every 10 seconds.
 ## Security and privacy
 
 - No accounts. The plan code in the link is the key: anyone who has it can edit. New plans get a random 16-character code, so they can't be guessed. Pick your own short code (`?plan=test`) only for throwaway plans.
+- **Renew link** (Settings → Plan) moves the plan to a new random code. All old collaboration and view links stop working at once, everyone currently connected is disconnected, and only you get the new link. Use it when a link got into the wrong hands.
 - A connection only ever receives the plan it asked for. View-only links are derived from the plan code with a server-side secret and can't be turned back into it.
 - The page loads nothing from other servers (fonts are bundled) and sends no referrer, so neither your IP address nor the plan code leaks to third parties. The server never sends IP addresses to clients; `/lan` (the Wi-Fi link helper) only answers direct requests from the server machine itself, never through a reverse proxy.
 - Everything that comes in (JSON imports and live changes) is validated, size-limited and escaped before it is stored or shown. A Content-Security-Policy blocks embedding the app in other sites.

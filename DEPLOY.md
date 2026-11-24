@@ -5,6 +5,7 @@ Für eine Handvoll Nutzer reicht ein kleiner Server (1 vCPU, 512 MB RAM). Der Ra
 - liefert die Seite unter `/` aus
 - Echtzeit über **WebSocket** unter `/ws`
 - speichert jeden Plan als `data/<plan>.json` (plus `.bak`), dazu `data/secret.key` für die Ansehen-Links
+- **Link erneuern** (Einstellungen → Plan): Der Plan zieht unter einen neuen Code um, alle alten Mitplanen- und Ansehen-Links sind sofort ungültig. Unter dem alten Code bleibt nur eine leere, gesperrte Datei.
 - `/health` antwortet mit `ok` (für Monitoring/Healthchecks)
 
 > Wichtig: Es darf immer nur **ein** Prozess laufen. Mehrere Instanzen hinter einem Load-Balancer würden die Echtzeit-Daten aufteilen.
