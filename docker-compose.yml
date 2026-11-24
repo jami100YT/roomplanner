@@ -1,17 +1,17 @@
-# Start:   docker compose up -d --build
-# Update:  git pull && docker compose up -d --build
+# Raumplaner – no clone needed: just download this file and run
+#   docker compose up -d
+# Update:  docker compose pull && docker compose up -d
 # Logs:    docker compose logs -f
 services:
   roomplanner:
-    build: .
-    image: roomplanner:latest
+    image: ghcr.io/jami100yt/roomplanner:latest   # or pin a version, e.g. :2.0.0
     container_name: roomplanner
     restart: unless-stopped
     ports:
-      - "3000:3000"            # nur intern nutzen? → "127.0.0.1:3000:3000"
+      - "3000:3000"            # only reachable locally? → "127.0.0.1:3000:3000"
     volumes:
-      - roomplanner-data:/app/data   # Pläne, secret.key – bleiben bei Updates erhalten
-    stop_grace_period: 10s     # Zeit zum Speichern beim Beenden
+      - roomplanner-data:/app/data   # plans + secret.key – survive updates
+    stop_grace_period: 10s     # time to save on shutdown
 
 volumes:
   roomplanner-data:

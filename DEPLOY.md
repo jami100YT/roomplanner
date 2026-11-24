@@ -11,22 +11,33 @@ Für eine Handvoll Nutzer reicht ein kleiner Server (1 vCPU, 512 MB RAM). Der Ra
 
 ---
 
-## Variante A: Docker Compose (empfohlen)
+## Variante A: Docker (empfohlen) – ohne Repository zu klonen
 
-Docker ersetzt bei jedem Update den kompletten Prozess. Das Problem „alte Version läuft im Hintergrund weiter“ kann dabei nicht auftreten.
+Bei jedem Push nach `main` baut GitHub automatisch ein fertiges Image: `ghcr.io/jami100yt/roomplanner` (amd64 + arm64). Docker ersetzt bei jedem Update den kompletten Prozess. Das Problem „alte Version läuft im Hintergrund weiter“ kann dabei nicht auftreten.
 
 ```bash
-git clone https://github.com/jami100YT/roomplanner.git /opt/roomplanner
-cd /opt/roomplanner
-docker compose up -d --build
+mkdir -p /opt/roomplanner && cd /opt/roomplanner
+curl -fsSLO https://raw.githubusercontent.com/jami100YT/roomplanner/main/docker-compose.yml   # oder Datei von Hand anlegen
+docker compose up -d
 curl -s localhost:3000/health        # → ok
+```
+Ist das Repository privat, lege `docker-compose.yml` einfach von Hand an, sie ist nur 15 Zeilen lang. Oder ohne Compose:
+```bash
+docker run -d --name roomplanner --restart unless-stopped -p 3000:3000 \
+  -v roomplanner-data:/app/data ghcr.io/jami100yt/roomplanner:latest
 ```
 
 **Update:**
 ```bash
-cd /opt/roomplanner && git pull && docker compose up -d --build
+cd /opt/roomplanner && docker compose pull && docker compose up -d
 ```
-Der Container wird in wenigen Sekunden ersetzt. Offene Seiten verbinden sich automatisch neu und zeigen „Neue Version verfügbar – Neu laden“.
+Der Container wird in wenigen Sekunden ersetzt. Offene Seiten verbinden sich neu und zeigen „Neue Version verfügbar – Neu laden“.
+
+**Feste Version / zurückrollen:** In `docker-compose.yml` statt `:latest` eine Version eintragen, z. B. `ghcr.io/jami100yt/roomplanner:2.0.0`, dann `docker compose up -d`.
+
+**Image nicht ladbar („denied“ / „unauthorized“)?** Das Paket ist noch privat. Entweder auf GitHub unter *Profil → Packages → roomplanner → Package settings → Change visibility → Public* umstellen, oder auf dem Server einmalig anmelden: `docker login ghcr.io -u jami100YT` (als Passwort ein Token mit `read:packages`).
+
+**Selbst bauen statt Image laden** (im geklonten Repository): `docker build -t ghcr.io/jami100yt/roomplanner:latest . && docker compose up -d`
 
 **Logs:** `docker compose logs -f`
 
@@ -39,7 +50,7 @@ docker compose cp roomplanner:/app/data ./backup-$(date +%F)
 ```bash
 pm2 delete raumplaner; pm2 save        # alten Prozess beenden (gibt Port 3000 frei)
 cd /opt/roomplanner
-docker compose up -d --build
+docker compose up -d
 docker compose cp ./data/. roomplanner:/app/data/
 docker compose exec -u root roomplanner chown -R node:node /app/data
 docker compose restart
@@ -136,11 +147,9 @@ Diese Regeln stellen sicher, dass ein Update nichts kaputt macht:
 4. **Speichern ist atomar**, mit `.bak` als Rückfallebene. Ein Absturz mitten im Schreiben beschädigt keinen Plan. Beim Beenden (pm2/Docker) wird vorher gespeichert.
 5. **Zurückrollen** geht jederzeit, das Datenformat bleibt kompatibel:
    ```bash
-   git log --oneline            # gewünschten Stand suchen, z. B. 9e690a4 = v2.0.0
-   git checkout 9e690a4
-   docker compose up -d --build # bzw. pm2 reload ecosystem.config.js
-   git checkout main            # später zurück auf den aktuellen Stand
+   # Docker: in docker-compose.yml eine Version eintragen, z. B. :2.0.0, dann
+   docker compose up -d
+   # pm2: gewünschten Stand auschecken (z. B. 9e690a4 = v2.0.0) und neu laden
+   git checkout 9e690a4 && pm2 reload ecosystem.config.js
    ```
-   Tipp: Versionen als Git-Tag markieren, dann geht `git checkout v2.0.0`:
-   `git tag v2.0.0 9e690a4 && git push origin v2.0.0`
 6. Vor größeren Updates ein Backup von `data/` machen (siehe oben). Das dauert eine Sekunde und schadet nie.

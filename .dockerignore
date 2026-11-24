@@ -5,3 +5,4 @@ data
 Dockerfile
 docker-compose.yml
 ecosystem.config.js
+.github
