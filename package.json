@@ -1,6 +1,6 @@
 {
   "name": "raumplaner-live",
-  "version": "2.5.0",
+  "version": "2.5.1",
   "description": "Raumplaner mit Echtzeit-Zusammenarbeit (ohne Login)",
   "main": "server.js",
   "scripts": {
@@ -12,5 +12,11 @@
   },
   "dependencies": {
     "ws": "^8.18.0"
-  }
+  },
+  "license": "AGPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jami100YT/roomplanner.git"
+  },
+  "homepage": "https://roomplanner.bameninghong.com"
 }

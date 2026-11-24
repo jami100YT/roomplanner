@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // Raumplaner – Echtzeit-Server (Node + ws), ohne Login.
 // Start: npm install && npm start  →  http://localhost:3000
 //

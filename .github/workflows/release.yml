@@ -1,0 +1,27 @@
+# Creates a GitHub release (tag v<version>) whenever the version in package.json changes.
+# Existing versions are skipped, so pushes without a version bump do nothing.
+name: Release
+
+on:
+  push:
+    branches: [main]
+    paths: [package.json]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create release for the new version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          v="v$(node -p "require('./package.json').version")"
+          if gh release view "$v" >/dev/null 2>&1; then
+            echo "$v already released – nothing to do"; exit 0
+          fi
+          gh release create "$v" --target "$GITHUB_SHA" --title "$v" --generate-notes

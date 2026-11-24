@@ -4,7 +4,7 @@
 
 Plan apartments together, live in the browser. No accounts, no login: anyone with the link can plan along.
 
-![Version](https://img.shields.io/github/package-json/v/jami100YT/roomplanner?label=version&color=1e5c76)
+![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-1e5c76) ![Version](https://img.shields.io/github/package-json/v/jami100YT/roomplanner?label=version&color=1e5c76)
 ![Vibe coded](https://img.shields.io/badge/vibe%20coded-100%25-cf5a17)
 
 > **This project is 100 % vibe coded.** Every line of code, every test and all of the documentation were written by an AI (Claude) from conversational prompts. No line was typed by hand. It is tested extensively with automated browser tests, but please keep its origin in mind.
@@ -102,7 +102,16 @@ No timeout tuning is needed, because the app sends a heartbeat every 10 seconds.
 | `test/security.js` | security checks (`npm test`) |
 | `Dockerfile`, `docker-compose.yml` | running with Docker |
 | `.github/workflows/docker.yml` | builds and publishes the Docker image |
+| `.github/workflows/release.yml` | creates a GitHub release for every new version |
+| `LICENSE` | AGPL-3.0-or-later |
 | `ecosystem.config.js` | running with pm2 |
 | `DEPLOY.md` | hosting guide |
 
 New versions get a higher number in `package.json` and in `public/index.html` (`APP_VERSION`).
+
+## License
+
+[GNU Affero General Public License v3.0 or later](LICENSE) (AGPL-3.0-or-later).
+
+You may use, run, study, change and share this software, also on your own server. If you distribute it or let other people use a modified version over a network, you must make your complete source code available under the same license. The "Source code on GitHub" link in the app covers the unmodified version; if you run a modified version publicly, point that link to your own source code.
+
