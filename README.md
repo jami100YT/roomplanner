@@ -4,7 +4,7 @@
 
 Plan apartments together, live in the browser. No accounts, no login: anyone with the link can plan along.
 
-![Version](https://img.shields.io/badge/version-2.0.0-1e5c76)
+![Version](https://img.shields.io/github/package-json/v/jami100YT/roomplanner?label=version&color=1e5c76)
 ![Vibe coded](https://img.shields.io/badge/vibe%20coded-100%25-cf5a17)
 
 > **This project is 100 % vibe coded.** Every line of code, every test and all of the documentation were written by an AI (Claude) from conversational prompts. No line was typed by hand. It is tested extensively with automated browser tests, but please keep its origin in mind.
