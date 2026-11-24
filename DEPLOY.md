@@ -136,7 +136,11 @@ Diese Regeln stellen sicher, dass ein Update nichts kaputt macht:
 4. **Speichern ist atomar**, mit `.bak` als Rückfallebene. Ein Absturz mitten im Schreiben beschädigt keinen Plan. Beim Beenden (pm2/Docker) wird vorher gespeichert.
 5. **Zurückrollen** geht jederzeit, das Datenformat bleibt kompatibel:
    ```bash
-   git checkout v2.0.0          # oder einen anderen Tag/Commit
+   git log --oneline            # gewünschten Stand suchen, z. B. 9e690a4 = v2.0.0
+   git checkout 9e690a4
    docker compose up -d --build # bzw. pm2 reload ecosystem.config.js
+   git checkout main            # später zurück auf den aktuellen Stand
    ```
+   Tipp: Versionen als Git-Tag markieren, dann geht `git checkout v2.0.0`:
+   `git tag v2.0.0 9e690a4 && git push origin v2.0.0`
 6. Vor größeren Updates ein Backup von `data/` machen (siehe oben). Das dauert eine Sekunde und schadet nie.
