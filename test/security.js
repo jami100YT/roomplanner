@@ -29,6 +29,8 @@ function conn(q) {
     ok(/frame-ancestors 'none'/.test(idx.h['content-security-policy'] || ''), 'CSP-Header gesetzt');
     ok(!/googleapis|gstatic/.test(idx.b), 'keine fremden Server im HTML (Schriften lokal)');
     ok((await get('/fonts/ibm-plex-sans-latin-400-normal.woff2')).s === 200, 'Schrift wird ausgeliefert');
+    ok(/noindex/.test((await get('/?plan=abc')).h['x-robots-tag'] || '') && /noindex/.test((await get('/?view=abc')).h['x-robots-tag'] || ''), 'Pläne und Ansehen-Links nicht für Suchmaschinen');
+    ok(!/["<>]/.test((await get('/', { host: 'evil"><script>' })).b.match(/canonical" href="([^"]*)"/)[1]), 'gefälschter Host landet nicht im HTML');
     ok((await get('/fonts/..%2fserver.js')).s === 404 && (await get('/fonts/../server.js')).s === 404, 'kein Pfad-Ausbruch über /fonts');
     ok((await get('/views.json')).s === 404 && (await get('/data/views.json')).s === 404, 'Daten-Dateien nicht per HTTP erreichbar');
     ok((await get('/lan')).s === 200, '/lan direkt vom eigenen Rechner');

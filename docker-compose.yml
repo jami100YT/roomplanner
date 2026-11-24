@@ -12,6 +12,8 @@ services:
     volumes:
       - roomplanner-data:/app/data   # plans + secret.key – survive updates
     stop_grace_period: 10s     # time to save on shutdown
+    environment:
+      - PUBLIC_URL=https://roomplanner.example.com   # your public address (search engines, link previews)
 
 volumes:
   roomplanner-data:

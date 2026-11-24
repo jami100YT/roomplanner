@@ -12,10 +12,14 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
+const zlib = require('zlib');
 const { WebSocketServer } = require('ws');
 
 const PORT = +process.env.PORT || 3000;
 const HOST = process.env.HOST || '0.0.0.0'; // alle Netzwerkschnittstellen → auch im LAN erreichbar
+// Öffentliche Adresse für Suchmaschinen und Link-Vorschauen (z. B. https://roomplanner.example.com).
+// Leer: wird aus der Anfrage abgeleitet (Host-Header, hinter Proxy X-Forwarded-Proto).
+const PUBLIC_URL = (process.env.PUBLIC_URL || '').replace(/\/+$/, '');
 const DATA = process.env.DATA_DIR || path.join(__dirname, 'data');
 const INDEX = path.join(__dirname, 'public', 'index.html');
 fs.mkdirSync(DATA, { recursive: true });
@@ -118,7 +122,7 @@ const SECURITY_HEADERS = {
 const STATIC = {
   '/icon.svg': 'image/svg+xml', '/favicon.svg': 'image/svg+xml', '/favicon-32.png': 'image/png',
   '/apple-touch-icon.png': 'image/png', '/icon-192.png': 'image/png', '/icon-512.png': 'image/png',
-  '/manifest.webmanifest': 'application/manifest+json'
+  '/manifest.webmanifest': 'application/manifest+json', '/og-image.png': 'image/png'
 };
 STATIC['/favicon.ico'] = 'image/png'; // alte Browser fragen ohne Link danach
 let FONTS = new Set();
@@ -130,6 +134,21 @@ function lanIPs() {
 // Nur direkt vom eigenen Rechner – nie über einen Reverse-Proxy (der sitzt oft auch auf 127.0.0.1).
 // Sonst könnte jeder aus dem Internet die internen IP-Adressen des Servers abfragen.
 const PROXY_HEADERS = ['x-forwarded-for', 'x-real-ip', 'forwarded', 'cf-connecting-ip', 'x-forwarded-host', 'via'];
+// Eigene Adresse: PUBLIC_URL, sonst aus Host-Header (streng geprüft, damit niemand fremde Adressen einschleust)
+function origin(req) {
+  if (PUBLIC_URL) return PUBLIC_URL;
+  const host = String(req.headers.host || '').toLowerCase();
+  if (!/^[a-z0-9.-]{1,253}(:\d{1,5})?$|^\[[0-9a-f:]+\](:\d{1,5})?$/.test(host)) return '';
+  const fp = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim();
+  return ((fp === 'https' || fp === 'http') ? fp : 'http') + '://' + host;
+}
+// index.html einmal lesen (neu, wenn die Datei sich ändert) und gezippt vorhalten
+let pageCache = { mtime: 0, text: '' };
+function pageText() {
+  const st = fs.statSync(INDEX);
+  if (st.mtimeMs !== pageCache.mtime) pageCache = { mtime: st.mtimeMs, text: fs.readFileSync(INDEX, 'utf8'), gz: new Map() };
+  return pageCache;
+}
 const isLocal = req => /^(::1|127\.|::ffff:127\.)/.test(req.socket.remoteAddress || '') &&
   !PROXY_HEADERS.some(h => h in req.headers) && /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(req.headers.host || '');
 
@@ -137,9 +156,25 @@ const server = http.createServer((req, res) => {
   let u; try { u = new URL(req.url, 'http://x'); } catch (e) { res.writeHead(400, SECURITY_HEADERS); return res.end(); }
   if (req.method !== 'GET' && req.method !== 'HEAD') { res.writeHead(405, SECURITY_HEADERS); return res.end(); }
   if (u.pathname === '/' || u.pathname === '/index.html') {
-    res.writeHead(200, { ...SECURITY_HEADERS, 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-cache' });
-    if (req.method === 'HEAD') return res.end();
-    fs.createReadStream(INDEX).on('error', () => res.end()).pipe(res);
+    let pc; try { pc = pageText(); } catch (e) { res.writeHead(500, SECURITY_HEADERS); return res.end(); }
+    const o = origin(req);
+    let body = pc.gz.get(o);
+    if (!body) { body = zlib.gzipSync(pc.text.replace(/__ORIGIN__/g, o)); if (pc.gz.size < 20) pc.gz.set(o, body); }
+    const h = { ...SECURITY_HEADERS, 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-cache', vary: 'Accept-Encoding' };
+    // Pläne und Ansehen-Links sind privat: nie in Suchmaschinen aufnehmen. Nur die Startseite ist öffentlich.
+    if (u.searchParams.has('plan') || u.searchParams.has('view') || u.pathname !== '/') h['x-robots-tag'] = 'noindex, nofollow';
+    const gz = /\bgzip\b/.test(req.headers['accept-encoding'] || '');
+    if (gz) h['content-encoding'] = 'gzip'; else body = zlib.gunzipSync(body);
+    res.writeHead(200, h);
+    res.end(req.method === 'HEAD' ? undefined : body);
+  } else if (u.pathname === '/robots.txt') {
+    const o = origin(req);
+    res.writeHead(200, { ...SECURITY_HEADERS, 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'public, max-age=86400' });
+    res.end('User-agent: *\nAllow: /\nDisallow: /ws\n' + (o ? `Sitemap: ${o}/sitemap.xml\n` : ''));
+  } else if (u.pathname === '/sitemap.xml') {
+    const o = origin(req);
+    res.writeHead(200, { ...SECURITY_HEADERS, 'content-type': 'application/xml; charset=utf-8', 'cache-control': 'public, max-age=86400' });
+    res.end(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${o}/</loc></url></urlset>\n`);
   } else if (STATIC[u.pathname]) { // Logo, Favicons, Web-App-Manifest (feste Liste, keine Pfade von außen)
     res.writeHead(200, { ...SECURITY_HEADERS, 'content-type': STATIC[u.pathname], 'cache-control': 'public, max-age=86400' });
     if (req.method === 'HEAD') return res.end();

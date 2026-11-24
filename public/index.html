@@ -1,11 +1,23 @@
-<!doctype html><html lang="de"><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Raumplaner</title>
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Raumplaner – Wohnung & Möbel online planen, gemeinsam in Echtzeit</title>
+<meta name="description" content="Kostenloser Raumplaner im Browser: Grundriss zeichnen, Möbel, Fenster und Türen maßstabsgetreu platzieren und live mit anderen planen. Ohne Anmeldung, open source.">
+<link rel="canonical" href="__ORIGIN__/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Raumplaner">
+<meta property="og:title" content="Raumplaner – Wohnung & Möbel online planen">
+<meta property="og:description" content="Grundriss zeichnen, Möbel maßstabsgetreu platzieren und live gemeinsam planen. Kostenlos, ohne Anmeldung.">
+<meta property="og:url" content="__ORIGIN__/">
+<meta property="og:image" content="__ORIGIN__/og-image.png">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Raumplaner – Wohnung und Möbel planen, gemeinsam live im Browser">
+<meta property="og:locale" content="de_DE">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Raumplaner","url":"__ORIGIN__/","image":"__ORIGIN__/og-image.png","description":"Kostenloser Raumplaner im Browser: Grundriss zeichnen, Möbel maßstabsgetreu platzieren und live gemeinsam planen.","applicationCategory":"DesignApplication","operatingSystem":"Any (Browser)","inLanguage":["de","en","fr","es","it","nl"],"isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"codeRepository":"https://github.com/jami100YT/roomplanner"}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="theme-color" content="#1e5c76">
-<meta name="claude:viewport-fit-sides" content="cover">
 <style>
 /* VOICE: ruhiges Zeichenwerkzeug
    IDEA: Zeichentisch – Grundriss auf Rasterpapier
@@ -663,7 +675,15 @@ function load(){try{const t=localStorage.getItem(KEY);if(!t)return null;
 function cacheLocal(){try{
   localStorage.setItem(KEY,JSON.stringify({...exportObj(true),active:S.rooms.findIndex(r=>r.id===S.active)}));
   hiddenSet=new Set(S.rooms.filter(r=>r.hidden).map(r=>r.id));localStorage.setItem(HKEY,JSON.stringify([...hiddenSet]))}catch(e){}}
-function save(){cacheLocal();if(RO)return;sync();sealUndo()}
+function save(){cacheLocal();if(RO)return;ensureCreated();sync();sealUndo()}
+/* Neuer, leerer Plan: Der eigene Stand wird erst hochgeladen, wenn jemand die Seite wirklich bedient
+   (Klick, Taste). So legen bloße Aufrufe – z. B. von Suchmaschinen – keine Pläne auf dem Server an. */
+let lazyCreate=false,lazyBase=null;
+function ensureCreated(){ // Ausgangsstand ohne Rückgängig-Eintrag hochladen; die gerade gemachte Änderung bleibt rückgängig machbar
+  if(!lazyCreate||!ready||RO)return;lazyCreate=false;
+  const cur=S.rooms,cn=S.north,r=recording;S.rooms=lazyBase.rooms;S.north=lazyBase.north;recording=false;
+  try{sync()}finally{S.rooms=cur;S.north=cn;recording=r;lazyBase=null}}
+for(const ev of ['pointerdown','keydown'])addEventListener(ev,()=>ensureCreated(),true);
 
 let S=load()||example();
 S.rooms.forEach(r=>r.hidden=hiddenSet.has(r.id));
@@ -1665,7 +1685,7 @@ const COLORS_ME=['#cf5a17','#1e5c76','#8a3fb0','#2f8a4f','#c0336b','#b08a12','#2
 // Damit kann der Server eine hängende alte Verbindung derselben Seite sofort entfernen.
 const SID=Math.random().toString(36).slice(2,12)+Math.random().toString(36).slice(2,8);
 /* ---------- Version ---------- */
-const APP_VERSION='2.3.0'; // bei jedem Update zusammen mit package.json erhöhen
+const APP_VERSION='2.4.0'; // bei jedem Update zusammen mit package.json erhöhen
 let updShown=false,updLast=0;
 async function checkUpdate(force){
   if(updShown||(!force&&Date.now()-updLast<5*60*1000))return;updLast=Date.now();
@@ -1843,7 +1863,7 @@ function handle(m){
     let p=null;if(srv.length){try{p=parsePlan({rooms:srv,meta:m.state.meta},true)}catch(e){}}
     ready=true;
     if(p){p.rooms.forEach(r=>r.hidden=hiddenSet.has(r.id));S.rooms=p.rooms;S.north=p.north;sel=null;drag=null;resetShadow();renderCompass();remoteRender()}
-    else{shadowR.clear();shadowI.clear();shadowM.clear();recording=false;sync();recording=true}   // leerer Plan: eigenen Stand hochladen
+    else{shadowR.clear();shadowI.clear();shadowM.clear();lazyCreate=true;lazyBase={rooms:structuredClone(S.rooms),north:S.north}}   // leerer Plan: eigenen Stand erst bei der ersten Bedienung hochladen
     setConn(t('● live · {n} online',{n:peers.size+1}),'ok');send({t:'pres',p:me});renderPeers();render();
   }else if(m.t==='viewlink'&&typeof m.token==='string'&&/^[A-Za-z0-9_-]{24}$/.test(m.token)){
     clearTimeout(viewLinkT);const u=new URL(shareUrl);u.search='?view='+m.token;u.hash='';const url=u.href;
@@ -1859,6 +1879,7 @@ function handle(m){
     if(ws){ws.onclose=null}
     const u=new URL(location.href);u.searchParams.set('plan',m.plan);location.replace(u.href);
   }else if(m.t==='ops'&&Array.isArray(m.ops)){
+    if(lazyCreate&&m.from!==myId){lazyCreate=false;lazyBase=null;S.rooms=[]} // jemand anderes hat den Plan zuerst angelegt: dessen Stand übernehmen
     applyRemote(m.ops,m.from===myId);
   }else if(m.t==='pres'&&m.p){
     if(m.p.sid===SID)return; // eigener Geist – ignorieren

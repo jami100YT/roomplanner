@@ -5,6 +5,7 @@ Für eine Handvoll Nutzer reicht ein kleiner Server (1 vCPU, 512 MB RAM). Der Ra
 - liefert die Seite unter `/` aus
 - Echtzeit über **WebSocket** unter `/ws`
 - speichert jeden Plan als `data/<plan>.json` (plus `.bak`), dazu `data/secret.key` für die Ansehen-Links
+- `PUBLIC_URL` (in `docker-compose.yml` bzw. als Umgebungsvariable) = deine öffentliche Adresse, z. B. `https://roomplanner.bameninghong.com`. Damit stimmen Link-Vorschauen (WhatsApp, Discord …), Sitemap und die Adresse für Google.
 - **Link erneuern** (Einstellungen → Plan): Der Plan zieht unter einen neuen Code um, alle alten Mitplanen- und Ansehen-Links sind sofort ungültig. Unter dem alten Code bleibt nur eine leere, gesperrte Datei.
 - `/health` antwortet mit `ok` (für Monitoring/Healthchecks)
 

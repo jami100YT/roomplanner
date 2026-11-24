@@ -76,6 +76,13 @@ No timeout tuning is needed, because the app sends a heartbeat every 10 seconds.
 - Everything that comes in (JSON imports and live changes) is validated, size-limited and escaped before it is stored or shown. A Content-Security-Policy blocks embedding the app in other sites.
 - `npm test` runs the security checks.
 
+## Search engines and link previews
+
+- Set `PUBLIC_URL` (e.g. `https://roomplanner.example.com`) so the canonical link, sitemap and link-preview image use your real address. Without it, the address is taken from the request.
+- Only the start page is indexable. Every plan and view link is sent with `X-Robots-Tag: noindex`, so plans never show up in search results.
+- `/robots.txt`, `/sitemap.xml`, Open Graph/Twitter tags, a 1200×630 preview image and schema.org data are built in.
+- Simply opening the page (as search engines do) doesn't create a plan on the server. A plan is saved on the first click or key press.
+
 ## Data
 
 - Each plan is stored on the server as `data/<plan>.json`, with a `.bak` copy. Saves are automatic, atomic, and also happen on shutdown.
