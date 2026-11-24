@@ -7,7 +7,7 @@ Plan apartments together, live in the browser. No accounts, no login: anyone wit
 
 > **This project is 100 % vibe coded.** Every line of code, every test and all of the documentation were written by an AI (Claude) from conversational prompts. No line was typed by hand. It is tested extensively with automated browser tests, but please keep its origin in mind.
 
-The user interface is in German.
+The user interface is available in German, English, French, Spanish, Italian and Dutch.
 
 ## Features
 
