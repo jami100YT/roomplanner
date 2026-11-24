@@ -1,0 +1,17 @@
+# Start:   docker compose up -d --build
+# Update:  git pull && docker compose up -d --build
+# Logs:    docker compose logs -f
+services:
+  roomplanner:
+    build: .
+    image: roomplanner:latest
+    container_name: roomplanner
+    restart: unless-stopped
+    ports:
+      - "3000:3000"            # nur intern nutzen? → "127.0.0.1:3000:3000"
+    volumes:
+      - roomplanner-data:/app/data   # Pläne, secret.key – bleiben bei Updates erhalten
+    stop_grace_period: 10s     # Zeit zum Speichern beim Beenden
+
+volumes:
+  roomplanner-data:

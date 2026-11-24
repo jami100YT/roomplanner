@@ -84,7 +84,6 @@ button[data-armed]{background:var(--danger);color:#fff;border-color:var(--danger
 .rrow.on .rn{color:var(--sel);font-weight:500}
 .rrow.off .rn span:first-child{opacity:.5}
 .bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;font-size:13px}
-.bar .hint{color:var(--muted);font-size:12px;margin-left:auto}
 .bar label{display:flex;align-items:center;gap:6px}
 .bar select{width:auto;padding:4px 6px}
 .bar input[type=checkbox]{width:auto}
@@ -105,6 +104,36 @@ button[data-armed]{background:var(--danger);color:#fff;border-color:var(--danger
 .undo{display:inline-flex;gap:4px}.undo button{min-width:38px;font-size:16px;padding:3px 8px}
 .rarea{paint-order:stroke;stroke:var(--floor);stroke-width:3px;stroke-linejoin:round;fill:var(--muted);font-family:var(--f-mono);pointer-events:none}
 .curs{pointer-events:none}
+.bar{gap:8px}.bar .grow{flex:1}
+.bar button{padding:6px 12px}
+.fold summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between}
+.fold summary::-webkit-details-marker{display:none}
+.fold summary::after{content:'▸';color:var(--muted);font-size:12px}.fold[open] summary::after{content:'▾'}
+.foldbody{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+.modebar{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:6;display:flex;align-items:center;gap:10px;max-width:min(92%,720px);
+  background:var(--panel);border:1px solid var(--sel);border-radius:10px;padding:8px 10px 8px 14px;box-shadow:0 6px 24px rgba(0,0,0,.15)}
+.modebar>div{display:flex;flex-direction:column;gap:2px;min-width:0}
+.modebar b{font-size:13px;color:var(--sel)}
+.modebar span{font-size:12px;color:var(--muted)}
+.modebar button{white-space:nowrap}
+.toasts{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;z-index:7;pointer-events:none;width:max-content;max-width:90%}
+.toast{background:var(--fg);color:var(--bg);border-radius:8px;padding:8px 14px;font-size:13px;box-shadow:0 6px 20px rgba(0,0,0,.2);opacity:0;transform:translateY(6px);transition:opacity .2s,transform .2s;pointer-events:auto;display:flex;gap:10px;align-items:center}
+.toast.show{opacity:1;transform:none}
+.toast.bad{background:var(--danger);color:#fff}
+.toast button{background:transparent;color:inherit;border-color:currentColor;padding:3px 10px}
+.dlg{border:1px solid var(--line);border-radius:12px;padding:0;background:var(--panel);color:var(--fg);width:min(520px,94vw);max-height:86vh;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.dlg::backdrop{background:rgba(10,15,18,.35)}
+.dlghead{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel)}
+.dlghead h2{font-size:15px;text-transform:none;letter-spacing:0;color:var(--fg)}
+.dlg .x{border:0;background:transparent;font-size:22px;line-height:1;padding:0 4px}
+.dlgbody{padding:16px 18px;display:flex;flex-direction:column;gap:14px}
+.dlg fieldset{border:1px solid var(--line);border-radius:8px;padding:10px 12px 12px;margin:0;display:flex;flex-direction:column;gap:10px}
+.dlg legend{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:0 4px}
+.keys h3{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:4px 0 0}
+.keys dl{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:6px 14px;margin:0;font-size:13px}
+.keys dt{color:var(--fg)}.keys dd{margin:0;color:var(--muted)}
+kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;background:var(--floor)}
+@media (max-width:860px){.modebar{top:8px;flex-wrap:wrap}}
 .ro-only{display:none!important}
 .ro .ro-only{display:flex!important}
 .ro .edit-only{display:none!important}
@@ -142,6 +171,9 @@ button[data-armed]{background:var(--danger);color:#fff;border-color:var(--danger
 .vm{position:absolute;z-index:20;top:calc(100% + 6px);left:0;width:300px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:10px;box-shadow:0 6px 24px rgba(0,0,0,.14)}
 .vrow{display:flex;align-items:center;gap:8px;font-size:13px}
 .vrow select{flex:1}
+.dlg .vrow{justify-content:flex-start}
+.dlg input[type=checkbox]{width:auto;flex:none;margin:0;accent-color:var(--accent)}
+.dlg .vrow input[type=range]{flex:1}
 .vrow input[type=range]{flex:1;padding:0}
 .vrow output{font-family:var(--f-mono);font-size:12px;min-width:44px;text-align:right;color:var(--muted)}
 .dimtxt.in{fill:var(--fg);opacity:.75}
@@ -206,7 +238,6 @@ button.on{background:var(--sel);border-color:var(--sel);color:#fff}
   main{order:-1}
   .stage{flex:none;height:min(68vh,560px)}
   aside{overflow:visible}
-  .bar .hint{margin-left:0}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style></head><body>
@@ -217,22 +248,17 @@ button.on{background:var(--sel);border-color:var(--sel);color:#fff}
 
     <section class="card ro-only">
       <div class="hrow"><h2>Präsentation</h2><span class="meta" id="connRO">verbinde…</span></div>
-      <div class="robadge">👁 Nur ansehen – Änderungen der Planer erscheinen hier live.</div>
-      <div class="meta">Zoomen mit dem Mausrad, Ansicht mit gedrückter Maus verschieben. Räume links ein-/ausblenden.</div>
+      <div class="robadge">👁 Nur ansehen · Änderungen erscheinen live</div>
     </section>
 
     <section class="card edit-only">
       <div class="hrow"><h2>Gemeinsam planen</h2><span class="meta" id="conn">verbinde…</span></div>
-      <div style="display:grid;grid-template-columns:1fr 64px;gap:8px">
-        <label class="f">Dein Name <input id="me-name" maxlength="24"></label>
-        <label class="f">Farbe <input id="me-color" type="color"></label>
-      </div>
       <div class="peers" id="peers"></div>
-      <button type="button" id="shareBtn" class="primary">Link zum Plan kopieren</button>
-      <div class="meta">Jeder mit dem Link plant live mit.</div>
+      <div class="btnrow">
+        <button type="button" id="shareBtn" class="primary" title="Wer diesen Link hat, plant live mit">🔗 Mitplanen-Link</button>
+        <button type="button" id="viewLinkBtn" title="Nur ansehen – zum Präsentieren, ohne Bearbeiten und ohne den Plan-Code">👁 Ansehen-Link</button>
+      </div>
       <div class="meta" id="shareHint"></div>
-      <button type="button" id="viewLinkBtn">👁 Nur-Ansehen-Link kopieren</button>
-      <div class="meta">Zum Präsentieren: Wer diesen Link hat, sieht alles live, kann aber nichts ändern. Der Plan-Code ist darin nicht enthalten.</div>
       <div class="meta" id="viewLinkHint" style="overflow-wrap:anywhere"></div>
     </section>
 
@@ -266,7 +292,7 @@ button.on{background:var(--sel);border-color:var(--sel);color:#fff}
       </div>
       <details id="wallBox">
         <summary>Wandlängen</summary>
-        <div class="meta" style="margin:6px 0 4px">Ändert die Länge; die folgende Wand (im Uhrzeigersinn) wandert parallel mit.</div>
+        <div class="meta" style="margin:6px 0 4px">Die nächste Wand (im Uhrzeigersinn) wandert mit.</div>
         <div id="wallList" class="walls"></div>
       </details>
       <div class="btnrow">
@@ -278,7 +304,6 @@ button.on{background:var(--sel);border-color:var(--sel);color:#fff}
         <button type="button" id="expRoom">Raum exportieren</button>
         <label class="btnlike" tabindex="0" id="impRoomLbl">Raum importieren<input type="file" id="impRoomIn" accept=".json,application/json,text/plain" hidden></label>
       </div>
-      <div class="meta" id="roomMsg" role="status"></div>
     </section>
 
     <section class="card edit-only">
@@ -337,7 +362,7 @@ button.on{background:var(--sel);border-color:var(--sel);color:#fff}
     </section>
 
     <section class="card edit-only">
-      <h2>Speichern &amp; Laden</h2>
+      <details class="fold" id="ioBox"><summary><h2>Speichern &amp; Laden</h2></summary><div class="foldbody">
       <div class="btnrow">
         <button type="button" id="saveFile" class="primary">Als JSON-Datei speichern</button>
         <button type="button" id="copyJson">JSON kopieren</button>
@@ -351,35 +376,21 @@ button.on{background:var(--sel);border-color:var(--sel);color:#fff}
         <textarea id="jsonTxt" rows="9" spellcheck="false" aria-label="Plan als JSON"></textarea>
         <button type="button" id="impTxt" class="primary">Aus Text importieren</button>
       </div>
-      <div class="meta" id="ioMsg" role="status"></div>
-    </section>
-    <section class="card">
-      <div class="hrow"><h2>Version</h2><b class="meta" id="verClient"></b></div>
+      </div></details>
     </section>
   </aside>
 
   <main>
     <div class="bar">
-      <label>Drehschritt <select id="step"><option value="45">45°</option><option value="90">90°</option></select></label>
-      <label><input type="checkbox" id="snap"> am 5-cm-Raster einrasten</label>
-      <details class="viewmenu" id="viewMenu"><summary>Ansicht ▾</summary>
-        <div class="vm">
-          <label class="vrow"><input type="checkbox" id="showNames" checked> Raumnamen</label>
-          <label class="vrow">Maße
-            <select id="dimsMode"><option value="smart">alle Räume (intelligent)</option><option value="active">nur aktiver Raum</option><option value="off">aus</option></select></label>
-          <label class="vrow"><input type="checkbox" id="showTotal" checked> Gesamtmaße der Wohnung</label>
-          <label class="vrow">Schrift Möbel <input type="range" id="furnFont" min="0.5" max="2.5" step="0.1" value="1"><output id="furnFontV">100 %</output></label>
-          <label class="vrow"><input type="checkbox" id="furnSize" checked> Möbelmaße anzeigen (z. B. 140×200)</label>
-          <label class="vrow">Schrift Maße <input type="range" id="dimFont" min="0.5" max="2" step="0.1" value="1"><output id="dimFontV">100 %</output></label>
-          <div class="meta">Wird in diesem Browser gespeichert.</div>
-        </div>
-      </details>
-      <label class="edit-only"><input type="checkbox" id="lockRooms"> Räume fixieren</label>
-      <span class="undo edit-only"><button type="button" id="undoBtn" title="Rückgängig (Strg+Z)" aria-label="Rückgängig" disabled>↶</button><button type="button" id="redoBtn" title="Wiederholen (Strg+Y / Strg+⇧+Z)" aria-label="Wiederholen" disabled>↷</button></span>
-      <button type="button" id="resetBtn" class="edit-only">Beispiel laden</button>
-      <span class="hint" id="hint">Mausrad = zoomen · leere Fläche / Leertaste ziehen = Ausschnitt verschieben · Raumname oder Boden ziehen = Raum verschieben · Ziehen = verschieben · Doppelklick / R = drehen · Q / E = 45° links / rechts · Pfeiltasten = 1 cm (⇧ 10 cm) · Entf = löschen · Boden anklicken = Raum wählen</span>
+      <span class="undo edit-only"><button type="button" id="undoBtn" title="Rückgängig (Strg+Z)" aria-label="Rückgängig" disabled>↶</button><button type="button" id="redoBtn" title="Wiederholen (Strg+Y)" aria-label="Wiederholen" disabled>↷</button></span>
+      <span class="grow"></span>
+      <button type="button" id="helpBtn" title="Tastenkürzel & Hilfe (?)">? Hilfe</button>
+      <button type="button" id="settingsBtn" title="Einstellungen">⚙ Einstellungen</button>
     </div>
     <div class="stage"><svg id="plan" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="modebar" id="modeBar" hidden><div><b id="modeTitle"></b><span id="modeHint"></span></div>
+        <button type="button" id="modeCancel">Abbrechen</button><button type="button" id="modeDone" class="primary">Fertig</button></div>
+      <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
       <div class="compass" id="compass">
         <svg id="rose" viewBox="-50 -50 100 100" aria-label="Kompass – ziehen zum Drehen" role="img">
           <circle r="46" class="cring"/>
@@ -404,6 +415,53 @@ button.on{background:var(--sel);border-color:var(--sel);color:#fff}
   </main>
 </div>
 
+<dialog id="settingsDlg" class="dlg" aria-labelledby="setTitle">
+  <div class="dlghead"><h2 id="setTitle">Einstellungen</h2><button type="button" class="x" data-close aria-label="Schließen">×</button></div>
+  <div class="dlgbody">
+    <fieldset><legend>Ansicht</legend>
+      <label class="vrow"><input type="checkbox" id="showNames" checked> Raumnamen anzeigen</label>
+      <label class="vrow">Maße <select id="dimsMode"><option value="smart">alle Räume</option><option value="active">nur aktiver Raum</option><option value="off">aus</option></select></label>
+      <label class="vrow"><input type="checkbox" id="showTotal" checked> Gesamtmaße der Wohnung</label>
+      <label class="vrow"><input type="checkbox" id="furnSize" checked> Möbelmaße anzeigen</label>
+      <label class="vrow">Schrift Möbel <input type="range" id="furnFont" min="0.5" max="2.5" step="0.1" value="1"><output id="furnFontV">100 %</output></label>
+      <label class="vrow">Schrift Maße <input type="range" id="dimFont" min="0.5" max="2" step="0.1" value="1"><output id="dimFontV">100 %</output></label>
+    </fieldset>
+    <fieldset class="edit-only"><legend>Bearbeiten</legend>
+      <label class="vrow"><input type="checkbox" id="snap"> Am 5-cm-Raster einrasten</label>
+      <label class="vrow">Drehschritt (R / Doppelklick) <select id="step"><option value="45">45°</option><option value="90">90°</option></select></label>
+      <label class="vrow"><input type="checkbox" id="lockRooms"> Räume fixieren (nicht verschiebbar)</label>
+    </fieldset>
+    <fieldset class="edit-only"><legend>Profil</legend>
+      <div style="display:grid;grid-template-columns:1fr 64px;gap:8px">
+        <label class="f">Dein Name <input id="me-name" maxlength="24"></label>
+        <label class="f">Farbe <input id="me-color" type="color"></label>
+      </div>
+    </fieldset>
+    <fieldset class="edit-only"><legend>Plan</legend>
+      <div class="btnrow"><button type="button" id="resetBtn">Beispielwohnung laden</button></div>
+      <div class="meta">Ersetzt den Plan für alle – lässt sich mit Strg+Z zurücknehmen.</div>
+    </fieldset>
+    <div class="meta">Einstellungen gelten nur in diesem Browser. Raumplaner <span id="verClient"></span></div>
+  </div>
+</dialog>
+
+<dialog id="helpDlg" class="dlg" aria-labelledby="helpTitle">
+  <div class="dlghead"><h2 id="helpTitle">Tastenkürzel &amp; Bedienung</h2><button type="button" class="x" data-close aria-label="Schließen">×</button></div>
+  <div class="dlgbody keys">
+    <h3>Ansicht</h3>
+    <dl><dt>Mausrad / Pinch</dt><dd>Zoomen</dd><dt>Leere Fläche ziehen · Leertaste + Ziehen · mittlere Maustaste</dt><dd>Ansicht verschieben</dd><dt><kbd>+</kbd> <kbd>−</kbd> <kbd>0</kbd></dt><dd>Zoom · einpassen</dd></dl>
+    <div class="edit-only">
+    <h3>Auswählen</h3>
+    <dl><dt>Klick</dt><dd>Möbel / Gruppe wählen · Boden: Raum wählen</dd><dt><kbd>⇧</kbd>/<kbd>Strg</kbd> + Klick · <kbd>⇧</kbd> + Ziehen</dt><dd>Mehrere wählen</dd><dt><kbd>Strg</kbd>+<kbd>A</kbd></dt><dd>Alle Möbel im Raum</dd><dt><kbd>Alt</kbd> + Klick</dt><dd>Einzelnes Möbel einer Gruppe</dd><dt><kbd>Esc</kbd></dt><dd>Auswahl aufheben · Modus beenden</dd></dl>
+    <h3>Bearbeiten</h3>
+    <dl><dt>Ziehen</dt><dd>Verschieben (Raum: am Namen oder Boden)</dd><dt>Pfeiltasten</dt><dd>1 cm verschieben (mit <kbd>⇧</kbd> 10 cm)</dd><dt><kbd>Q</kbd> / <kbd>E</kbd></dt><dd>45° links / rechts drehen</dd><dt><kbd>R</kbd> · Doppelklick</dt><dd>Um den Drehschritt drehen</dd><dt><kbd>Entf</kbd></dt><dd>Löschen</dd><dt><kbd>Strg</kbd>+<kbd>G</kbd> / <kbd>Strg</kbd>+<kbd>⇧</kbd>+<kbd>G</kbd></dt><dd>Gruppieren / Gruppe auflösen</dd><dt><kbd>Strg</kbd>+<kbd>Z</kbd> / <kbd>Strg</kbd>+<kbd>Y</kbd></dt><dd>Rückgängig / Wiederholen (nur eigene Änderungen)</dd></dl>
+    <h3>Räume formen</h3>
+    <dl><dt>✎ Raum zeichnen</dt><dd>Ecken klicken, Startpunkt / Enter = fertig</dd><dt>Form bearbeiten</dt><dd>● Ecke ziehen · ■ Wand verschieben · Doppelklick auf Wand = neue Ecke · auf ● = Ecke löschen</dd><dt>＋ Anbau / Ausschnitt</dt><dd>Auf einer Wand starten und enden – außen erweitert, innen schneidet aus</dd></dl>
+    </div>
+    <div class="meta">Raumplaner <span id="verHelp"></span></div>
+  </div>
+</dialog>
+
 <script>
 {
 const $=s=>document.querySelector(s);
@@ -414,7 +472,7 @@ const VIEW=(()=>{const v=new URL(location.href).searchParams.get('view');return 
 const RO=!!VIEW;
 document.documentElement.classList.toggle('ro',RO);
 const planId=RO?'view-'+VIEW.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,16):(()=>{const u=new URL(location.href);let p=(u.searchParams.get('plan')||'').toLowerCase();
-  if(!/^[a-z0-9-]{1,40}$/.test(p)){p=Math.random().toString(36).slice(2,10);u.searchParams.set('plan',p);history.replaceState(null,'',u)}return p})();
+  if(!/^[a-z0-9-]{1,40}$/.test(p)){p=(Math.random().toString(36).slice(2,8)+Math.random().toString(36).slice(2,8)).slice(0,12);u.searchParams.set('plan',p);history.replaceState(null,'',u)}return p})();
 const ROGUARD=()=>RO; // Schreibschutz in der Oberfläche (der Server erzwingt ihn zusätzlich)
 const KEY='raumplaner-live-'+planId, HKEY='raumplaner-hidden-'+planId;
 const LEGACY=['top','right','bottom','left']; // alte Wandnamen → Kante 0..3 eines Rechtecks
@@ -439,7 +497,19 @@ function normRoom(r,keep){
   if(Math.abs(polyArea(room.pts))<100)room.pts=rectPts(w,d);
   if(polyArea(room.pts)<0)room.pts.reverse();
   normalizeRoom(room);
+  keepExtra(r,room,ROOM_KEYS);
   return room;
+}
+/* Vorwärts-Kompatibilität: Felder, die diese Version nicht kennt (aus einer neueren Version),
+   werden unverändert mitgeführt statt verworfen – so geht beim Bearbeiten mit einer älteren Seite nichts verloren. */
+const ROOM_KEYS=new Set(['id','name','x','y','w','d','hidden','items','pts','north']);
+const ITEM_KEYS=new Set(['id','type','name','w','d','color','x','y','rot','form','la','lb','mir','pts','grp','gn','wall','s','hinge','swing','noleaf']);
+function keepExtra(src,dst,known){
+  for(const k of Object.keys(src)){
+    if(known.has(k)||k in dst||!/^[A-Za-z_][\w-]{0,40}$/.test(k)||k==='__proto__'||k==='constructor'||k==='prototype')continue;
+    const v=src[k];let j;try{j=JSON.stringify(v)}catch(e){continue}
+    if(j!==undefined&&j.length<=4000)dst[k]=JSON.parse(j);
+  }
 }
 function normItem(i,room,keep){
   if(!i||typeof i!=='object')return null;let it;
@@ -461,7 +531,7 @@ function normItem(i,room,keep){
     it={id:okId(i.id,keep),type:i.type,name:String(i.name||(i.type==='door'?'Tür':'Fenster')).slice(0,60),wall,w,s};
     if(i.type==='door'){it.hinge=hinge;it.swing=i.swing==='out'?'out':'in';if(i.noleaf)it.noleaf=true} // noleaf = Türblatt ausgehängt
   }else return null;
-  clamp(room,it);return it;
+  clamp(room,it);keepExtra(i,it,ITEM_KEYS);return it;
 }
 function parsePlan(o,keep){
   if(!o||typeof o!=='object')throw new Error('Keine gültige JSON-Struktur');
@@ -501,9 +571,9 @@ function example(){
       {type:'furn',name:'Kleiderschrank',w:150,d:60,color:'#c9877a',x:30,y:130,rot:90}]},
     {name:'Bad',x:0,y:412,w:240,d:220,items:[
       {type:'window',name:'Fenster',wall:'bottom',s:80,w:80},
-      {type:'furn',name:'Badewanne',w:170,d:75,color:'#7fb3ad',x:85,y:37.5,rot:0},
-      {type:'furn',name:'WC',w:40,d:65,color:'#d9dee0',x:60,y:187.5,rot:180},
-      {type:'furn',name:'Waschbecken',w:60,d:45,color:'#d9dee0',x:180,y:197.5,rot:180}]},
+      {type:'furn',name:'Badewanne',w:170,d:75,color:'#7fb3ad',x:95,y:182.5,rot:180},
+      {type:'furn',name:'WC',w:40,d:65,color:'#d9dee0',x:150,y:32.5,rot:0},
+      {type:'furn',name:'Waschbecken',w:60,d:45,color:'#d9dee0',x:95,y:22.5,rot:0}]},
     {name:'Flur',x:252,y:412,w:420,d:220,items:[
       {type:'door',name:'Wohnungstür',wall:'bottom',s:160,w:100,hinge:'start',swing:'in'},
       {type:'door',name:'Tür Wohnzimmer',wall:'top',s:40,w:90,hinge:'start',swing:'out'},
@@ -513,8 +583,8 @@ function example(){
       {type:'furn',name:'Garderobe',w:100,d:40,color:'#b9926a',x:340,y:200,rot:180}]},
     {name:'Küche',x:684,y:412,w:228,d:220,items:[
       {type:'window',name:'Fenster',wall:'right',s:60,w:100},
-      {type:'furn',name:'Küchenzeile',w:220,d:60,color:'#c9877a',x:114,y:30,rot:0},
-      {type:'furn',name:'Kühlschrank',w:60,d:65,color:'#d9dee0',x:150,y:187.5,rot:180}]}
+      {type:'furn',name:'Küchenzeile',w:220,d:60,color:'#c9877a',x:114,y:190,rot:180},
+      {type:'furn',name:'Kühlschrank',w:60,d:65,color:'#d9dee0',x:190,y:32.5,rot:0}]}
   ]});
   p.active=p.rooms[0].id;return p;
 }
@@ -668,11 +738,16 @@ function render(){
       <line class="front" x1="${-w/2+2}" y1="${d/2}" x2="${w/2-2}" y2="${d/2}"/>`}</g>`;
   }
   for(const r of vis)for(const it of r.items.filter(i=>i.type==='furn')){
-    let{hx,hy}=ext(it),lf=Math.min(fs,Math.min(hx,hy)/1.6)*SET.ff,X=r.x+it.x,Y=r.y+it.y;
-    if(it.pts){const q=pole(it.pts),g=furnToG(r,it,q);X=r1(g[0]);Y=r1(g[1]);lf=Math.min(fs,q[2]/1.3)*SET.ff}
+    let{hx,hy}=ext(it),X=r.x+it.x,Y=r.y+it.y,room=Math.min(hx,hy)/1.6,avail=2*hx,vert=false;
+    if(it.pts){const q=pole(it.pts),g=furnToG(r,it,q);X=r1(g[0]);Y=r1(g[1]);room=q[2]/1.3;avail=2*q[2]}
+    else if(hy>hx*1.25){vert=true;avail=2*hy} // hochkant: Beschriftung senkrecht
+    // Schrift an die Breite anpassen (Name und Maßzeile passen ins Möbel); Regler „Schrift Möbel“ skaliert darüber hinaus
+    const chars=Math.max(it.name.length,SET.fsize?(fmt(it.w)+'×'+fmt(it.d)).length*0.8:0)||1;
+    let lf=Math.min(fs,room,avail*0.9/(0.58*chars))*SET.ff;
     if(lf<3)continue;
-    h+=SET.fsize?`<text class="lbl" font-size="${r1(lf)}" text-anchor="middle" x="${X}" y="${Y}"><tspan x="${X}" dy="-0.15em">${esc(it.name)}</tspan><tspan class="sz" x="${X}" dy="1.2em" font-size="${r1(lf*0.8)}">${fmt(it.w)}×${fmt(it.d)}</tspan></text>`
-      :`<text class="lbl" font-size="${r1(lf)}" text-anchor="middle" dy="0.35em" x="${X}" y="${Y}">${esc(it.name)}</text>`;
+    const tr=vert?` transform="rotate(-90 ${r1(X)} ${r1(Y)})"`:'';
+    h+=SET.fsize?`<text class="lbl" font-size="${r1(lf)}" text-anchor="middle" x="${X}" y="${Y}"${tr}><tspan x="${X}" dy="-0.15em">${esc(it.name)}</tspan><tspan class="sz" x="${X}" dy="1.2em" font-size="${r1(lf*0.8)}">${fmt(it.w)}×${fmt(it.d)}</tspan></text>`
+      :`<text class="lbl" font-size="${r1(lf)}" text-anchor="middle" dy="0.35em" x="${X}" y="${Y}"${tr}>${esc(it.name)}</text>`;
   }
   // Raumnamen über den Möbeln (zum Ziehen des Raums) – abschaltbar
   if(showNames)for(const r of vis){const c=r.pts.reduce((m,p)=>(p[1]<m[1]||(p[1]===m[1]&&p[0]<m[0]))?p:m,r.pts[0]),X=r.x+c[0]+fs*.5,Y=r.y+c[1];
@@ -837,7 +912,7 @@ svg.addEventListener('wheel',e=>{
 },{passive:false});
 let spaceDown=false;
 document.addEventListener('keydown',e=>{
-  if(e.target.closest('input,select,textarea'))return;
+  if(e.target.closest('input,select,textarea,dialog')||document.querySelector('dialog[open]'))return;
   if(e.code==='Space'){if(!spaceDown){spaceDown=true;svg.classList.add('spacepan');if(document.activeElement&&document.activeElement.tagName==='BUTTON')document.activeElement.blur()}e.preventDefault();return}
   if(e.ctrlKey||e.metaKey||e.altKey)return;
   if(e.key==='+'||e.key==='='){zoomCenter(1/1.3);e.preventDefault()}
@@ -941,7 +1016,7 @@ function renderPanel(){
     <div class="f" style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)">Ausrichten
       <div class="r3" style="grid-template-columns:repeat(6,1fr)"><button type="button" data-al="l" title="links bündig">⇤</button><button type="button" data-al="cx" title="waagrecht mittig">↔</button><button type="button" data-al="r" title="rechts bündig">⇥</button><button type="button" data-al="t" title="oben bündig">⤒</button><button type="button" data-al="cy" title="senkrecht mittig">↕</button><button type="button" data-al="b" title="unten bündig">⤓</button></div></div>
     <div class="btnrow"><button type="button" data-act="dup">Duplizieren</button><button type="button" data-act="del" class="danger">Alle löschen</button></div>
-    <div class="meta">Ziehen, Q/E/R, Pfeiltasten und Entf wirken auf alle. Shift/Strg+Klick: hinzufügen/entfernen · Alt+Klick: einzelnes Möbel einer Gruppe.</div>`;
+    <div class="meta">Ziehen, Drehen und Löschen wirken auf alle.</div>`;
     return}
   let h=`<h2>Auswahl</h2><label class="f">Name<input data-k="name" value="${esc(it.name)}"></label>`;
   if(it.grp)h+=`<div class="ginfo">Teil der Gruppe „${esc(it.gn||'Gruppe')}“<button type="button" data-act="selgrp">Ganze Gruppe wählen</button><button type="button" data-act="leavegrp">Aus Gruppe lösen</button></div>`;
@@ -1108,17 +1183,21 @@ function snapRoom(r,nx,ny){
     for(const c of cy){const d=Math.abs(ny+v[1]-c);if(d<dy){dy=d;by=c-v[1]}}}
   return[r1(bx),r1(by)]}
 /* ---------- Raum zeichnen & Form bearbeiten ---------- */
-const HINT_DEFAULT='Mausrad = zoomen · leere Fläche / Leertaste ziehen = Ausschnitt verschieben · Raumname oder Boden ziehen = Raum verschieben · Strg+Z / Strg+Y = rückgängig / wiederholen · Shift/Strg+Klick oder Shift+Ziehen = mehrere wählen · Strg+G = gruppieren · Ziehen = verschieben · Doppelklick / R = drehen · Q / E = 45° links / rechts · Pfeiltasten = 1 cm (⇧ 10 cm) · Entf = löschen · Boden anklicken = Raum wählen';
+const MODES={
+  draw:['Raum zeichnen','Ecken klicken · Startpunkt oder Enter schließt · ⌫ letzte Ecke','Fertig'],
+  shape:['Form bearbeiten','● Ecke ziehen · ■ Wand verschieben · Doppelklick: Ecke einfügen / löschen','Fertig'],
+  fshape:['Möbel-Ecken','● Ecke ziehen · ■ Kante verschieben · Doppelklick: Ecke einfügen / löschen','Fertig'],
+  extend:['Anbau / Ausschnitt','Auf einer Wand starten, Ecken klicken, auf einer Wand enden',null]};
 function updateModeUI(){
   $('#drawRoom').classList.toggle('on',mode==='draw');$('#drawRoom').textContent=mode==='draw'?'Zeichnen beenden':'✎ Raum zeichnen';
   $('#editShape').classList.toggle('on',mode==='shape');$('#editShape').textContent=mode==='shape'?'Form fertig':'Form bearbeiten';
   $('#extendShape').classList.toggle('on',mode==='extend');$('#extendShape').textContent=mode==='extend'?'Abbrechen':'＋ Anbau / Ausschnitt';
-  $('#hint').textContent=mode==='draw'?'Raum zeichnen: Klick = Ecke setzen · Startpunkt anklicken, Doppelklick oder Enter = fertig · ⌫ = letzte Ecke weg · Esc = abbrechen · rastet am Raster, an Achsen und an Wänden ein'
-    :mode==='shape'?'Form bearbeiten: ● Ecke ziehen · ■ Wand verschieben · Doppelklick auf eine Wand = Ecke an dieser Stelle einfügen · Doppelklick auf ● = Ecke löschen · Esc = fertig'
-    :mode==='fshape'?'Möbel-Ecken: ● Ecke ziehen · ■ Kante verschieben · Doppelklick auf ■ = neue Ecke · Doppelklick auf ● = Ecke löschen · Esc = fertig'
-    :mode==='extend'?'Anbau / Ausschnitt: auf einer Wand starten · Ecken klicken · auf einer Wand enden (außen = Anbau, innen = Ausschnitt) · ⌫ = letzte Ecke weg · Esc = abbrechen'
-    :HINT_DEFAULT;
+  const m=MODES[mode];$('#modeBar').hidden=!m;if(!m)return;
+  $('#modeTitle').textContent=m[0];$('#modeHint').textContent=m[1];
+  $('#modeDone').hidden=!m[2];$('#modeCancel').hidden=mode==='shape'||mode==='fshape';
 }
+$('#modeDone').addEventListener('click',()=>{if(mode==='draw')finishDraw();else{setMode(null);renderPanel()}});
+$('#modeCancel').addEventListener('click',()=>{setMode(mode==='extend'?'shape':null)});
 function setMode(m){
   mode=m;drawPts=[];drawCur=null;extCur=null;extStart=null;drag=null;
   if(m&&m!=='fshape')sel=null;
@@ -1373,7 +1452,7 @@ svg.addEventListener('dblclick',e=>{
   rotate(f[0],f[1],S.step);render();renderPanel();save()});
 
 document.addEventListener('keydown',e=>{
-  if(RO||e.target.closest('input,select,textarea'))return;
+  if(RO||e.target.closest('input,select,textarea,dialog'))return;
   if(mode==='draw'){
     if(e.key==='Escape')setMode(null);else if(e.key==='Enter')finishDraw();
     else if(e.key==='Backspace'||e.key==='Delete'){drawPts.pop();render()}else return;
@@ -1443,7 +1522,14 @@ $('#addForm').addEventListener('submit',e=>{e.preventDefault();const A=R(),W=A.w
 });
 
 /* ---------- Speichern & Laden ---------- */
-const msg=t=>{$('#ioMsg').textContent=t};
+function toast(t,{bad=false,action=null,ms=3500}={}){
+  const el=document.createElement('div');el.className='toast'+(bad?' bad':'');el.textContent=t;
+  if(action){const b=document.createElement('button');b.type='button';b.textContent=action[0];b.onclick=()=>{action[1]();el.remove()};el.appendChild(b)}
+  $('#toasts').appendChild(el);requestAnimationFrame(()=>el.classList.add('show'));
+  while($('#toasts').children.length>3)$('#toasts').firstChild.remove();
+  if(ms)setTimeout(()=>{el.classList.remove('show');setTimeout(()=>el.remove(),250)},ms);return el;
+}
+const msg=t=>toast(t,{bad:/fehlgeschlagen|nicht möglich|geht nicht|ungültig|zu klein|keine gültige|mindestens/i.test(t)});
 const json=()=>JSON.stringify(exportObj(),null,2);
 function download(name,text){
   const url=URL.createObjectURL(new Blob([text],{type:'application/json'})),a=document.createElement('a');
@@ -1455,7 +1541,7 @@ $('#saveFile').addEventListener('click',()=>{
 });
 
 /* ---------- Einzelne Räume exportieren / importieren ---------- */
-const roomMsg=t=>{$('#roomMsg').textContent=t};
+const roomMsg=t=>msg(t);
 $('#expRoom').addEventListener('click',()=>{
   const A=R(),{id,hidden,items,...r}=A;
   const obj={app:'raumplaner',version:2,kind:'room',rooms:[{...r,pts:r.pts.map(p=>[...p]),items:items.map(({id,...i})=>i)}]};
@@ -1508,8 +1594,17 @@ const COLORS_ME=['#cf5a17','#1e5c76','#8a3fb0','#2f8a4f','#c0336b','#b08a12','#2
 // Damit kann der Server eine hängende alte Verbindung derselben Seite sofort entfernen.
 const SID=Math.random().toString(36).slice(2,12)+Math.random().toString(36).slice(2,8);
 /* ---------- Version ---------- */
-const APP_VERSION='1.11.0'; // bei jedem Update zusammen mit package.json erhöhen
-function renderVersion(){$('#verTop').textContent='v'+APP_VERSION;$('#verClient').textContent='v'+APP_VERSION}
+const APP_VERSION='2.0.0'; // bei jedem Update zusammen mit package.json erhöhen
+let updShown=false,updLast=0;
+async function checkUpdate(force){
+  if(updShown||(!force&&Date.now()-updLast<5*60*1000))return;updLast=Date.now();
+  try{const t=await (await fetch('/',{cache:'no-store'})).text(),m=t.match(/const APP_VERSION='([\d.]+)'/);
+    if(m&&verCmp(m[1],APP_VERSION)>0){updShown=true;
+      toast(`Neue Version ${m[1]} verfügbar`,{ms:0,action:['Neu laden',()=>{cacheLocal();location.reload()}]})}}catch(e){}
+}
+setInterval(()=>checkUpdate(false),10*60*1000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate(false)});
+function renderVersion(){$('#verTop').textContent='v'+APP_VERSION;$('#verClient').textContent='v'+APP_VERSION;$('#verHelp').textContent='v'+APP_VERSION}
 const verCmp=(a,b)=>{const x=String(a).split('.').map(Number),y=String(b).split('.').map(Number);for(let i=0;i<3;i++){const d=(x[i]||0)-(y[i]||0);if(d)return d}return 0};
 const me={n:'',c:'',x:null,y:null,sel:null,sid:SID,v:APP_VERSION};
 try{me.n=localStorage.getItem('rp-name')||'';me.c=localStorage.getItem('rp-color')||''}catch(e){}
@@ -1602,7 +1697,7 @@ $('#redoBtn').addEventListener('click',()=>undoRedo('redo'));
 document.addEventListener('keydown',e=>{
   if(RO||!(e.ctrlKey||e.metaKey)||e.altKey)return;
   const k=e.key.toLowerCase();if(k!=='z'&&k!=='y')return;
-  if(e.target.closest('input,textarea'))return; // dort gilt das normale Rückgängig des Feldes
+  if(e.target.closest('input,textarea')||document.querySelector('dialog[open]'))return; // dort gilt das normale Rückgängig des Feldes
   e.preventDefault();e.stopImmediatePropagation();
   if((mode==='draw'||mode==='extend')&&k==='z'&&!e.shiftKey&&drawPts.length){drawPts.pop();if(!drawPts.length)extStart=null;render();return}
   undoRedo(k==='y'||e.shiftKey?'redo':'undo');
@@ -1670,6 +1765,7 @@ function renderPeers(){
 function setConn(t,cls){for(const c of [$('#conn'),$('#connRO')]){c.textContent=t;c.className='meta '+(cls||'')}}
 function handle(m){
   if(m.t==='init'){
+    checkUpdate(true); // nach (Wieder-)Verbindung, z. B. nach einem Server-Update
     myId=m.you;pend.clear();peers.clear();undoStack.length=redoStack.length=0;openGroup=null;updateUndoUI();
     for(const p of m.peers||[])if(p&&p.p&&p.p.sid!==SID)peers.set(p.id,p.p);
     const srv=m.state&&Array.isArray(m.state.rooms)?m.state.rooms:[];
@@ -1681,7 +1777,7 @@ function handle(m){
   }else if(m.t==='viewlink'&&typeof m.token==='string'&&/^[A-Za-z0-9_-]{24}$/.test(m.token)){
     clearTimeout(viewLinkT);const u=new URL(shareUrl);u.search='?view='+m.token;u.hash='';const url=u.href;
     $('#viewLinkHint').textContent=url;
-    (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(()=>{const b=$('#viewLinkBtn');b.textContent='Nur-Ansehen-Link kopiert ✓';setTimeout(()=>b.textContent='👁 Nur-Ansehen-Link kopieren',1800)})
+    (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(()=>{const b=$('#viewLinkBtn');b.textContent='Kopiert ✓';setTimeout(()=>b.textContent='👁 Ansehen-Link',1800);toast('Ansehen-Link kopiert – zum Präsentieren, ohne Bearbeiten.')})
       .catch(()=>window.prompt('Nur-Ansehen-Link (zum Präsentieren):',url));
   }else if(m.t==='ops'&&Array.isArray(m.ops)){
     applyRemote(m.ops,m.from===myId);
@@ -1737,7 +1833,7 @@ if(/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)&&typeof fetch===
     $('#shareHint').textContent='Im WLAN/LAN erreichbar unter '+u.host}}).catch(()=>{});
 }
 $('#shareBtn').addEventListener('click',async()=>{const b=$('#shareBtn'),url=shareUrl;
-  try{await navigator.clipboard.writeText(url);b.textContent='Link kopiert ✓';setTimeout(()=>b.textContent='Link zum Plan kopieren',1800)}
+  try{await navigator.clipboard.writeText(url);b.textContent='Kopiert ✓';setTimeout(()=>b.textContent='🔗 Mitplanen-Link',1800);toast('Mitplanen-Link kopiert – wer ihn hat, plant live mit.')}
   catch(e){window.prompt('Diesen Link an deine Freunde schicken:',url)}});
 let viewLinkT=null;
 $('#viewLinkBtn').addEventListener('click',()=>{
@@ -1765,7 +1861,14 @@ setting('#furnFont','input',t=>{SET.ff=+t.value});
 setting('#dimFont','input',t=>{SET.df=+t.value});
 $('#wallBox').addEventListener('toggle',()=>{SET.walls=$('#wallBox').open;saveSettings()});
 // Ansicht-Menü schließen, wenn man daneben klickt
-document.addEventListener('pointerdown',e=>{const m=$('#viewMenu');if(m.open&&!m.contains(e.target))m.open=false});
+/* ---------- Dialoge: Einstellungen & Hilfe ---------- */
+const openDlg=id=>{const d=$(id);if(!d.open){d.showModal();d.querySelector('.x').focus()}};
+$('#settingsBtn').addEventListener('click',()=>openDlg('#settingsDlg'));
+$('#helpBtn').addEventListener('click',()=>openDlg('#helpDlg'));
+document.querySelectorAll('dialog.dlg').forEach(d=>{
+  d.addEventListener('click',e=>{if(e.target===d||e.target.closest('[data-close]'))d.close()}); // Klick daneben schließt
+});
+document.addEventListener('keydown',e=>{if(e.key==='?'&&!e.target.closest('input,select,textarea')&&!document.querySelector('dialog[open]')){e.preventDefault();openDlg('#helpDlg')}});
 syncSettingsUI();
 
 wallLabels();renderAll();renderCompass();renderVersion();renderPeers();cacheLocal();connect();
