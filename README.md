@@ -79,6 +79,7 @@ No timeout tuning is needed, because the app sends a heartbeat every 10 seconds.
 ## Search engines and link previews
 
 - Set `PUBLIC_URL` (e.g. `https://roomplanner.example.com`) so the canonical link, sitemap and link-preview image use your real address. Without it, the address is taken from the request.
+- Below the app there is an info section with features, a how-to and an FAQ (with FAQ structured data), translated into all six languages. Each language has its own indexable address (`/` = German, `/?lang=en`, `/?lang=fr`, …) with `hreflang` links and a multilingual sitemap.
 - Only the start page is indexable. Every plan and view link is sent with `X-Robots-Tag: noindex`, so plans never show up in search results.
 - `/robots.txt`, `/sitemap.xml`, Open Graph/Twitter tags, a 1200×630 preview image and schema.org data are built in.
 - Simply opening the page (as search engines do) doesn't create a plan on the server. A plan is saved on the first click or key press.

@@ -142,6 +142,9 @@ function origin(req) {
   const fp = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim();
   return ((fp === 'https' || fp === 'http') ? fp : 'http') + '://' + host;
 }
+// Sprachversionen der Startseite: Deutsch unter /, die anderen unter /?lang=xx
+const LANGS = ['de', 'en', 'fr', 'es', 'it', 'nl'];
+const langUrl = (o, l) => o + (l === 'de' ? '/' : '/?lang=' + l).replace(/&/g, '&amp;');
 // index.html einmal lesen (neu, wenn die Datei sich ändert) und gezippt vorhalten
 let pageCache = { mtime: 0, text: '' };
 function pageText() {
@@ -158,8 +161,15 @@ const server = http.createServer((req, res) => {
   if (u.pathname === '/' || u.pathname === '/index.html') {
     let pc; try { pc = pageText(); } catch (e) { res.writeHead(500, SECURITY_HEADERS); return res.end(); }
     const o = origin(req);
-    let body = pc.gz.get(o);
-    if (!body) { body = zlib.gzipSync(pc.text.replace(/__ORIGIN__/g, o)); if (pc.gz.size < 20) pc.gz.set(o, body); }
+    const lang = LANGS.includes(u.searchParams.get('lang')) ? u.searchParams.get('lang') : 'de';
+    const key = o + '|' + lang;
+    let body = pc.gz.get(key);
+    if (!body) {
+      const html = pc.text.replace(/__ORIGIN__/g, o).replace('__LANG__', lang).replace(/__CANON__/g, langUrl(o, lang))
+        .replace('__HREFLANG__', LANGS.map(l => `<link rel="alternate" hreflang="${l}" href="${langUrl(o, l)}">`).join('\n') +
+          `\n<link rel="alternate" hreflang="x-default" href="${o}/">`);
+      body = zlib.gzipSync(html); if (pc.gz.size < 60) pc.gz.set(key, body);
+    }
     const h = { ...SECURITY_HEADERS, 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-cache', vary: 'Accept-Encoding' };
     // Pläne und Ansehen-Links sind privat: nie in Suchmaschinen aufnehmen. Nur die Startseite ist öffentlich.
     if (u.searchParams.has('plan') || u.searchParams.has('view') || u.pathname !== '/') h['x-robots-tag'] = 'noindex, nofollow';
@@ -174,7 +184,9 @@ const server = http.createServer((req, res) => {
   } else if (u.pathname === '/sitemap.xml') {
     const o = origin(req);
     res.writeHead(200, { ...SECURITY_HEADERS, 'content-type': 'application/xml; charset=utf-8', 'cache-control': 'public, max-age=86400' });
-    res.end(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${o}/</loc></url></urlset>\n`);
+    const alt = LANGS.map(l => `<xhtml:link rel="alternate" hreflang="${l}" href="${langUrl(o, l)}"/>`).join('');
+    res.end(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n` +
+      LANGS.map(l => `<url><loc>${langUrl(o, l)}</loc>${alt}</url>`).join('\n') + '\n</urlset>\n');
   } else if (STATIC[u.pathname]) { // Logo, Favicons, Web-App-Manifest (feste Liste, keine Pfade von außen)
     res.writeHead(200, { ...SECURITY_HEADERS, 'content-type': STATIC[u.pathname], 'cache-control': 'public, max-age=86400' });
     if (req.method === 'HEAD') return res.end();
