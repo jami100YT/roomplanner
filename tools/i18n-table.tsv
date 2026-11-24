@@ -1,0 +1,313 @@
+de	en	fr	es	it	nl
+(du)	(you)	(vous)	(tú)	(tu)	(jij)
++ Raum	+ Room	+ Pièce	+ Habitación	+ Stanza	+ Ruimte
+1 cm verschieben (mit ⇧ 10 cm)	Move 1 cm (with ⇧ 10 cm)	Déplacer de 1 cm (avec ⇧ 10 cm)	Mover 1 cm (con ⇧ 10 cm)	Sposta di 1 cm (con ⇧ 10 cm)	1 cm verplaatsen (met ⇧ 10 cm)
+45° links / rechts drehen	Rotate 45° left / right	Pivoter de 45° à gauche / droite	Girar 45° izquierda / derecha	Ruota di 45° a sinistra / destra	45° links / rechts draaien
+= links	= left	= gauche	= izquierda	= sinistra	= links
+= rechts	= right	= droite	= derecha	= destra	= rechts
+= unten	= bottom	= bas	= abajo	= basso	= onder
+? Hilfe	? Help	? Aide	? Ayuda	? Aiuto	? Help
+Abbrechen	Cancel	Annuler	Cancelar	Annulla	Annuleren
+Abstand	Distance	Distance	Distancia	Distanza	Afstand
+Abstand links	Distance left	Distance à gauche	Distancia izquierda	Distanza sinistra	Afstand links
+Abstand oben	Distance top	Distance en haut	Distancia arriba	Distanza in alto	Afstand boven
+Abstand rechts	Distance right	Distance à droite	Distancia derecha	Distanza destra	Afstand rechts
+Abstand unten	Distance bottom	Distance en bas	Distancia abajo	Distanza in basso	Afstand onder
+Abstand von 	Distance from 	Distance depuis 	Distancia desde 	Distanza da 	Afstand vanaf
+Abstand von links	Distance from left	Distance depuis la gauche	Distancia desde la izquierda	Distanza da sinistra	Afstand vanaf links
+Abstand von oben	Distance from top	Distance depuis le haut	Distancia desde arriba	Distanza dall'alto	Afstand vanaf boven
+Abstand von rechts	Distance from right	Distance depuis la droite	Distancia desde la derecha	Distanza da destra	Afstand vanaf rechts
+Abstand von unten	Distance from bottom	Distance depuis le bas	Distancia desde abajo	Distanza dal basso	Afstand vanaf onder
+Alle Möbel im Raum	All furniture in the room	Tous les meubles de la pièce	Todos los muebles de la habitación	Tutti i mobili della stanza	Alle meubels in de ruimte
+Alle Räume sind ausgeblendet	All rooms are hidden	Toutes les pièces sont masquées	Todas las habitaciones están ocultas	Tutte le stanze sono nascoste	Alle ruimtes zijn verborgen
+Alle einblenden	Show all	Tout afficher	Mostrar todo	Mostra tutto	Alles tonen
+Alle löschen	Delete all	Tout supprimer	Borrar todo	Elimina tutto	Alles verwijderen
+Alles einpassen (0)	Fit all (0)	Tout ajuster (0)	Ajustar todo (0)	Adatta tutto (0)	Alles passend maken (0)
+Als JSON-Datei speichern	Save as JSON file	Enregistrer en fichier JSON	Guardar como archivo JSON	Salva come file JSON	Opslaan als JSON-bestand
+Am 5-cm-Raster einrasten	Snap to 5 cm grid	Aimanter à la grille de 5 cm	Ajustar a cuadrícula de 5 cm	Aggancia alla griglia di 5 cm	Uitlijnen op raster van 5 cm
+Anbau / Ausschnitt	Extension / cut-out	Extension / découpe	Ampliación / recorte	Ampliamento / ritaglio	Uitbouw / uitsparing
+Anbau: +{n} m²	Extension: +{n} m²	Extension : +{n} m²	Ampliación: +{n} m²	Ampliamento: +{n} m²	Uitbouw: +{n} m²
+Anschlag	Hinge	Charnière	Bisagra	Cerniera	Scharnier
+Ansehen-Link kopiert – zum Präsentieren, ohne Bearbeiten.	View link copied – for presenting, no editing.	Lien de consultation copié – pour présenter, sans modification.	Enlace de vista copiado – para presentar, sin edición.	Link di visualizzazione copiato – per presentare, senza modifiche.	Bekijklink gekopieerd – om te presenteren, zonder bewerken.
+Ansicht	View	Affichage	Vista	Vista	Weergave
+Ansicht verschieben	Pan view	Déplacer la vue	Mover la vista	Sposta la vista	Weergave verschuiven
+Auf einer Wand starten und enden – außen erweitert, innen schneidet aus	Start and end on a wall – outside extends, inside cuts out	Commencer et finir sur un mur – à l'extérieur agrandit, à l'intérieur découpe	Empezar y terminar en una pared – fuera amplía, dentro recorta	Inizia e termina su una parete – all'esterno amplia, all'interno ritaglia	Begin en eindig op een muur – buiten breidt uit, binnen snijdt uit
+Auf einer Wand starten, Ecken klicken, auf einer Wand enden	Start on a wall, click corners, end on a wall	Commencer sur un mur, cliquer les angles, finir sur un mur	Empieza en una pared, haz clic en las esquinas, termina en una pared	Inizia su una parete, clicca gli angoli, termina su una parete	Begin op een muur, klik hoeken, eindig op een muur
+Aus Gruppe lösen	Remove from group	Retirer du groupe	Quitar del grupo	Rimuovi dal gruppo	Uit groep halen
+Aus Text importieren	Import from text	Importer depuis le texte	Importar desde texto	Importa da testo	Importeren uit tekst
+Ausblenden	Hide	Masquer	Ocultar	Nascondi	Verbergen
+Ausrichten	Align	Aligner	Alinear	Allinea	Uitlijnen
+Ausschnitt: −{n} m²	Cut-out: −{n} m²	Découpe : −{n} m²	Recorte: −{n} m²	Ritaglio: −{n} m²	Uitsparing: −{n} m²
+Auswahl	Selection	Sélection	Selección	Selezione	Selectie
+Auswahl aufheben · Modus beenden	Clear selection · exit mode	Désélectionner · quitter le mode	Quitar selección · salir del modo	Annulla selezione · esci dalla modalità	Selectie opheffen · modus verlaten
+Auswahl · {n} Möbel	Selection · {n} items	Sélection · {n} meubles	Selección · {n} muebles	Selezione · {n} mobili	Selectie · {n} meubels
+Auswählen	Select	Sélectionner	Seleccionar	Selezionare	Selecteren
+Bad	Bathroom	Salle de bain	Baño	Bagno	Badkamer
+Badewanne	Bathtub	Baignoire	Bañera	Vasca da bagno	Bad
+Bearbeiten	Edit	Modifier	Editar	Modifica	Bewerken
+Beispielwohnung laden	Load sample apartment	Charger l'appartement exemple	Cargar piso de ejemplo	Carica appartamento di esempio	Voorbeeldwoning laden
+Bett	Bed	Lit	Cama	Letto	Bed
+Breite	Width	Largeur	Ancho	Larghezza	Breedte
+Couchtisch	Coffee table	Table basse	Mesa de centro	Tavolino	Salontafel
+Dein Name	Your name	Votre nom	Tu nombre	Il tuo nome	Je naam
+Der Server antwortet nicht auf diese Anfrage – er läuft noch mit einer älteren Version. Bitte auf dem Server aktualisieren und neu starten.	The server does not answer this request – it is still running an older version. Please update and restart the server.	Le serveur ne répond pas à cette requête – il utilise encore une ancienne version. Veuillez le mettre à jour et le redémarrer.	El servidor no responde a esta solicitud – aún ejecuta una versión anterior. Actualiza y reinicia el servidor.	Il server non risponde a questa richiesta – usa ancora una versione precedente. Aggiorna e riavvia il server.	De server beantwoordt dit verzoek niet – hij draait nog een oudere versie. Werk de server bij en start hem opnieuw.
+Die nächste Wand (im Uhrzeigersinn) wandert mit.	The next wall (clockwise) moves along.	Le mur suivant (sens horaire) suit.	La siguiente pared (en sentido horario) se mueve con ella.	La parete successiva (in senso orario) si sposta insieme.	De volgende muur (met de klok mee) schuift mee.
+Diesen Link an deine Freunde schicken:	Send this link to your friends:	Envoyez ce lien à vos amis :	Envía este enlace a tus amigos:	Invia questo link ai tuoi amici:	Stuur deze link naar je vrienden:
+Doppelklick	Double-click	Double-clic	Doble clic	Doppio clic	Dubbelklik
+Doppelklick = hier eine Ecke einfügen	Double-click = insert a corner here	Double-clic = insérer un angle ici	Doble clic = insertar una esquina aquí	Doppio clic = inserisci un angolo qui	Dubbelklik = hier een hoek invoegen
+Drehschritt (R / Doppelklick)	Rotation step (R / double-click)	Pas de rotation (R / double-clic)	Paso de giro (R / doble clic)	Passo di rotazione (R / doppio clic)	Draaistap (R / dubbelklik)
+Drehung:	Rotation:	Rotation :	Giro:	Rotazione:	Draaiing:
+Duplizieren	Duplicate	Dupliquer	Duplicar	Duplica	Dupliceren
+Durchgang	Opening	Passage	Paso	Passaggio	Doorgang
+Dusche	Shower	Douche	Ducha	Doccia	Douche
+Eckbank (L)	Corner bench (L)	Banquette d'angle (L)	Banco de esquina (L)	Panca ad angolo (L)	Hoekbank (L)
+Ecke ziehen · Doppelklick = löschen	Drag corner · double-click = delete	Glisser l'angle · double-clic = supprimer	Arrastrar esquina · doble clic = borrar	Trascina angolo · doppio clic = elimina	Hoek slepen · dubbelklik = verwijderen
+Ecken bearbeiten	Edit corners	Modifier les angles	Editar esquinas	Modifica angoli	Hoeken bewerken
+Ecken fertig	Corners done	Angles terminés	Esquinas listas	Angoli fatti	Hoeken klaar
+Ecken klicken · Startpunkt oder Enter schließt · ⌫ letzte Ecke	Click corners · start point or Enter closes · ⌫ last corner	Cliquer les angles · point de départ ou Entrée ferme · ⌫ dernier angle	Haz clic en las esquinas · punto inicial o Intro cierra · ⌫ última esquina	Clicca gli angoli · punto iniziale o Invio chiude · ⌫ ultimo angolo	Klik hoeken · startpunt of Enter sluit · ⌫ laatste hoek
+Ecken klicken, Startpunkt / Enter = fertig	Click corners, start point / Enter = done	Cliquer les angles, point de départ / Entrée = terminé	Clic en esquinas, punto inicial / Intro = listo	Clicca gli angoli, punto iniziale / Invio = fatto	Klik hoeken, startpunt / Enter = klaar
+Eckschreibtisch (L)	Corner desk (L)	Bureau d'angle (L)	Escritorio de esquina (L)	Scrivania ad angolo (L)	Hoekbureau (L)
+Ecksofa (L)	Corner sofa (L)	Canapé d'angle (L)	Sofá rinconera (L)	Divano angolare (L)	Hoekbank-sofa (L)
+Einblenden	Show	Afficher	Mostrar	Mostra	Tonen
+Einstellungen	Settings	Paramètres	Ajustes	Impostazioni	Instellingen
+Einstellungen gelten nur in diesem Browser.	Settings apply to this browser only.	Les paramètres ne valent que pour ce navigateur.	Los ajustes solo se aplican a este navegador.	Le impostazioni valgono solo per questo browser.	Instellingen gelden alleen in deze browser.
+Einzelbett	Single bed	Lit simple	Cama individual	Letto singolo	Eenpersoonsbed
+Einzelnes Möbel einer Gruppe	Single item of a group	Meuble seul d'un groupe	Mueble suelto de un grupo	Singolo mobile di un gruppo	Los meubel uit een groep
+Entf	Del	Suppr	Supr	Canc	Del
+Ersetzt den Plan für alle – lässt sich mit Strg+Z zurücknehmen.	Replaces the plan for everyone – can be undone with Ctrl+Z.	Remplace le plan pour tous – annulable avec Ctrl+Z.	Reemplaza el plano para todos – se puede deshacer con Ctrl+Z.	Sostituisce il piano per tutti – annullabile con Ctrl+Z.	Vervangt het plan voor iedereen – ongedaan te maken met Ctrl+Z.
+Esstisch	Dining table	Table à manger	Mesa de comedor	Tavolo da pranzo	Eettafel
+Farbe	Colour	Couleur	Color	Colore	Kleur
+Fenster	Window	Fenêtre	Ventana	Finestra	Raam
+Fenster blickt nach	Window faces	Fenêtre orientée vers	Ventana orientada al	Finestra rivolta a	Raam kijkt naar
+Fenster hinzufügen	Add window	Ajouter une fenêtre	Añadir ventana	Aggiungi finestra	Raam toevoegen
+Fertig	Done	Terminé	Listo	Fatto	Klaar
+Flur	Hallway	Couloir	Pasillo	Corridoio	Gang
+Form	Shape	Forme	Forma	Forma	Vorm
+Form bearbeiten	Edit shape	Modifier la forme	Editar forma	Modifica forma	Vorm bewerken
+Form fertig	Shape done	Forme terminée	Forma lista	Forma fatta	Vorm klaar
+Frei (Ecken)	Free (corners)	Libre (angles)	Libre (esquinas)	Libera (angoli)	Vrij (hoeken)
+Freie Form · {n} Wände	Free form · {n} walls	Forme libre · {n} murs	Forma libre · {n} paredes	Forma libera · {n} pareti	Vrije vorm · {n} muren
+Freie Form: Größe über „Form bearbeiten“ ändern	Free form: change size via “Edit shape”	Forme libre : modifier la taille via « Modifier la forme »	Forma libre: cambia el tamaño con «Editar forma»	Forma libera: cambia le dimensioni con «Modifica forma»	Vrije vorm: grootte wijzigen via „Vorm bewerken”
+Ganze Gruppe wählen	Select whole group	Sélectionner tout le groupe	Seleccionar todo el grupo	Seleziona tutto il gruppo	Hele groep selecteren
+Garderobe	Coat rack	Vestiaire	Perchero	Guardaroba	Kapstok
+Gast	Guest	Invité	Invitado	Ospite	Gast
+Gemeinsam drehen (um die Mitte)	Rotate together (around centre)	Pivoter ensemble (autour du centre)	Girar juntos (alrededor del centro)	Ruota insieme (attorno al centro)	Samen draaien (om het midden)
+Gemeinsam planen	Plan together	Planifier ensemble	Planificar juntos	Pianifica insieme	Samen plannen
+Gesamtmaße der Wohnung	Overall apartment dimensions	Dimensions totales de l'appartement	Medidas totales del piso	Misure totali dell'appartamento	Totale afmetingen van de woning
+Gespeichert als {file}.	Saved as {file}.	Enregistré sous {file}.	Guardado como {file}.	Salvato come {file}.	Opgeslagen als {file}.
+Gruppe	Group	Groupe	Grupo	Gruppo	Groep
+Gruppe {n}	Group {n}	Groupe {n}	Grupo {n}	Gruppo {n}	Groep {n}
+Gruppe · {n} Möbel	Group · {n} items	Groupe · {n} meubles	Grupo · {n} muebles	Gruppo · {n} mobili	Groep · {n} meubels
+Gruppenname	Group name	Nom du groupe	Nombre del grupo	Nome del gruppo	Groepsnaam
+Gruppieren	Group	Grouper	Agrupar	Raggruppa	Groeperen
+Gruppieren / Gruppe auflösen	Group / ungroup	Grouper / dissocier	Agrupar / desagrupar	Raggruppa / separa	Groeperen / groep opheffen
+Gruppierung aufheben	Ungroup	Dissocier	Desagrupar	Separa gruppo	Groep opheffen
+Herauszoomen	Zoom out	Dézoomer	Alejar	Riduci zoom	Uitzoomen
+Herauszoomen (−)	Zoom out (−)	Dézoomer (−)	Alejar (−)	Riduci zoom (−)	Uitzoomen (−)
+Himmelsrichtung	Direction	Orientation	Orientación	Orientamento	Windrichting
+Hineinzoomen	Zoom in	Zoomer	Acercar	Aumenta zoom	Inzoomen
+Hineinzoomen (+)	Zoom in (+)	Zoomer (+)	Acercar (+)	Aumenta zoom (+)	Inzoomen (+)
+Hinzufügen in	Add to	Ajouter dans	Añadir en	Aggiungi in	Toevoegen aan
+Horizontal	Horizontal	Horizontal	Horizontal	Orizzontale	Horizontaal
+Im Raum	In the room	Dans la pièce	En la habitación	Nella stanza	In de ruimte
+Im WLAN/LAN erreichbar unter {host}	Reachable on your Wi-Fi/LAN at {host}	Accessible sur le Wi-Fi/LAN à {host}	Accesible en la Wi-Fi/LAN en {host}	Raggiungibile in Wi-Fi/LAN su {host}	Bereikbaar in wifi/LAN via {host}
+Import fehlgeschlagen: {e}	Import failed: {e}	Échec de l'import : {e}	Error al importar: {e}	Importazione non riuscita: {e}	Import mislukt: {e}
+JSON als Text	JSON as text	JSON en texte	JSON como texto	JSON come testo	JSON als tekst
+JSON kopieren	Copy JSON	Copier le JSON	Copiar JSON	Copia JSON	JSON kopiëren
+JSON-Datei importieren	Import JSON file	Importer un fichier JSON	Importar archivo JSON	Importa file JSON	JSON-bestand importeren
+Kante verschieben · Doppelklick = neue Ecke	Move edge · double-click = new corner	Déplacer le bord · double-clic = nouvel angle	Mover borde · doble clic = nueva esquina	Sposta lato · doppio clic = nuovo angolo	Rand verschuiven · dubbelklik = nieuwe hoek
+Keine Räume in der Datei gefunden	No rooms found in the file	Aucune pièce trouvée dans le fichier	No se encontraron habitaciones en el archivo	Nessuna stanza trovata nel file	Geen ruimtes in het bestand gevonden
+Keine gültige JSON-Struktur	Not a valid JSON structure	Structure JSON invalide	Estructura JSON no válida	Struttura JSON non valida	Geen geldige JSON-structuur
+Kleiderschrank	Wardrobe	Armoire	Armario	Armadio	Kledingkast
+Klick	Click	Clic	Clic	Clic	Klik
+Kommode	Dresser	Commode	Cómoda	Cassettiera	Ladekast
+Kopiert ✓	Copied ✓	Copié ✓	Copiado ✓	Copiato ✓	Gekopieerd ✓
+Küche	Kitchen	Cuisine	Cocina	Cucina	Keuken
+Küche L-Form	L-shaped kitchen	Cuisine en L	Cocina en L	Cucina a L	L-keuken
+Küchenzeile	Kitchen unit	Kitchenette	Bloque de cocina	Cucina lineare	Keukenblok
+Kühlschrank	Fridge	Réfrigérateur	Nevera	Frigorifero	Koelkast
+L-Form	L-shape	Forme en L	Forma en L	Forma a L	L-vorm
+Leere Fläche ziehen	Drag empty area	Glisser une zone vide	Arrastrar zona vacía	Trascina area vuota	Lege vlakte slepen
+Leeren	Clear	Vider	Vaciar	Svuota	Leegmaken
+Link ungültig	Invalid link	Lien invalide	Enlace no válido	Link non valido	Ongeldige link
+Löschen	Delete	Supprimer	Borrar	Elimina	Verwijderen
+Mausrad	Mouse wheel	Molette	Rueda del ratón	Rotellina	Muiswiel
+Maße	Dimensions	Dimensions	Medidas	Misure	Afmetingen
+Mehrere wählen	Select multiple	Sélection multiple	Seleccionar varios	Selezione multipla	Meerdere selecteren
+Mitplanen-Link kopiert – wer ihn hat, plant live mit.	Collaboration link copied – anyone with it can plan live with you.	Lien de collaboration copié – quiconque l'a peut planifier en direct.	Enlace de colaboración copiado – quien lo tenga planifica en directo contigo.	Link di collaborazione copiato – chi lo ha pianifica in diretta con te.	Samenwerklink gekopieerd – wie hem heeft, plant live mee.
+Möbel	Furniture	Meuble	Mueble	Mobile	Meubel
+Möbel / Gruppe wählen · Boden: Raum wählen	Select furniture / group · floor: select room	Sélectionner meuble / groupe · sol : sélectionner la pièce	Seleccionar mueble / grupo · suelo: seleccionar habitación	Seleziona mobile / gruppo · pavimento: seleziona stanza	Meubel / groep selecteren · vloer: ruimte selecteren
+Möbel hinzufügen	Add furniture	Ajouter un meuble	Añadir mueble	Aggiungi mobile	Meubel toevoegen
+Möbel-Ecken	Furniture corners	Angles du meuble	Esquinas del mueble	Angoli del mobile	Meubelhoeken
+Möbelmaße anzeigen	Show furniture dimensions	Afficher les dimensions des meubles	Mostrar medidas de muebles	Mostra misure dei mobili	Meubelafmetingen tonen
+Nachttisch	Bedside table	Table de chevet	Mesita de noche	Comodino	Nachtkastje
+Name	Name	Nom	Nombre	Nome	Naam
+Neu laden	Reload	Recharger	Recargar	Ricarica	Opnieuw laden
+Neue Version {v} verfügbar	New version {v} available	Nouvelle version {v} disponible	Nueva versión {v} disponible	Nuova versione {v} disponibile	Nieuwe versie {v} beschikbaar
+Nicht verbunden – bitte kurz warten.	Not connected – please wait a moment.	Non connecté – veuillez patienter.	No conectado – espera un momento.	Non connesso – attendi un momento.	Niet verbonden – even geduld.
+Noch nichts im Raum. Füge oben Möbel, Fenster oder eine Tür hinzu.	Nothing in this room yet. Add furniture, windows or a door above.	Rien dans la pièce. Ajoutez des meubles, fenêtres ou une porte ci-dessus.	Aún no hay nada. Añade muebles, ventanas o una puerta arriba.	Ancora niente nella stanza. Aggiungi mobili, finestre o una porta sopra.	Nog niets in de ruimte. Voeg hierboven meubels, ramen of een deur toe.
+Nord	North	Nord	Norte	Nord	Noord
+Nord (0°)	North (0°)	Nord (0°)	Norte (0°)	Nord (0°)	Noord (0°)
+Norden	North	Nord	Norte	Nord	Noorden
+Norden = oben	North = up	Nord = haut	Norte = arriba	Nord = in alto	Noorden = boven
+Norden einstellen	Set north	Régler le nord	Ajustar el norte	Imposta il nord	Noorden instellen
+Nordost	Northeast	Nord-est	Noreste	Nord-est	Noordoost
+Nordwest	Northwest	Nord-ouest	Noroeste	Nord-ovest	Noordwest
+Nur aktiven zeigen	Show active only	Afficher seulement l'active	Mostrar solo la activa	Mostra solo l'attiva	Alleen actieve tonen
+Nur ansehen – zum Präsentieren, ohne Bearbeiten und ohne den Plan-Code	View only – for presenting, without editing and without the plan code	Consultation seule – pour présenter, sans modification ni code du plan	Solo ver – para presentar, sin edición y sin el código del plano	Solo visualizzazione – per presentare, senza modifiche e senza il codice del piano	Alleen bekijken – om te presenteren, zonder bewerken en zonder de plancode
+Nur-Ansehen-Link (zum Präsentieren):	View-only link (for presenting):	Lien de consultation (pour présenter) :	Enlace de solo vista (para presentar):	Link di sola visualizzazione (per presentare):	Alleen-bekijken-link (om te presenteren):
+Objekt	Object	Objet	Objeto	Oggetto	Object
+Ost	East	Est	Este	Est	Oost
+Ost (90°)	East (90°)	Est (90°)	Este (90°)	Est (90°)	Oost (90°)
+Pinch	Pinch	Pincer	Pellizcar	Pizzico	Knijpen
+Plan	Plan	Plan	Plano	Piano	Plan
+Position	Position	Position	Posición	Posizione	Positie
+Position X	Position X	Position X	Posición X	Posizione X	Positie X
+Position Y	Position Y	Position Y	Posición Y	Posizione Y	Positie Y
+Profil	Profile	Profil	Perfil	Profilo	Profiel
+Präsentation	Presentation	Présentation	Presentación	Presentazione	Presentatie
+Quellcode auf GitHub	Source code on GitHub	Code source sur GitHub	Código fuente en GitHub	Codice sorgente su GitHub	Broncode op GitHub
+Raum	Room	Pièce	Habitación	Stanza	Ruimte
+Raum exportieren	Export room	Exporter la pièce	Exportar habitación	Esporta stanza	Ruimte exporteren
+Raum importieren	Import room	Importer une pièce	Importar habitación	Importa stanza	Ruimte importeren
+Raum zeichnen	Draw room	Dessiner une pièce	Dibujar habitación	Disegna stanza	Ruimte tekenen
+Raum {n}	Room {n}	Pièce {n}	Habitación {n}	Stanza {n}	Ruimte {n}
+Raumnamen anzeigen	Show room names	Afficher les noms des pièces	Mostrar nombres de habitaciones	Mostra nomi delle stanze	Ruimtenamen tonen
+Rechteck	Rectangle	Rectangle	Rectángulo	Rettangolo	Rechthoek
+Regal	Shelf	Étagère	Estantería	Scaffale	Kast
+Räume fixieren (nicht verschiebbar)	Lock rooms (not movable)	Verrouiller les pièces (non déplaçables)	Fijar habitaciones (no movibles)	Blocca stanze (non spostabili)	Ruimtes vastzetten (niet verplaatsbaar)
+Räume formen	Shaping rooms	Former les pièces	Dar forma a habitaciones	Modellare le stanze	Ruimtes vormen
+Rückgängig	Undo	Annuler	Deshacer	Annulla	Ongedaan maken
+Rückgängig (Strg+Z)	Undo (Ctrl+Z)	Annuler (Ctrl+Z)	Deshacer (Ctrl+Z)	Annulla (Ctrl+Z)	Ongedaan maken (Ctrl+Z)
+Rückgängig / Wiederholen (nur eigene Änderungen)	Undo / redo (own changes only)	Annuler / rétablir (vos modifications seulement)	Deshacer / rehacer (solo cambios propios)	Annulla / ripeti (solo modifiche proprie)	Ongedaan maken / opnieuw (alleen eigen wijzigingen)
+Schenkel links	Left leg	Branche gauche	Brazo izquierdo	Lato sinistro	Linkerbeen
+Schenkel vorne	Front leg	Branche avant	Brazo delantero	Lato anteriore	Voorbeen
+Schenkeltiefe	Leg depth	Profondeur des branches	Fondo del brazo	Profondità del lato	Beendiepte
+Schlafzimmer	Bedroom	Chambre	Dormitorio	Camera da letto	Slaapkamer
+Schließen	Close	Fermer	Cerrar	Chiudi	Sluiten
+Schreibtisch	Desk	Bureau	Escritorio	Scrivania	Bureau
+Schrift Maße	Dimension font	Police des cotes	Fuente de medidas	Carattere misure	Lettergrootte maten
+Schrift Möbel	Furniture font	Police des meubles	Fuente de muebles	Carattere mobili	Lettergrootte meubels
+Sessel	Armchair	Fauteuil	Sillón	Poltrona	Fauteuil
+Sofa	Sofa	Canapé	Sofá	Divano	Bank
+Speichern & Laden	Save & load	Enregistrer & charger	Guardar y cargar	Salva e carica	Opslaan & laden
+Strg	Ctrl	Ctrl	Ctrl	Ctrl	Ctrl
+Strg+G	Ctrl+G	Ctrl+G	Ctrl+G	Ctrl+G	Ctrl+G
+Strg+⇧+G	Ctrl+⇧+G	Ctrl+⇧+G	Ctrl+⇧+G	Ctrl+⇧+G	Ctrl+⇧+G
+Stuhl	Chair	Chaise	Silla	Sedia	Stoel
+Süd	South	Sud	Sur	Sud	Zuid
+Süd (180°)	South (180°)	Sud (180°)	Sur (180°)	Sud (180°)	Zuid (180°)
+Südost	Southeast	Sud-est	Sureste	Sud-est	Zuidoost
+Südwest	Southwest	Sud-ouest	Suroeste	Sud-ovest	Zuidwest
+Tastenkürzel & Bedienung	Shortcuts & controls	Raccourcis & commandes	Atajos y controles	Scorciatoie e comandi	Sneltoetsen & bediening
+Tastenkürzel & Hilfe (?)	Shortcuts & help (?)	Raccourcis & aide (?)	Atajos y ayuda (?)	Scorciatoie e aiuto (?)	Sneltoetsen & help (?)
+Teil der Gruppe	Part of group	Fait partie du groupe	Parte del grupo	Parte del gruppo	Onderdeel van groep
+Teppich	Rug	Tapis	Alfombra	Tappeto	Vloerkleed
+Text kopieren oder eigenes JSON einfügen.	Copy the text or paste your own JSON.	Copiez le texte ou collez votre propre JSON.	Copia el texto o pega tu propio JSON.	Copia il testo o incolla il tuo JSON.	Kopieer de tekst of plak je eigen JSON.
+Tiefe	Depth	Profondeur	Fondo	Profondità	Diepte
+Tür	Door	Porte	Puerta	Porta	Deur
+Tür Bad	Bathroom door	Porte salle de bain	Puerta baño	Porta bagno	Deur badkamer
+Tür Küche	Kitchen door	Porte cuisine	Puerta cocina	Porta cucina	Deur keuken
+Tür Schlafzimmer	Bedroom door	Porte chambre	Puerta dormitorio	Porta camera	Deur slaapkamer
+Tür Wohnzimmer	Living room door	Porte salon	Puerta salón	Porta soggiorno	Deur woonkamer
+Tür hinzufügen	Add door	Ajouter une porte	Añadir puerta	Aggiungi porta	Deur toevoegen
+Um den Drehschritt drehen	Rotate by rotation step	Pivoter du pas de rotation	Girar según el paso	Ruota del passo impostato	Draaien met de draaistap
+Verschieben (Raum: am Namen oder Boden)	Move (room: by its name or floor)	Déplacer (pièce : par son nom ou le sol)	Mover (habitación: por el nombre o el suelo)	Sposta (stanza: dal nome o dal pavimento)	Verplaatsen (ruimte: aan de naam of vloer)
+Vertikal	Vertical	Vertical	Vertical	Verticale	Verticaal
+Vorderseite zeigt nach	Front faces	Façade orientée vers	Frente orientado al	Fronte rivolto a	Voorkant wijst naar
+Wand	Wall	Mur	Pared	Parete	Muur
+Wand {n}	Wall {n}	Mur {n}	Pared {n}	Parete {n}	Muur {n}
+Wand {n} verschieben · Doppelklick = teilen	Move wall {n} · double-click = split	Déplacer le mur {n} · double-clic = diviser	Mover pared {n} · doble clic = dividir	Sposta parete {n} · doppio clic = dividi	Muur {n} verschuiven · dubbelklik = splitsen
+Wandlängen	Wall lengths	Longueurs des murs	Longitudes de pared	Lunghezze delle pareti	Muurlengtes
+Waschbecken	Sink	Lavabo	Lavabo	Lavandino	Wastafel
+Wer diesen Link hat, plant live mit	Anyone with this link plans live with you	Quiconque a ce lien planifie en direct	Quien tenga este enlace planifica en directo	Chi ha questo link pianifica in diretta	Wie deze link heeft, plant live mee
+West	West	Ouest	Oeste	Ovest	West
+West (270°)	West (270°)	Ouest (270°)	Oeste (270°)	Ovest (270°)	West (270°)
+Wiederholen	Redo	Rétablir	Rehacer	Ripeti	Opnieuw
+Wiederholen (Strg+Y)	Redo (Ctrl+Y)	Rétablir (Ctrl+Y)	Rehacer (Ctrl+Y)	Ripeti (Ctrl+Y)	Opnieuw (Ctrl+Y)
+Wirklich?	Sure?	Vraiment ?	¿Seguro?	Sicuro?	Zeker?
+Wo ist Norden? Kompass ziehen oder Winkel eingeben (0° = oben im Plan, im Uhrzeigersinn). Gilt für alle in diesem Plan.	Where is north? Drag the compass or enter an angle (0° = top of the plan, clockwise). Applies to everyone in this plan.	Où est le nord ? Glissez la boussole ou saisissez un angle (0° = haut du plan, sens horaire). Vaut pour tous dans ce plan.	¿Dónde está el norte? Arrastra la brújula o introduce un ángulo (0° = arriba del plano, sentido horario). Se aplica a todos en este plano.	Dov'è il nord? Trascina la bussola o inserisci un angolo (0° = in alto nel piano, senso orario). Vale per tutti in questo piano.	Waar is het noorden? Sleep het kompas of voer een hoek in (0° = boven in het plan, met de klok mee). Geldt voor iedereen in dit plan.
+Wohnung	Apartment	Appartement	Piso	Appartamento	Woning
+Wohnungstür	Front door	Porte d'entrée	Puerta de entrada	Porta d'ingresso	Voordeur
+Wohnzimmer	Living room	Salon	Salón	Soggiorno	Woonkamer
+Zeichnen beenden	Stop drawing	Arrêter le dessin	Terminar dibujo	Termina disegno	Tekenen stoppen
+Ziehen	Drag	Glisser	Arrastrar	Trascina	Slepen
+Ziehen = Raum verschieben	Drag = move room	Glisser = déplacer la pièce	Arrastrar = mover habitación	Trascina = sposta stanza	Slepen = ruimte verplaatsen
+Ziehen, Drehen und Löschen wirken auf alle.	Moving, rotating and deleting apply to all.	Déplacer, pivoter et supprimer s'appliquent à tous.	Mover, girar y borrar se aplican a todos.	Spostare, ruotare ed eliminare valgono per tutti.	Verplaatsen, draaien en verwijderen gelden voor alle.
+Zoom	Zoom	Zoom	Zoom	Zoom	Zoom
+Zoom · einpassen	Zoom · fit	Zoom · ajuster	Zoom · ajustar	Zoom · adatta	Zoom · passend
+Zoomen	Zoom	Zoomer	Hacer zoom	Zoom	Zoomen
+Zu 100 % „vibe coded“: Code, Tests und Doku wurden vollständig von einer KI (Claude) geschrieben.	100% “vibe coded”: code, tests and docs were written entirely by an AI (Claude).	100 % « vibe coded » : code, tests et documentation entièrement écrits par une IA (Claude).	100 % «vibe coded»: código, pruebas y documentación escritos íntegramente por una IA (Claude).	100% «vibe coded»: codice, test e documentazione scritti interamente da un'IA (Claude).	100% „vibe coded”: code, tests en documentatie volledig geschreven door een AI (Claude).
+Zu Rechteck	To rectangle	En rectangle	A rectángulo	A rettangolo	Naar rechthoek
+alle Maße in cm	all dimensions in cm	toutes les cotes en cm	todas las medidas en cm	tutte le misure in cm	alle maten in cm
+alle Räume	all rooms	toutes les pièces	todas las habitaciones	tutte le stanze	alle ruimtes
+alt	old	ancienne	antigua	vecchia	oud
+alte Version ohne Versionsangabe – bitte neu laden	old version without version number – please reload	ancienne version sans numéro – veuillez recharger	versión antigua sin número – recarga, por favor	versione vecchia senza numero – ricarica	oude versie zonder versienummer – herlaad a.u.b.
+aus	off	désactivé	desactivado	disattivato	uit
+ausblenden	hide	masquer	ocultar	nascondi	verbergen
+ausgeblendet	hidden	masquée	oculta	nascosta	verborgen
+beim Import an bestehende Räume anhängen	append to existing rooms on import	ajouter aux pièces existantes lors de l'import	añadir a las habitaciones existentes al importar	aggiungi alle stanze esistenti durante l'importazione	bij import toevoegen aan bestaande ruimtes
+einblenden	show	afficher	mostrar	mostra	tonen
+gesamt {n}	total {n}	total {n}	total {n}	totale {n}	totaal {n}
+kein gültiges JSON.	not valid JSON.	JSON invalide.	JSON no válido.	JSON non valido.	geen geldige JSON.
+links	left	gauche	izquierda	sinistra	links
+links bündig	align left	aligner à gauche	alinear a la izquierda	allinea a sinistra	links uitlijnen
+mittlere Maustaste	middle mouse button	bouton central	botón central	tasto centrale	middelste muisknop
+nach außen	outwards	vers l'extérieur	hacia fuera	verso l'esterno	naar buiten
+nach innen	inwards	vers l'intérieur	hacia dentro	verso l'interno	naar binnen
+nur aktiver Raum	active room only	pièce active seulement	solo habitación activa	solo stanza attiva	alleen actieve ruimte
+oben	top	haut	arriba	alto	boven
+oben bündig	align top	aligner en haut	alinear arriba	allinea in alto	boven uitlijnen
+ohne Blatt	no leaf	sans battant	sin hoja	senza anta	zonder blad
+ohne Türblatt (nur Durchgang)	no door leaf (opening only)	sans battant (passage seul)	sin hoja (solo paso)	senza anta (solo passaggio)	zonder deurblad (alleen doorgang)
+rechts	right	droite	derecha	destra	rechts
+rechts bündig	align right	aligner à droite	alinear a la derecha	allinea a destra	rechts uitlijnen
+schräg	diagonal	en biais	oblicua	obliqua	schuin
+senkrecht mittig	centre vertically	centrer verticalement	centrar verticalmente	centra verticalmente	verticaal centreren
+unten	bottom	bas	abajo	basso	onder
+unten bündig	align bottom	aligner en bas	alinear abajo	allinea in basso	onder uitlijnen
+verbinde…	connecting…	connexion…	conectando…	connessione…	verbinden…
+waagrecht mittig	centre horizontally	centrer horizontalement	centrar horizontalmente	centra orizzontalmente	horizontaal centreren
+zentriert	centred	centré	centrado	centrato	gecentreerd
+{n} Möbel	{n} items	{n} meubles	{n} muebles	{n} mobili	{n} meubels
+{n} Raum	{n} room	{n} pièce	{n} habitación	{n} stanza	{n} ruimte
+{n} Raum aus {src} importiert.	{n} room imported from {src}.	{n} pièce importée depuis {src}.	{n} habitación importada desde {src}.	{n} stanza importata da {src}.	{n} ruimte geïmporteerd uit {src}.
+{n} Räume	{n} rooms	{n} pièces	{n} habitaciones	{n} stanze	{n} ruimtes
+{n} Räume aus {src} hinzugefügt – rechts neben der Wohnung.	{n} rooms added from {src} – to the right of the apartment.	{n} pièces ajoutées depuis {src} – à droite de l'appartement.	{n} habitaciones añadidas desde {src} – a la derecha del piso.	{n} stanze aggiunte da {src} – a destra dell'appartamento.	{n} ruimtes toegevoegd uit {src} – rechts naast de woning.
+{n} Räume aus {src} importiert.	{n} rooms imported from {src}.	{n} pièces importées depuis {src}.	{n} habitaciones importadas desde {src}.	{n} stanze importate da {src}.	{n} ruimtes geïmporteerd uit {src}.
+Öffnet	Opens	S'ouvre	Abre	Si apre	Opent
+älter als deine, bitte neu laden	older than yours, please reload	plus ancienne que la vôtre, veuillez recharger	más antigua que la tuya, recarga	più vecchia della tua, ricarica	ouder dan de jouwe, herlaad a.u.b.
+„{name}“ aus {src} hinzugefügt – rechts neben der Wohnung. Zum Platzieren am Namen ziehen.	“{name}” added from {src} – to the right of the apartment. Drag it by its name to place it.	« {name} » ajoutée depuis {src} – à droite de l'appartement. Glissez par son nom pour la placer.	«{name}» añadida desde {src} – a la derecha del piso. Arrástrala por el nombre para colocarla.	«{name}» aggiunta da {src} – a destra dell'appartamento. Trascinala dal nome per posizionarla.	„{name}” toegevoegd uit {src} – rechts naast de woning. Sleep aan de naam om te plaatsen.
+„{name}“ exportiert als {file}.	“{name}” exported as {file}.	« {name} » exportée sous {file}.	«{name}» exportada como {file}.	«{name}» esportata come {file}.	„{name}” geëxporteerd als {file}.
+↔ auf Wand zentrieren	↔ centre on wall	↔ centrer sur le mur	↔ centrar en la pared	↔ centra sulla parete	↔ op muur centreren
+↔ horizontal zentrieren	↔ centre horizontally	↔ centrer horizontalement	↔ centrar horizontalmente	↔ centra orizzontalmente	↔ horizontaal centreren
+↕ vertikal zentrieren	↕ centre vertically	↕ centrer verticalement	↕ centrar verticalmente	↕ centra verticalmente	↕ verticaal centreren
+⇋ Spiegeln	⇋ Mirror	⇋ Miroir	⇋ Reflejar	⇋ Specchia	⇋ Spiegelen
+● Ecke ziehen · ■ Kante verschieben · Doppelklick: Ecke einfügen / löschen	● drag corner · ■ move edge · double-click: insert / delete corner	● glisser l'angle · ■ déplacer le bord · double-clic : insérer / supprimer un angle	● arrastrar esquina · ■ mover borde · doble clic: insertar / borrar esquina	● trascina angolo · ■ sposta lato · doppio clic: inserisci / elimina angolo	● hoek slepen · ■ rand verschuiven · dubbelklik: hoek invoegen / verwijderen
+● Ecke ziehen · ■ Wand verschieben · Doppelklick auf Wand = neue Ecke · auf ● = Ecke löschen	● drag corner · ■ move wall · double-click wall = new corner · on ● = delete corner	● glisser l'angle · ■ déplacer le mur · double-clic sur un mur = nouvel angle · sur ● = supprimer l'angle	● arrastrar esquina · ■ mover pared · doble clic en pared = nueva esquina · en ● = borrar esquina	● trascina angolo · ■ sposta parete · doppio clic sulla parete = nuovo angolo · su ● = elimina angolo	● hoek slepen · ■ muur verschuiven · dubbelklik op muur = nieuwe hoek · op ● = hoek verwijderen
+● Ecke ziehen · ■ Wand verschieben · Doppelklick: Ecke einfügen / löschen	● drag corner · ■ move wall · double-click: insert / delete corner	● glisser l'angle · ■ déplacer le mur · double-clic : insérer / supprimer un angle	● arrastrar esquina · ■ mover pared · doble clic: insertar / borrar esquina	● trascina angolo · ■ sposta parete · doppio clic: inserisci / elimina angolo	● hoek slepen · ■ muur verschuiven · dubbelklik: hoek invoegen / verwijderen
+● live · {n} online	● live · {n} online	● en direct · {n} en ligne	● en directo · {n} en línea	● live · {n} online	● live · {n} online
+⚙ Einstellungen	⚙ Settings	⚙ Paramètres	⚙ Ajustes	⚙ Impostazioni	⚙ Instellingen
+✎ Raum zeichnen	✎ Draw room	✎ Dessiner une pièce	✎ Dibujar habitación	✎ Disegna stanza	✎ Ruimte tekenen
+＋ Anbau / Ausschnitt	＋ Extension / cut-out	＋ Extension / découpe	＋ Ampliación / recorte	＋ Ampliamento / ritaglio	＋ Uitbouw / uitsparing
+👁 Ansehen-Link	👁 View link	👁 Lien de consultation	👁 Enlace de vista	👁 Link di visualizzazione	👁 Bekijklink
+👁 Nur ansehen · Änderungen erscheinen live	👁 View only · changes appear live	👁 Consultation seule · les modifications apparaissent en direct	👁 Solo ver · los cambios aparecen en directo	👁 Solo visualizzazione · le modifiche appaiono in diretta	👁 Alleen bekijken · wijzigingen verschijnen live
+🔗 Mitplanen-Link	🔗 Collaboration link	🔗 Lien de collaboration	🔗 Enlace para colaborar	🔗 Link di collaborazione	🔗 Samenwerklink
+Server unterstützt Nur-Ansehen noch nicht – bitte Server aktualisieren.	Server doesn't support view-only yet – please update the server.	Le serveur ne prend pas encore en charge la consultation seule – veuillez le mettre à jour.	El servidor aún no admite solo vista – actualiza el servidor.	Il server non supporta ancora la sola visualizzazione – aggiornalo.	Server ondersteunt alleen-bekijken nog niet – werk de server bij.
+offline – verbinde neu…	offline – reconnecting…	hors ligne – reconnexion…	sin conexión – reconectando…	offline – riconnessione…	offline – opnieuw verbinden…
+keine Verbindung möglich	cannot connect	connexion impossible	no se puede conectar	impossibile connettersi	geen verbinding mogelijk
+Sprache · Language	Language	Langue · Language	Idioma · Language	Lingua · Language	Taal · Language
+Das ergibt keine gültige Form (Linien kreuzen die Wände?). Nochmal versuchen.	That isn't a valid shape (lines crossing the walls?). Please try again.	Forme invalide (des lignes croisent les murs ?). Réessayez.	Eso no da una forma válida (¿líneas que cruzan las paredes?). Inténtalo de nuevo.	Non è una forma valida (linee che incrociano le pareti?). Riprova.	Dat is geen geldige vorm (lijnen kruisen de muren?). Probeer opnieuw.
+Datei konnte nicht gelesen werden.	The file could not be read.	Impossible de lire le fichier.	No se pudo leer el archivo.	Impossibile leggere il file.	Bestand kon niet gelezen worden.
+Diese Form geht nicht (Wände überkreuzen sich oder Raum zu klein).	This shape doesn't work (walls cross or room too small).	Cette forme est impossible (murs croisés ou pièce trop petite).	Esta forma no es posible (paredes cruzadas o habitación demasiado pequeña).	Questa forma non è possibile (pareti incrociate o stanza troppo piccola).	Deze vorm kan niet (muren kruisen of ruimte te klein).
+Diese Möbelform geht nicht (Kanten überkreuzen sich).	This furniture shape doesn't work (edges cross).	Cette forme de meuble est impossible (bords croisés).	Esta forma de mueble no es posible (bordes cruzados).	Questa forma di mobile non è possibile (lati incrociati).	Deze meubelvorm kan niet (randen kruisen).
+Ein Möbel braucht mindestens 3 Ecken.	Furniture needs at least 3 corners.	Un meuble a besoin d'au moins 3 angles.	Un mueble necesita al menos 3 esquinas.	Un mobile richiede almeno 3 angoli.	Een meubel heeft minstens 3 hoeken nodig.
+Ein Raum braucht mindestens 3 Ecken.	A room needs at least 3 corners.	Une pièce a besoin d'au moins 3 angles.	Una habitación necesita al menos 3 esquinas.	Una stanza richiede almeno 3 angoli.	Een ruimte heeft minstens 3 hoeken nodig.
+JSON in die Zwischenablage kopiert.	JSON copied to the clipboard.	JSON copié dans le presse-papiers.	JSON copiado al portapapeles.	JSON copiato negli appunti.	JSON naar het klembord gekopieerd.
+Kopieren blockiert – Text unten ist markiert, mit Strg/⌘+C kopieren.	Copy blocked – the text below is selected, copy it with Ctrl/⌘+C.	Copie bloquée – le texte ci-dessous est sélectionné, copiez avec Ctrl/⌘+C.	Copia bloqueada – el texto de abajo está seleccionado, cópialo con Ctrl/⌘+C.	Copia bloccata – il testo sotto è selezionato, copialo con Ctrl/⌘+C.	Kopiëren geblokkeerd – de tekst hieronder is geselecteerd, kopieer met Ctrl/⌘+C.
+Raum zu klein – mindestens 3 Ecken und 0,25 m².	Room too small – at least 3 corners and 0.25 m².	Pièce trop petite – au moins 3 angles et 0,25 m².	Habitación demasiado pequeña – al menos 3 esquinas y 0,25 m².	Stanza troppo piccola – almeno 3 angoli e 0,25 m².	Ruimte te klein – minstens 3 hoeken en 0,25 m².
+Rückgängig geht nur, wenn du verbunden bist.	Undo only works while you are connected.	Annuler ne fonctionne que connecté.	Deshacer solo funciona con conexión.	Annulla funziona solo se sei connesso.	Ongedaan maken werkt alleen als je verbonden bent.
+Starte auf einer Wand des aktiven Raums.	Start on a wall of the active room.	Commencez sur un mur de la pièce active.	Empieza en una pared de la habitación activa.	Inizia su una parete della stanza attiva.	Begin op een muur van de actieve ruimte.
+Zeichne mindestens eine Ecke zwischen Start und Ende.	Draw at least one corner between start and end.	Dessinez au moins un angle entre le début et la fin.	Dibuja al menos una esquina entre el inicio y el final.	Disegna almeno un angolo tra inizio e fine.	Teken minstens één hoek tussen begin en einde.
+Zu nah an einer vorhandenen Ecke.	Too close to an existing corner.	Trop près d'un angle existant.	Demasiado cerca de una esquina existente.	Troppo vicino a un angolo esistente.	Te dicht bij een bestaande hoek.
+Zum Gruppieren mindestens 2 Möbel auswählen (Shift/Strg+Klick).	Select at least 2 items to group (Shift/Ctrl+click).	Sélectionnez au moins 2 meubles pour grouper (Maj/Ctrl+clic).	Selecciona al menos 2 muebles para agrupar (Mayús/Ctrl+clic).	Seleziona almeno 2 mobili per raggruppare (Maiusc/Ctrl+clic).	Selecteer minstens 2 meubels om te groeperen (Shift/Ctrl+klik).

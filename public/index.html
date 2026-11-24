@@ -1,13 +1,18 @@
 <!doctype html><html lang="de"><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Raumplaner</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
 /* VOICE: ruhiges Zeichenwerkzeug
    IDEA: Zeichentisch – Grundriss auf Rasterpapier
    PICTURE: der Grundriss der ganzen Wohnung
    COLOUR and TYPE: Papierweiß, Petrol, orange Auswahl; IBM Plex
    LAYOUT: links Werkzeugleiste, rechts Plan */
+/* Schriften liegen lokal: keine Anfragen an fremde Server, also keine IP-Weitergabe */
+@font-face{font-family:"IBM Plex Sans";font-weight:400;font-display:swap;src:url(/fonts/ibm-plex-sans-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:"IBM Plex Sans";font-weight:500;font-display:swap;src:url(/fonts/ibm-plex-sans-latin-500-normal.woff2) format("woff2")}
+@font-face{font-family:"IBM Plex Sans";font-weight:600;font-display:swap;src:url(/fonts/ibm-plex-sans-latin-600-normal.woff2) format("woff2")}
+@font-face{font-family:"IBM Plex Mono";font-weight:400;font-display:swap;src:url(/fonts/ibm-plex-mono-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:"IBM Plex Mono";font-weight:500;font-display:swap;src:url(/fonts/ibm-plex-mono-latin-500-normal.woff2) format("woff2")}
 :root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
   --bg:#e9ecea; --panel:#fafbf9; --fg:#1c2427; --muted:#5b686d; --line:#cdd5d4;
   --accent:#1e5c76; --accent-fg:#ffffff; --wall:#263034; --floor:#fdfdfb;
@@ -104,6 +109,14 @@ button[data-armed]{background:var(--danger);color:#fff;border-color:var(--danger
 .undo{display:inline-flex;gap:4px}.undo button{min-width:38px;font-size:16px;padding:3px 8px}
 .rarea{paint-order:stroke;stroke:var(--floor);stroke-width:3px;stroke-linejoin:round;fill:var(--muted);font-family:var(--f-mono);pointer-events:none}
 .curs{pointer-events:none}
+.brand{position:relative}
+.ghlink{display:inline-flex;align-items:center;gap:6px;padding:0 10px;height:32px;border-radius:6px;color:var(--fg);border:1px solid var(--line);background:var(--panel);text-decoration:none;font-size:13px;flex:none}
+.ghlink:hover{color:var(--accent);border-color:var(--accent)}
+.about{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:12px}
+.about b{color:var(--fg);font-size:13px}
+.about a{display:inline-flex;align-items:center;gap:6px;color:var(--accent);text-decoration:none;font-weight:500;margin-top:2px}
+.about a:hover{text-decoration:underline}
+#langSel{flex:1}
 .bar{gap:8px}.bar .grow{flex:1}
 .bar button{padding:6px 12px}
 .fold summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between}
@@ -129,7 +142,7 @@ button[data-armed]{background:var(--danger);color:#fff;border-color:var(--danger
 .dlgbody{padding:16px 18px;display:flex;flex-direction:column;gap:14px}
 .dlg fieldset{border:1px solid var(--line);border-radius:8px;padding:10px 12px 12px;margin:0;display:flex;flex-direction:column;gap:10px}
 .dlg legend{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:0 4px}
-.keys h3{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:4px 0 0}
+.keys h3{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:14px 0 6px}.keys h3:first-child{margin-top:0}
 .keys dl{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:6px 14px;margin:0;font-size:13px}
 .keys dt{color:var(--fg)}.keys dd{margin:0;color:var(--muted)}
 kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;background:var(--floor)}
@@ -244,7 +257,7 @@ button.on{background:var(--sel);border-color:var(--sel);color:#fff}
 
 <div class="app">
   <aside>
-    <div class="brand"><h1>Raumplaner</h1><small><span id="verTop"></span> · alle Maße in cm</small></div>
+    <div class="brand"><h1>Raumplaner</h1><small><span id="verTop"></span> · <span>alle Maße in cm</span></small></div>
 
     <section class="card ro-only">
       <div class="hrow"><h2>Präsentation</h2><span class="meta" id="connRO">verbinde…</span></div>
@@ -384,6 +397,7 @@ button.on{background:var(--sel);border-color:var(--sel);color:#fff}
     <div class="bar">
       <span class="undo edit-only"><button type="button" id="undoBtn" title="Rückgängig (Strg+Z)" aria-label="Rückgängig" disabled>↶</button><button type="button" id="redoBtn" title="Wiederholen (Strg+Y)" aria-label="Wiederholen" disabled>↷</button></span>
       <span class="grow"></span>
+      <a class="ghlink" href="https://github.com/jami100YT/roomplanner" target="_blank" rel="noopener noreferrer" title="Quellcode auf GitHub"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 7 3 12l5 5M16 7l5 5-5 5M14 4l-4 16"/></svg><span>GitHub</span></a>
       <button type="button" id="helpBtn" title="Tastenkürzel & Hilfe (?)">? Hilfe</button>
       <button type="button" id="settingsBtn" title="Einstellungen">⚙ Einstellungen</button>
     </div>
@@ -418,6 +432,9 @@ button.on{background:var(--sel);border-color:var(--sel);color:#fff}
 <dialog id="settingsDlg" class="dlg" aria-labelledby="setTitle">
   <div class="dlghead"><h2 id="setTitle">Einstellungen</h2><button type="button" class="x" data-close aria-label="Schließen">×</button></div>
   <div class="dlgbody">
+    <fieldset><legend>Sprache · Language</legend>
+      <label class="vrow"><select id="langSel" aria-label="Sprache · Language"></select></label>
+    </fieldset>
     <fieldset><legend>Ansicht</legend>
       <label class="vrow"><input type="checkbox" id="showNames" checked> Raumnamen anzeigen</label>
       <label class="vrow">Maße <select id="dimsMode"><option value="smart">alle Räume</option><option value="active">nur aktiver Raum</option><option value="off">aus</option></select></label>
@@ -441,7 +458,9 @@ button.on{background:var(--sel);border-color:var(--sel);color:#fff}
       <div class="btnrow"><button type="button" id="resetBtn">Beispielwohnung laden</button></div>
       <div class="meta">Ersetzt den Plan für alle – lässt sich mit Strg+Z zurücknehmen.</div>
     </fieldset>
-    <div class="meta">Einstellungen gelten nur in diesem Browser. Raumplaner <span id="verClient"></span></div>
+    <div class="meta">Einstellungen gelten nur in diesem Browser.</div>
+    <div class="about"><b>Raumplaner <span id="verClient"></span></b><span>Zu 100 % „vibe coded“: Code, Tests und Doku wurden vollständig von einer KI (Claude) geschrieben.</span>
+      <a href="https://github.com/jami100YT/roomplanner" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 7 3 12l5 5M16 7l5 5-5 5M14 4l-4 16"/></svg> <span>Quellcode auf GitHub</span></a></div>
   </div>
 </dialog>
 
@@ -449,21 +468,63 @@ button.on{background:var(--sel);border-color:var(--sel);color:#fff}
   <div class="dlghead"><h2 id="helpTitle">Tastenkürzel &amp; Bedienung</h2><button type="button" class="x" data-close aria-label="Schließen">×</button></div>
   <div class="dlgbody keys">
     <h3>Ansicht</h3>
-    <dl><dt>Mausrad / Pinch</dt><dd>Zoomen</dd><dt>Leere Fläche ziehen · Leertaste + Ziehen · mittlere Maustaste</dt><dd>Ansicht verschieben</dd><dt><kbd>+</kbd> <kbd>−</kbd> <kbd>0</kbd></dt><dd>Zoom · einpassen</dd></dl>
+    <dl><dt><span>Mausrad</span> / <span>Pinch</span></dt><dd>Zoomen</dd>
+      <dt><span>Leere Fläche ziehen</span> · <kbd>␣</kbd> + <span>Ziehen</span> · <span>mittlere Maustaste</span></dt><dd>Ansicht verschieben</dd>
+      <dt><kbd>+</kbd> <kbd>−</kbd> <kbd>0</kbd></dt><dd>Zoom · einpassen</dd></dl>
     <div class="edit-only">
     <h3>Auswählen</h3>
-    <dl><dt>Klick</dt><dd>Möbel / Gruppe wählen · Boden: Raum wählen</dd><dt><kbd>⇧</kbd>/<kbd>Strg</kbd> + Klick · <kbd>⇧</kbd> + Ziehen</dt><dd>Mehrere wählen</dd><dt><kbd>Strg</kbd>+<kbd>A</kbd></dt><dd>Alle Möbel im Raum</dd><dt><kbd>Alt</kbd> + Klick</dt><dd>Einzelnes Möbel einer Gruppe</dd><dt><kbd>Esc</kbd></dt><dd>Auswahl aufheben · Modus beenden</dd></dl>
+    <dl><dt><span>Klick</span></dt><dd>Möbel / Gruppe wählen · Boden: Raum wählen</dd>
+      <dt><kbd>⇧</kbd> / <kbd>Strg</kbd> + <span>Klick</span> · <kbd>⇧</kbd> + <span>Ziehen</span></dt><dd>Mehrere wählen</dd>
+      <dt><kbd>Strg</kbd> + <kbd>A</kbd></dt><dd>Alle Möbel im Raum</dd>
+      <dt><kbd>Alt</kbd> + <span>Klick</span></dt><dd>Einzelnes Möbel einer Gruppe</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Auswahl aufheben · Modus beenden</dd></dl>
     <h3>Bearbeiten</h3>
-    <dl><dt>Ziehen</dt><dd>Verschieben (Raum: am Namen oder Boden)</dd><dt>Pfeiltasten</dt><dd>1 cm verschieben (mit <kbd>⇧</kbd> 10 cm)</dd><dt><kbd>Q</kbd> / <kbd>E</kbd></dt><dd>45° links / rechts drehen</dd><dt><kbd>R</kbd> · Doppelklick</dt><dd>Um den Drehschritt drehen</dd><dt><kbd>Entf</kbd></dt><dd>Löschen</dd><dt><kbd>Strg</kbd>+<kbd>G</kbd> / <kbd>Strg</kbd>+<kbd>⇧</kbd>+<kbd>G</kbd></dt><dd>Gruppieren / Gruppe auflösen</dd><dt><kbd>Strg</kbd>+<kbd>Z</kbd> / <kbd>Strg</kbd>+<kbd>Y</kbd></dt><dd>Rückgängig / Wiederholen (nur eigene Änderungen)</dd></dl>
+    <dl><dt><span>Ziehen</span></dt><dd>Verschieben (Raum: am Namen oder Boden)</dd>
+      <dt><kbd>←</kbd> <kbd>↑</kbd> <kbd>→</kbd> <kbd>↓</kbd></dt><dd>1 cm verschieben (mit ⇧ 10 cm)</dd>
+      <dt><kbd>Q</kbd> / <kbd>E</kbd></dt><dd>45° links / rechts drehen</dd>
+      <dt><kbd>R</kbd> · <span>Doppelklick</span></dt><dd>Um den Drehschritt drehen</dd>
+      <dt><kbd>Entf</kbd></dt><dd>Löschen</dd>
+      <dt><kbd>Strg</kbd> + <kbd>G</kbd> / <kbd>Strg</kbd> + <kbd>⇧</kbd> + <kbd>G</kbd></dt><dd>Gruppieren / Gruppe auflösen</dd>
+      <dt><kbd>Strg</kbd> + <kbd>Z</kbd> / <kbd>Strg</kbd> + <kbd>Y</kbd></dt><dd>Rückgängig / Wiederholen (nur eigene Änderungen)</dd></dl>
     <h3>Räume formen</h3>
-    <dl><dt>✎ Raum zeichnen</dt><dd>Ecken klicken, Startpunkt / Enter = fertig</dd><dt>Form bearbeiten</dt><dd>● Ecke ziehen · ■ Wand verschieben · Doppelklick auf Wand = neue Ecke · auf ● = Ecke löschen</dd><dt>＋ Anbau / Ausschnitt</dt><dd>Auf einer Wand starten und enden – außen erweitert, innen schneidet aus</dd></dl>
+    <dl><dt><span>✎ Raum zeichnen</span></dt><dd>Ecken klicken, Startpunkt / Enter = fertig</dd>
+      <dt><span>Form bearbeiten</span></dt><dd>● Ecke ziehen · ■ Wand verschieben · Doppelklick auf Wand = neue Ecke · auf ● = Ecke löschen</dd>
+      <dt><span>＋ Anbau / Ausschnitt</span></dt><dd>Auf einer Wand starten und enden – außen erweitert, innen schneidet aus</dd></dl>
     </div>
-    <div class="meta">Raumplaner <span id="verHelp"></span></div>
+    <div class="about"><b>Raumplaner <span id="verHelp"></span></b><span>Zu 100 % „vibe coded“: Code, Tests und Doku wurden vollständig von einer KI (Claude) geschrieben.</span>
+      <a href="https://github.com/jami100YT/roomplanner" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 7 3 12l5 5M16 7l5 5-5 5M14 4l-4 16"/></svg> <span>Quellcode auf GitHub</span></a></div>
   </div>
 </dialog>
 
+<!--I18N-->
+<script>window.I18N={"en":{"(du)":"(you)","+ Raum":"+ Room","1 cm verschieben (mit ⇧ 10 cm)":"Move 1 cm (with ⇧ 10 cm)","45° links / rechts drehen":"Rotate 45° left / right","= links":"= left","= rechts":"= right","= unten":"= bottom","? Hilfe":"? Help","Abbrechen":"Cancel","Abstand":"Distance","Abstand links":"Distance left","Abstand oben":"Distance top","Abstand rechts":"Distance right","Abstand unten":"Distance bottom","Abstand von ":"Distance from ","Abstand von links":"Distance from left","Abstand von oben":"Distance from top","Abstand von rechts":"Distance from right","Abstand von unten":"Distance from bottom","Alle Möbel im Raum":"All furniture in the room","Alle Räume sind ausgeblendet":"All rooms are hidden","Alle einblenden":"Show all","Alle löschen":"Delete all","Alles einpassen (0)":"Fit all (0)","Als JSON-Datei speichern":"Save as JSON file","Am 5-cm-Raster einrasten":"Snap to 5 cm grid","Anbau / Ausschnitt":"Extension / cut-out","Anbau: +{n} m²":"Extension: +{n} m²","Anschlag":"Hinge","Ansehen-Link kopiert – zum Präsentieren, ohne Bearbeiten.":"View link copied – for presenting, no editing.","Ansicht":"View","Ansicht verschieben":"Pan view","Auf einer Wand starten und enden – außen erweitert, innen schneidet aus":"Start and end on a wall – outside extends, inside cuts out","Auf einer Wand starten, Ecken klicken, auf einer Wand enden":"Start on a wall, click corners, end on a wall","Aus Gruppe lösen":"Remove from group","Aus Text importieren":"Import from text","Ausblenden":"Hide","Ausrichten":"Align","Ausschnitt: −{n} m²":"Cut-out: −{n} m²","Auswahl":"Selection","Auswahl aufheben · Modus beenden":"Clear selection · exit mode","Auswahl · {n} Möbel":"Selection · {n} items","Auswählen":"Select","Bad":"Bathroom","Badewanne":"Bathtub","Bearbeiten":"Edit","Beispielwohnung laden":"Load sample apartment","Bett":"Bed","Breite":"Width","Couchtisch":"Coffee table","Dein Name":"Your name","Der Server antwortet nicht auf diese Anfrage – er läuft noch mit einer älteren Version. Bitte auf dem Server aktualisieren und neu starten.":"The server does not answer this request – it is still running an older version. Please update and restart the server.","Die nächste Wand (im Uhrzeigersinn) wandert mit.":"The next wall (clockwise) moves along.","Diesen Link an deine Freunde schicken:":"Send this link to your friends:","Doppelklick":"Double-click","Doppelklick = hier eine Ecke einfügen":"Double-click = insert a corner here","Drehschritt (R / Doppelklick)":"Rotation step (R / double-click)","Drehung:":"Rotation:","Duplizieren":"Duplicate","Durchgang":"Opening","Dusche":"Shower","Eckbank (L)":"Corner bench (L)","Ecke ziehen · Doppelklick = löschen":"Drag corner · double-click = delete","Ecken bearbeiten":"Edit corners","Ecken fertig":"Corners done","Ecken klicken · Startpunkt oder Enter schließt · ⌫ letzte Ecke":"Click corners · start point or Enter closes · ⌫ last corner","Ecken klicken, Startpunkt / Enter = fertig":"Click corners, start point / Enter = done","Eckschreibtisch (L)":"Corner desk (L)","Ecksofa (L)":"Corner sofa (L)","Einblenden":"Show","Einstellungen":"Settings","Einstellungen gelten nur in diesem Browser.":"Settings apply to this browser only.","Einzelbett":"Single bed","Einzelnes Möbel einer Gruppe":"Single item of a group","Entf":"Del","Ersetzt den Plan für alle – lässt sich mit Strg+Z zurücknehmen.":"Replaces the plan for everyone – can be undone with Ctrl+Z.","Esstisch":"Dining table","Farbe":"Colour","Fenster":"Window","Fenster blickt nach":"Window faces","Fenster hinzufügen":"Add window","Fertig":"Done","Flur":"Hallway","Form":"Shape","Form bearbeiten":"Edit shape","Form fertig":"Shape done","Frei (Ecken)":"Free (corners)","Freie Form · {n} Wände":"Free form · {n} walls","Freie Form: Größe über „Form bearbeiten“ ändern":"Free form: change size via “Edit shape”","Ganze Gruppe wählen":"Select whole group","Garderobe":"Coat rack","Gast":"Guest","Gemeinsam drehen (um die Mitte)":"Rotate together (around centre)","Gemeinsam planen":"Plan together","Gesamtmaße der Wohnung":"Overall apartment dimensions","Gespeichert als {file}.":"Saved as {file}.","Gruppe":"Group","Gruppe {n}":"Group {n}","Gruppe · {n} Möbel":"Group · {n} items","Gruppenname":"Group name","Gruppieren":"Group","Gruppieren / Gruppe auflösen":"Group / ungroup","Gruppierung aufheben":"Ungroup","Herauszoomen":"Zoom out","Herauszoomen (−)":"Zoom out (−)","Himmelsrichtung":"Direction","Hineinzoomen":"Zoom in","Hineinzoomen (+)":"Zoom in (+)","Hinzufügen in":"Add to","Horizontal":"Horizontal","Im Raum":"In the room","Im WLAN/LAN erreichbar unter {host}":"Reachable on your Wi-Fi/LAN at {host}","Import fehlgeschlagen: {e}":"Import failed: {e}","JSON als Text":"JSON as text","JSON kopieren":"Copy JSON","JSON-Datei importieren":"Import JSON file","Kante verschieben · Doppelklick = neue Ecke":"Move edge · double-click = new corner","Keine Räume in der Datei gefunden":"No rooms found in the file","Keine gültige JSON-Struktur":"Not a valid JSON structure","Kleiderschrank":"Wardrobe","Klick":"Click","Kommode":"Dresser","Kopiert ✓":"Copied ✓","Küche":"Kitchen","Küche L-Form":"L-shaped kitchen","Küchenzeile":"Kitchen unit","Kühlschrank":"Fridge","L-Form":"L-shape","Leere Fläche ziehen":"Drag empty area","Leeren":"Clear","Link ungültig":"Invalid link","Löschen":"Delete","Mausrad":"Mouse wheel","Maße":"Dimensions","Mehrere wählen":"Select multiple","Mitplanen-Link kopiert – wer ihn hat, plant live mit.":"Collaboration link copied – anyone with it can plan live with you.","Möbel":"Furniture","Möbel / Gruppe wählen · Boden: Raum wählen":"Select furniture / group · floor: select room","Möbel hinzufügen":"Add furniture","Möbel-Ecken":"Furniture corners","Möbelmaße anzeigen":"Show furniture dimensions","Nachttisch":"Bedside table","Name":"Name","Neu laden":"Reload","Neue Version {v} verfügbar":"New version {v} available","Nicht verbunden – bitte kurz warten.":"Not connected – please wait a moment.","Noch nichts im Raum. Füge oben Möbel, Fenster oder eine Tür hinzu.":"Nothing in this room yet. Add furniture, windows or a door above.","Nord":"North","Nord (0°)":"North (0°)","Norden":"North","Norden = oben":"North = up","Norden einstellen":"Set north","Nordost":"Northeast","Nordwest":"Northwest","Nur aktiven zeigen":"Show active only","Nur ansehen – zum Präsentieren, ohne Bearbeiten und ohne den Plan-Code":"View only – for presenting, without editing and without the plan code","Nur-Ansehen-Link (zum Präsentieren):":"View-only link (for presenting):","Objekt":"Object","Ost":"East","Ost (90°)":"East (90°)","Pinch":"Pinch","Plan":"Plan","Position":"Position","Position X":"Position X","Position Y":"Position Y","Profil":"Profile","Präsentation":"Presentation","Quellcode auf GitHub":"Source code on GitHub","Raum":"Room","Raum exportieren":"Export room","Raum importieren":"Import room","Raum zeichnen":"Draw room","Raum {n}":"Room {n}","Raumnamen anzeigen":"Show room names","Rechteck":"Rectangle","Regal":"Shelf","Räume fixieren (nicht verschiebbar)":"Lock rooms (not movable)","Räume formen":"Shaping rooms","Rückgängig":"Undo","Rückgängig (Strg+Z)":"Undo (Ctrl+Z)","Rückgängig / Wiederholen (nur eigene Änderungen)":"Undo / redo (own changes only)","Schenkel links":"Left leg","Schenkel vorne":"Front leg","Schenkeltiefe":"Leg depth","Schlafzimmer":"Bedroom","Schließen":"Close","Schreibtisch":"Desk","Schrift Maße":"Dimension font","Schrift Möbel":"Furniture font","Sessel":"Armchair","Sofa":"Sofa","Speichern & Laden":"Save & load","Strg":"Ctrl","Strg+G":"Ctrl+G","Strg+⇧+G":"Ctrl+⇧+G","Stuhl":"Chair","Süd":"South","Süd (180°)":"South (180°)","Südost":"Southeast","Südwest":"Southwest","Tastenkürzel & Bedienung":"Shortcuts & controls","Tastenkürzel & Hilfe (?)":"Shortcuts & help (?)","Teil der Gruppe":"Part of group","Teppich":"Rug","Text kopieren oder eigenes JSON einfügen.":"Copy the text or paste your own JSON.","Tiefe":"Depth","Tür":"Door","Tür Bad":"Bathroom door","Tür Küche":"Kitchen door","Tür Schlafzimmer":"Bedroom door","Tür Wohnzimmer":"Living room door","Tür hinzufügen":"Add door","Um den Drehschritt drehen":"Rotate by rotation step","Verschieben (Raum: am Namen oder Boden)":"Move (room: by its name or floor)","Vertikal":"Vertical","Vorderseite zeigt nach":"Front faces","Wand":"Wall","Wand {n}":"Wall {n}","Wand {n} verschieben · Doppelklick = teilen":"Move wall {n} · double-click = split","Wandlängen":"Wall lengths","Waschbecken":"Sink","Wer diesen Link hat, plant live mit":"Anyone with this link plans live with you","West":"West","West (270°)":"West (270°)","Wiederholen":"Redo","Wiederholen (Strg+Y)":"Redo (Ctrl+Y)","Wirklich?":"Sure?","Wo ist Norden? Kompass ziehen oder Winkel eingeben (0° = oben im Plan, im Uhrzeigersinn). Gilt für alle in diesem Plan.":"Where is north? Drag the compass or enter an angle (0° = top of the plan, clockwise). Applies to everyone in this plan.","Wohnung":"Apartment","Wohnungstür":"Front door","Wohnzimmer":"Living room","Zeichnen beenden":"Stop drawing","Ziehen":"Drag","Ziehen = Raum verschieben":"Drag = move room","Ziehen, Drehen und Löschen wirken auf alle.":"Moving, rotating and deleting apply to all.","Zoom":"Zoom","Zoom · einpassen":"Zoom · fit","Zoomen":"Zoom","Zu 100 % „vibe coded“: Code, Tests und Doku wurden vollständig von einer KI (Claude) geschrieben.":"100% “vibe coded”: code, tests and docs were written entirely by an AI (Claude).","Zu Rechteck":"To rectangle","alle Maße in cm":"all dimensions in cm","alle Räume":"all rooms","alt":"old","alte Version ohne Versionsangabe – bitte neu laden":"old version without version number – please reload","aus":"off","ausblenden":"hide","ausgeblendet":"hidden","beim Import an bestehende Räume anhängen":"append to existing rooms on import","einblenden":"show","gesamt {n}":"total {n}","kein gültiges JSON.":"not valid JSON.","links":"left","links bündig":"align left","mittlere Maustaste":"middle mouse button","nach außen":"outwards","nach innen":"inwards","nur aktiver Raum":"active room only","oben":"top","oben bündig":"align top","ohne Blatt":"no leaf","ohne Türblatt (nur Durchgang)":"no door leaf (opening only)","rechts":"right","rechts bündig":"align right","schräg":"diagonal","senkrecht mittig":"centre vertically","unten":"bottom","unten bündig":"align bottom","verbinde…":"connecting…","waagrecht mittig":"centre horizontally","zentriert":"centred","{n} Möbel":"{n} items","{n} Raum":"{n} room","{n} Raum aus {src} importiert.":"{n} room imported from {src}.","{n} Räume":"{n} rooms","{n} Räume aus {src} hinzugefügt – rechts neben der Wohnung.":"{n} rooms added from {src} – to the right of the apartment.","{n} Räume aus {src} importiert.":"{n} rooms imported from {src}.","Öffnet":"Opens","älter als deine, bitte neu laden":"older than yours, please reload","„{name}“ aus {src} hinzugefügt – rechts neben der Wohnung. Zum Platzieren am Namen ziehen.":"“{name}” added from {src} – to the right of the apartment. Drag it by its name to place it.","„{name}“ exportiert als {file}.":"“{name}” exported as {file}.","↔ auf Wand zentrieren":"↔ centre on wall","↔ horizontal zentrieren":"↔ centre horizontally","↕ vertikal zentrieren":"↕ centre vertically","⇋ Spiegeln":"⇋ Mirror","● Ecke ziehen · ■ Kante verschieben · Doppelklick: Ecke einfügen / löschen":"● drag corner · ■ move edge · double-click: insert / delete corner","● Ecke ziehen · ■ Wand verschieben · Doppelklick auf Wand = neue Ecke · auf ● = Ecke löschen":"● drag corner · ■ move wall · double-click wall = new corner · on ● = delete corner","● Ecke ziehen · ■ Wand verschieben · Doppelklick: Ecke einfügen / löschen":"● drag corner · ■ move wall · double-click: insert / delete corner","● live · {n} online":"● live · {n} online","⚙ Einstellungen":"⚙ Settings","✎ Raum zeichnen":"✎ Draw room","＋ Anbau / Ausschnitt":"＋ Extension / cut-out","👁 Ansehen-Link":"👁 View link","👁 Nur ansehen · Änderungen erscheinen live":"👁 View only · changes appear live","🔗 Mitplanen-Link":"🔗 Collaboration link","Server unterstützt Nur-Ansehen noch nicht – bitte Server aktualisieren.":"Server doesn't support view-only yet – please update the server.","offline – verbinde neu…":"offline – reconnecting…","keine Verbindung möglich":"cannot connect","Sprache · Language":"Language","Das ergibt keine gültige Form (Linien kreuzen die Wände?). Nochmal versuchen.":"That isn't a valid shape (lines crossing the walls?). Please try again.","Datei konnte nicht gelesen werden.":"The file could not be read.","Diese Form geht nicht (Wände überkreuzen sich oder Raum zu klein).":"This shape doesn't work (walls cross or room too small).","Diese Möbelform geht nicht (Kanten überkreuzen sich).":"This furniture shape doesn't work (edges cross).","Ein Möbel braucht mindestens 3 Ecken.":"Furniture needs at least 3 corners.","Ein Raum braucht mindestens 3 Ecken.":"A room needs at least 3 corners.","JSON in die Zwischenablage kopiert.":"JSON copied to the clipboard.","Kopieren blockiert – Text unten ist markiert, mit Strg/⌘+C kopieren.":"Copy blocked – the text below is selected, copy it with Ctrl/⌘+C.","Raum zu klein – mindestens 3 Ecken und 0,25 m².":"Room too small – at least 3 corners and 0.25 m².","Rückgängig geht nur, wenn du verbunden bist.":"Undo only works while you are connected.","Starte auf einer Wand des aktiven Raums.":"Start on a wall of the active room.","Zeichne mindestens eine Ecke zwischen Start und Ende.":"Draw at least one corner between start and end.","Zu nah an einer vorhandenen Ecke.":"Too close to an existing corner.","Zum Gruppieren mindestens 2 Möbel auswählen (Shift/Strg+Klick).":"Select at least 2 items to group (Shift/Ctrl+click)."},"fr":{"(du)":"(vous)","+ Raum":"+ Pièce","1 cm verschieben (mit ⇧ 10 cm)":"Déplacer de 1 cm (avec ⇧ 10 cm)","45° links / rechts drehen":"Pivoter de 45° à gauche / droite","= links":"= gauche","= rechts":"= droite","= unten":"= bas","? Hilfe":"? Aide","Abbrechen":"Annuler","Abstand":"Distance","Abstand links":"Distance à gauche","Abstand oben":"Distance en haut","Abstand rechts":"Distance à droite","Abstand unten":"Distance en bas","Abstand von ":"Distance depuis ","Abstand von links":"Distance depuis la gauche","Abstand von oben":"Distance depuis le haut","Abstand von rechts":"Distance depuis la droite","Abstand von unten":"Distance depuis le bas","Alle Möbel im Raum":"Tous les meubles de la pièce","Alle Räume sind ausgeblendet":"Toutes les pièces sont masquées","Alle einblenden":"Tout afficher","Alle löschen":"Tout supprimer","Alles einpassen (0)":"Tout ajuster (0)","Als JSON-Datei speichern":"Enregistrer en fichier JSON","Am 5-cm-Raster einrasten":"Aimanter à la grille de 5 cm","Anbau / Ausschnitt":"Extension / découpe","Anbau: +{n} m²":"Extension : +{n} m²","Anschlag":"Charnière","Ansehen-Link kopiert – zum Präsentieren, ohne Bearbeiten.":"Lien de consultation copié – pour présenter, sans modification.","Ansicht":"Affichage","Ansicht verschieben":"Déplacer la vue","Auf einer Wand starten und enden – außen erweitert, innen schneidet aus":"Commencer et finir sur un mur – à l'extérieur agrandit, à l'intérieur découpe","Auf einer Wand starten, Ecken klicken, auf einer Wand enden":"Commencer sur un mur, cliquer les angles, finir sur un mur","Aus Gruppe lösen":"Retirer du groupe","Aus Text importieren":"Importer depuis le texte","Ausblenden":"Masquer","Ausrichten":"Aligner","Ausschnitt: −{n} m²":"Découpe : −{n} m²","Auswahl":"Sélection","Auswahl aufheben · Modus beenden":"Désélectionner · quitter le mode","Auswahl · {n} Möbel":"Sélection · {n} meubles","Auswählen":"Sélectionner","Bad":"Salle de bain","Badewanne":"Baignoire","Bearbeiten":"Modifier","Beispielwohnung laden":"Charger l'appartement exemple","Bett":"Lit","Breite":"Largeur","Couchtisch":"Table basse","Dein Name":"Votre nom","Der Server antwortet nicht auf diese Anfrage – er läuft noch mit einer älteren Version. Bitte auf dem Server aktualisieren und neu starten.":"Le serveur ne répond pas à cette requête – il utilise encore une ancienne version. Veuillez le mettre à jour et le redémarrer.","Die nächste Wand (im Uhrzeigersinn) wandert mit.":"Le mur suivant (sens horaire) suit.","Diesen Link an deine Freunde schicken:":"Envoyez ce lien à vos amis :","Doppelklick":"Double-clic","Doppelklick = hier eine Ecke einfügen":"Double-clic = insérer un angle ici","Drehschritt (R / Doppelklick)":"Pas de rotation (R / double-clic)","Drehung:":"Rotation :","Duplizieren":"Dupliquer","Durchgang":"Passage","Dusche":"Douche","Eckbank (L)":"Banquette d'angle (L)","Ecke ziehen · Doppelklick = löschen":"Glisser l'angle · double-clic = supprimer","Ecken bearbeiten":"Modifier les angles","Ecken fertig":"Angles terminés","Ecken klicken · Startpunkt oder Enter schließt · ⌫ letzte Ecke":"Cliquer les angles · point de départ ou Entrée ferme · ⌫ dernier angle","Ecken klicken, Startpunkt / Enter = fertig":"Cliquer les angles, point de départ / Entrée = terminé","Eckschreibtisch (L)":"Bureau d'angle (L)","Ecksofa (L)":"Canapé d'angle (L)","Einblenden":"Afficher","Einstellungen":"Paramètres","Einstellungen gelten nur in diesem Browser.":"Les paramètres ne valent que pour ce navigateur.","Einzelbett":"Lit simple","Einzelnes Möbel einer Gruppe":"Meuble seul d'un groupe","Entf":"Suppr","Ersetzt den Plan für alle – lässt sich mit Strg+Z zurücknehmen.":"Remplace le plan pour tous – annulable avec Ctrl+Z.","Esstisch":"Table à manger","Farbe":"Couleur","Fenster":"Fenêtre","Fenster blickt nach":"Fenêtre orientée vers","Fenster hinzufügen":"Ajouter une fenêtre","Fertig":"Terminé","Flur":"Couloir","Form":"Forme","Form bearbeiten":"Modifier la forme","Form fertig":"Forme terminée","Frei (Ecken)":"Libre (angles)","Freie Form · {n} Wände":"Forme libre · {n} murs","Freie Form: Größe über „Form bearbeiten“ ändern":"Forme libre : modifier la taille via « Modifier la forme »","Ganze Gruppe wählen":"Sélectionner tout le groupe","Garderobe":"Vestiaire","Gast":"Invité","Gemeinsam drehen (um die Mitte)":"Pivoter ensemble (autour du centre)","Gemeinsam planen":"Planifier ensemble","Gesamtmaße der Wohnung":"Dimensions totales de l'appartement","Gespeichert als {file}.":"Enregistré sous {file}.","Gruppe":"Groupe","Gruppe {n}":"Groupe {n}","Gruppe · {n} Möbel":"Groupe · {n} meubles","Gruppenname":"Nom du groupe","Gruppieren":"Grouper","Gruppieren / Gruppe auflösen":"Grouper / dissocier","Gruppierung aufheben":"Dissocier","Herauszoomen":"Dézoomer","Herauszoomen (−)":"Dézoomer (−)","Himmelsrichtung":"Orientation","Hineinzoomen":"Zoomer","Hineinzoomen (+)":"Zoomer (+)","Hinzufügen in":"Ajouter dans","Horizontal":"Horizontal","Im Raum":"Dans la pièce","Im WLAN/LAN erreichbar unter {host}":"Accessible sur le Wi-Fi/LAN à {host}","Import fehlgeschlagen: {e}":"Échec de l'import : {e}","JSON als Text":"JSON en texte","JSON kopieren":"Copier le JSON","JSON-Datei importieren":"Importer un fichier JSON","Kante verschieben · Doppelklick = neue Ecke":"Déplacer le bord · double-clic = nouvel angle","Keine Räume in der Datei gefunden":"Aucune pièce trouvée dans le fichier","Keine gültige JSON-Struktur":"Structure JSON invalide","Kleiderschrank":"Armoire","Klick":"Clic","Kommode":"Commode","Kopiert ✓":"Copié ✓","Küche":"Cuisine","Küche L-Form":"Cuisine en L","Küchenzeile":"Kitchenette","Kühlschrank":"Réfrigérateur","L-Form":"Forme en L","Leere Fläche ziehen":"Glisser une zone vide","Leeren":"Vider","Link ungültig":"Lien invalide","Löschen":"Supprimer","Mausrad":"Molette","Maße":"Dimensions","Mehrere wählen":"Sélection multiple","Mitplanen-Link kopiert – wer ihn hat, plant live mit.":"Lien de collaboration copié – quiconque l'a peut planifier en direct.","Möbel":"Meuble","Möbel / Gruppe wählen · Boden: Raum wählen":"Sélectionner meuble / groupe · sol : sélectionner la pièce","Möbel hinzufügen":"Ajouter un meuble","Möbel-Ecken":"Angles du meuble","Möbelmaße anzeigen":"Afficher les dimensions des meubles","Nachttisch":"Table de chevet","Name":"Nom","Neu laden":"Recharger","Neue Version {v} verfügbar":"Nouvelle version {v} disponible","Nicht verbunden – bitte kurz warten.":"Non connecté – veuillez patienter.","Noch nichts im Raum. Füge oben Möbel, Fenster oder eine Tür hinzu.":"Rien dans la pièce. Ajoutez des meubles, fenêtres ou une porte ci-dessus.","Nord":"Nord","Nord (0°)":"Nord (0°)","Norden":"Nord","Norden = oben":"Nord = haut","Norden einstellen":"Régler le nord","Nordost":"Nord-est","Nordwest":"Nord-ouest","Nur aktiven zeigen":"Afficher seulement l'active","Nur ansehen – zum Präsentieren, ohne Bearbeiten und ohne den Plan-Code":"Consultation seule – pour présenter, sans modification ni code du plan","Nur-Ansehen-Link (zum Präsentieren):":"Lien de consultation (pour présenter) :","Objekt":"Objet","Ost":"Est","Ost (90°)":"Est (90°)","Pinch":"Pincer","Plan":"Plan","Position":"Position","Position X":"Position X","Position Y":"Position Y","Profil":"Profil","Präsentation":"Présentation","Quellcode auf GitHub":"Code source sur GitHub","Raum":"Pièce","Raum exportieren":"Exporter la pièce","Raum importieren":"Importer une pièce","Raum zeichnen":"Dessiner une pièce","Raum {n}":"Pièce {n}","Raumnamen anzeigen":"Afficher les noms des pièces","Rechteck":"Rectangle","Regal":"Étagère","Räume fixieren (nicht verschiebbar)":"Verrouiller les pièces (non déplaçables)","Räume formen":"Former les pièces","Rückgängig":"Annuler","Rückgängig (Strg+Z)":"Annuler (Ctrl+Z)","Rückgängig / Wiederholen (nur eigene Änderungen)":"Annuler / rétablir (vos modifications seulement)","Schenkel links":"Branche gauche","Schenkel vorne":"Branche avant","Schenkeltiefe":"Profondeur des branches","Schlafzimmer":"Chambre","Schließen":"Fermer","Schreibtisch":"Bureau","Schrift Maße":"Police des cotes","Schrift Möbel":"Police des meubles","Sessel":"Fauteuil","Sofa":"Canapé","Speichern & Laden":"Enregistrer & charger","Strg":"Ctrl","Strg+G":"Ctrl+G","Strg+⇧+G":"Ctrl+⇧+G","Stuhl":"Chaise","Süd":"Sud","Süd (180°)":"Sud (180°)","Südost":"Sud-est","Südwest":"Sud-ouest","Tastenkürzel & Bedienung":"Raccourcis & commandes","Tastenkürzel & Hilfe (?)":"Raccourcis & aide (?)","Teil der Gruppe":"Fait partie du groupe","Teppich":"Tapis","Text kopieren oder eigenes JSON einfügen.":"Copiez le texte ou collez votre propre JSON.","Tiefe":"Profondeur","Tür":"Porte","Tür Bad":"Porte salle de bain","Tür Küche":"Porte cuisine","Tür Schlafzimmer":"Porte chambre","Tür Wohnzimmer":"Porte salon","Tür hinzufügen":"Ajouter une porte","Um den Drehschritt drehen":"Pivoter du pas de rotation","Verschieben (Raum: am Namen oder Boden)":"Déplacer (pièce : par son nom ou le sol)","Vertikal":"Vertical","Vorderseite zeigt nach":"Façade orientée vers","Wand":"Mur","Wand {n}":"Mur {n}","Wand {n} verschieben · Doppelklick = teilen":"Déplacer le mur {n} · double-clic = diviser","Wandlängen":"Longueurs des murs","Waschbecken":"Lavabo","Wer diesen Link hat, plant live mit":"Quiconque a ce lien planifie en direct","West":"Ouest","West (270°)":"Ouest (270°)","Wiederholen":"Rétablir","Wiederholen (Strg+Y)":"Rétablir (Ctrl+Y)","Wirklich?":"Vraiment ?","Wo ist Norden? Kompass ziehen oder Winkel eingeben (0° = oben im Plan, im Uhrzeigersinn). Gilt für alle in diesem Plan.":"Où est le nord ? Glissez la boussole ou saisissez un angle (0° = haut du plan, sens horaire). Vaut pour tous dans ce plan.","Wohnung":"Appartement","Wohnungstür":"Porte d'entrée","Wohnzimmer":"Salon","Zeichnen beenden":"Arrêter le dessin","Ziehen":"Glisser","Ziehen = Raum verschieben":"Glisser = déplacer la pièce","Ziehen, Drehen und Löschen wirken auf alle.":"Déplacer, pivoter et supprimer s'appliquent à tous.","Zoom":"Zoom","Zoom · einpassen":"Zoom · ajuster","Zoomen":"Zoomer","Zu 100 % „vibe coded“: Code, Tests und Doku wurden vollständig von einer KI (Claude) geschrieben.":"100 % « vibe coded » : code, tests et documentation entièrement écrits par une IA (Claude).","Zu Rechteck":"En rectangle","alle Maße in cm":"toutes les cotes en cm","alle Räume":"toutes les pièces","alt":"ancienne","alte Version ohne Versionsangabe – bitte neu laden":"ancienne version sans numéro – veuillez recharger","aus":"désactivé","ausblenden":"masquer","ausgeblendet":"masquée","beim Import an bestehende Räume anhängen":"ajouter aux pièces existantes lors de l'import","einblenden":"afficher","gesamt {n}":"total {n}","kein gültiges JSON.":"JSON invalide.","links":"gauche","links bündig":"aligner à gauche","mittlere Maustaste":"bouton central","nach außen":"vers l'extérieur","nach innen":"vers l'intérieur","nur aktiver Raum":"pièce active seulement","oben":"haut","oben bündig":"aligner en haut","ohne Blatt":"sans battant","ohne Türblatt (nur Durchgang)":"sans battant (passage seul)","rechts":"droite","rechts bündig":"aligner à droite","schräg":"en biais","senkrecht mittig":"centrer verticalement","unten":"bas","unten bündig":"aligner en bas","verbinde…":"connexion…","waagrecht mittig":"centrer horizontalement","zentriert":"centré","{n} Möbel":"{n} meubles","{n} Raum":"{n} pièce","{n} Raum aus {src} importiert.":"{n} pièce importée depuis {src}.","{n} Räume":"{n} pièces","{n} Räume aus {src} hinzugefügt – rechts neben der Wohnung.":"{n} pièces ajoutées depuis {src} – à droite de l'appartement.","{n} Räume aus {src} importiert.":"{n} pièces importées depuis {src}.","Öffnet":"S'ouvre","älter als deine, bitte neu laden":"plus ancienne que la vôtre, veuillez recharger","„{name}“ aus {src} hinzugefügt – rechts neben der Wohnung. Zum Platzieren am Namen ziehen.":"« {name} » ajoutée depuis {src} – à droite de l'appartement. Glissez par son nom pour la placer.","„{name}“ exportiert als {file}.":"« {name} » exportée sous {file}.","↔ auf Wand zentrieren":"↔ centrer sur le mur","↔ horizontal zentrieren":"↔ centrer horizontalement","↕ vertikal zentrieren":"↕ centrer verticalement","⇋ Spiegeln":"⇋ Miroir","● Ecke ziehen · ■ Kante verschieben · Doppelklick: Ecke einfügen / löschen":"● glisser l'angle · ■ déplacer le bord · double-clic : insérer / supprimer un angle","● Ecke ziehen · ■ Wand verschieben · Doppelklick auf Wand = neue Ecke · auf ● = Ecke löschen":"● glisser l'angle · ■ déplacer le mur · double-clic sur un mur = nouvel angle · sur ● = supprimer l'angle","● Ecke ziehen · ■ Wand verschieben · Doppelklick: Ecke einfügen / löschen":"● glisser l'angle · ■ déplacer le mur · double-clic : insérer / supprimer un angle","● live · {n} online":"● en direct · {n} en ligne","⚙ Einstellungen":"⚙ Paramètres","✎ Raum zeichnen":"✎ Dessiner une pièce","＋ Anbau / Ausschnitt":"＋ Extension / découpe","👁 Ansehen-Link":"👁 Lien de consultation","👁 Nur ansehen · Änderungen erscheinen live":"👁 Consultation seule · les modifications apparaissent en direct","🔗 Mitplanen-Link":"🔗 Lien de collaboration","Server unterstützt Nur-Ansehen noch nicht – bitte Server aktualisieren.":"Le serveur ne prend pas encore en charge la consultation seule – veuillez le mettre à jour.","offline – verbinde neu…":"hors ligne – reconnexion…","keine Verbindung möglich":"connexion impossible","Sprache · Language":"Langue · Language","Das ergibt keine gültige Form (Linien kreuzen die Wände?). Nochmal versuchen.":"Forme invalide (des lignes croisent les murs ?). Réessayez.","Datei konnte nicht gelesen werden.":"Impossible de lire le fichier.","Diese Form geht nicht (Wände überkreuzen sich oder Raum zu klein).":"Cette forme est impossible (murs croisés ou pièce trop petite).","Diese Möbelform geht nicht (Kanten überkreuzen sich).":"Cette forme de meuble est impossible (bords croisés).","Ein Möbel braucht mindestens 3 Ecken.":"Un meuble a besoin d'au moins 3 angles.","Ein Raum braucht mindestens 3 Ecken.":"Une pièce a besoin d'au moins 3 angles.","JSON in die Zwischenablage kopiert.":"JSON copié dans le presse-papiers.","Kopieren blockiert – Text unten ist markiert, mit Strg/⌘+C kopieren.":"Copie bloquée – le texte ci-dessous est sélectionné, copiez avec Ctrl/⌘+C.","Raum zu klein – mindestens 3 Ecken und 0,25 m².":"Pièce trop petite – au moins 3 angles et 0,25 m².","Rückgängig geht nur, wenn du verbunden bist.":"Annuler ne fonctionne que connecté.","Starte auf einer Wand des aktiven Raums.":"Commencez sur un mur de la pièce active.","Zeichne mindestens eine Ecke zwischen Start und Ende.":"Dessinez au moins un angle entre le début et la fin.","Zu nah an einer vorhandenen Ecke.":"Trop près d'un angle existant.","Zum Gruppieren mindestens 2 Möbel auswählen (Shift/Strg+Klick).":"Sélectionnez au moins 2 meubles pour grouper (Maj/Ctrl+clic)."},"es":{"(du)":"(tú)","+ Raum":"+ Habitación","1 cm verschieben (mit ⇧ 10 cm)":"Mover 1 cm (con ⇧ 10 cm)","45° links / rechts drehen":"Girar 45° izquierda / derecha","= links":"= izquierda","= rechts":"= derecha","= unten":"= abajo","? Hilfe":"? Ayuda","Abbrechen":"Cancelar","Abstand":"Distancia","Abstand links":"Distancia izquierda","Abstand oben":"Distancia arriba","Abstand rechts":"Distancia derecha","Abstand unten":"Distancia abajo","Abstand von ":"Distancia desde ","Abstand von links":"Distancia desde la izquierda","Abstand von oben":"Distancia desde arriba","Abstand von rechts":"Distancia desde la derecha","Abstand von unten":"Distancia desde abajo","Alle Möbel im Raum":"Todos los muebles de la habitación","Alle Räume sind ausgeblendet":"Todas las habitaciones están ocultas","Alle einblenden":"Mostrar todo","Alle löschen":"Borrar todo","Alles einpassen (0)":"Ajustar todo (0)","Als JSON-Datei speichern":"Guardar como archivo JSON","Am 5-cm-Raster einrasten":"Ajustar a cuadrícula de 5 cm","Anbau / Ausschnitt":"Ampliación / recorte","Anbau: +{n} m²":"Ampliación: +{n} m²","Anschlag":"Bisagra","Ansehen-Link kopiert – zum Präsentieren, ohne Bearbeiten.":"Enlace de vista copiado – para presentar, sin edición.","Ansicht":"Vista","Ansicht verschieben":"Mover la vista","Auf einer Wand starten und enden – außen erweitert, innen schneidet aus":"Empezar y terminar en una pared – fuera amplía, dentro recorta","Auf einer Wand starten, Ecken klicken, auf einer Wand enden":"Empieza en una pared, haz clic en las esquinas, termina en una pared","Aus Gruppe lösen":"Quitar del grupo","Aus Text importieren":"Importar desde texto","Ausblenden":"Ocultar","Ausrichten":"Alinear","Ausschnitt: −{n} m²":"Recorte: −{n} m²","Auswahl":"Selección","Auswahl aufheben · Modus beenden":"Quitar selección · salir del modo","Auswahl · {n} Möbel":"Selección · {n} muebles","Auswählen":"Seleccionar","Bad":"Baño","Badewanne":"Bañera","Bearbeiten":"Editar","Beispielwohnung laden":"Cargar piso de ejemplo","Bett":"Cama","Breite":"Ancho","Couchtisch":"Mesa de centro","Dein Name":"Tu nombre","Der Server antwortet nicht auf diese Anfrage – er läuft noch mit einer älteren Version. Bitte auf dem Server aktualisieren und neu starten.":"El servidor no responde a esta solicitud – aún ejecuta una versión anterior. Actualiza y reinicia el servidor.","Die nächste Wand (im Uhrzeigersinn) wandert mit.":"La siguiente pared (en sentido horario) se mueve con ella.","Diesen Link an deine Freunde schicken:":"Envía este enlace a tus amigos:","Doppelklick":"Doble clic","Doppelklick = hier eine Ecke einfügen":"Doble clic = insertar una esquina aquí","Drehschritt (R / Doppelklick)":"Paso de giro (R / doble clic)","Drehung:":"Giro:","Duplizieren":"Duplicar","Durchgang":"Paso","Dusche":"Ducha","Eckbank (L)":"Banco de esquina (L)","Ecke ziehen · Doppelklick = löschen":"Arrastrar esquina · doble clic = borrar","Ecken bearbeiten":"Editar esquinas","Ecken fertig":"Esquinas listas","Ecken klicken · Startpunkt oder Enter schließt · ⌫ letzte Ecke":"Haz clic en las esquinas · punto inicial o Intro cierra · ⌫ última esquina","Ecken klicken, Startpunkt / Enter = fertig":"Clic en esquinas, punto inicial / Intro = listo","Eckschreibtisch (L)":"Escritorio de esquina (L)","Ecksofa (L)":"Sofá rinconera (L)","Einblenden":"Mostrar","Einstellungen":"Ajustes","Einstellungen gelten nur in diesem Browser.":"Los ajustes solo se aplican a este navegador.","Einzelbett":"Cama individual","Einzelnes Möbel einer Gruppe":"Mueble suelto de un grupo","Entf":"Supr","Ersetzt den Plan für alle – lässt sich mit Strg+Z zurücknehmen.":"Reemplaza el plano para todos – se puede deshacer con Ctrl+Z.","Esstisch":"Mesa de comedor","Farbe":"Color","Fenster":"Ventana","Fenster blickt nach":"Ventana orientada al","Fenster hinzufügen":"Añadir ventana","Fertig":"Listo","Flur":"Pasillo","Form":"Forma","Form bearbeiten":"Editar forma","Form fertig":"Forma lista","Frei (Ecken)":"Libre (esquinas)","Freie Form · {n} Wände":"Forma libre · {n} paredes","Freie Form: Größe über „Form bearbeiten“ ändern":"Forma libre: cambia el tamaño con «Editar forma»","Ganze Gruppe wählen":"Seleccionar todo el grupo","Garderobe":"Perchero","Gast":"Invitado","Gemeinsam drehen (um die Mitte)":"Girar juntos (alrededor del centro)","Gemeinsam planen":"Planificar juntos","Gesamtmaße der Wohnung":"Medidas totales del piso","Gespeichert als {file}.":"Guardado como {file}.","Gruppe":"Grupo","Gruppe {n}":"Grupo {n}","Gruppe · {n} Möbel":"Grupo · {n} muebles","Gruppenname":"Nombre del grupo","Gruppieren":"Agrupar","Gruppieren / Gruppe auflösen":"Agrupar / desagrupar","Gruppierung aufheben":"Desagrupar","Herauszoomen":"Alejar","Herauszoomen (−)":"Alejar (−)","Himmelsrichtung":"Orientación","Hineinzoomen":"Acercar","Hineinzoomen (+)":"Acercar (+)","Hinzufügen in":"Añadir en","Horizontal":"Horizontal","Im Raum":"En la habitación","Im WLAN/LAN erreichbar unter {host}":"Accesible en la Wi-Fi/LAN en {host}","Import fehlgeschlagen: {e}":"Error al importar: {e}","JSON als Text":"JSON como texto","JSON kopieren":"Copiar JSON","JSON-Datei importieren":"Importar archivo JSON","Kante verschieben · Doppelklick = neue Ecke":"Mover borde · doble clic = nueva esquina","Keine Räume in der Datei gefunden":"No se encontraron habitaciones en el archivo","Keine gültige JSON-Struktur":"Estructura JSON no válida","Kleiderschrank":"Armario","Klick":"Clic","Kommode":"Cómoda","Kopiert ✓":"Copiado ✓","Küche":"Cocina","Küche L-Form":"Cocina en L","Küchenzeile":"Bloque de cocina","Kühlschrank":"Nevera","L-Form":"Forma en L","Leere Fläche ziehen":"Arrastrar zona vacía","Leeren":"Vaciar","Link ungültig":"Enlace no válido","Löschen":"Borrar","Mausrad":"Rueda del ratón","Maße":"Medidas","Mehrere wählen":"Seleccionar varios","Mitplanen-Link kopiert – wer ihn hat, plant live mit.":"Enlace de colaboración copiado – quien lo tenga planifica en directo contigo.","Möbel":"Mueble","Möbel / Gruppe wählen · Boden: Raum wählen":"Seleccionar mueble / grupo · suelo: seleccionar habitación","Möbel hinzufügen":"Añadir mueble","Möbel-Ecken":"Esquinas del mueble","Möbelmaße anzeigen":"Mostrar medidas de muebles","Nachttisch":"Mesita de noche","Name":"Nombre","Neu laden":"Recargar","Neue Version {v} verfügbar":"Nueva versión {v} disponible","Nicht verbunden – bitte kurz warten.":"No conectado – espera un momento.","Noch nichts im Raum. Füge oben Möbel, Fenster oder eine Tür hinzu.":"Aún no hay nada. Añade muebles, ventanas o una puerta arriba.","Nord":"Norte","Nord (0°)":"Norte (0°)","Norden":"Norte","Norden = oben":"Norte = arriba","Norden einstellen":"Ajustar el norte","Nordost":"Noreste","Nordwest":"Noroeste","Nur aktiven zeigen":"Mostrar solo la activa","Nur ansehen – zum Präsentieren, ohne Bearbeiten und ohne den Plan-Code":"Solo ver – para presentar, sin edición y sin el código del plano","Nur-Ansehen-Link (zum Präsentieren):":"Enlace de solo vista (para presentar):","Objekt":"Objeto","Ost":"Este","Ost (90°)":"Este (90°)","Pinch":"Pellizcar","Plan":"Plano","Position":"Posición","Position X":"Posición X","Position Y":"Posición Y","Profil":"Perfil","Präsentation":"Presentación","Quellcode auf GitHub":"Código fuente en GitHub","Raum":"Habitación","Raum exportieren":"Exportar habitación","Raum importieren":"Importar habitación","Raum zeichnen":"Dibujar habitación","Raum {n}":"Habitación {n}","Raumnamen anzeigen":"Mostrar nombres de habitaciones","Rechteck":"Rectángulo","Regal":"Estantería","Räume fixieren (nicht verschiebbar)":"Fijar habitaciones (no movibles)","Räume formen":"Dar forma a habitaciones","Rückgängig":"Deshacer","Rückgängig (Strg+Z)":"Deshacer (Ctrl+Z)","Rückgängig / Wiederholen (nur eigene Änderungen)":"Deshacer / rehacer (solo cambios propios)","Schenkel links":"Brazo izquierdo","Schenkel vorne":"Brazo delantero","Schenkeltiefe":"Fondo del brazo","Schlafzimmer":"Dormitorio","Schließen":"Cerrar","Schreibtisch":"Escritorio","Schrift Maße":"Fuente de medidas","Schrift Möbel":"Fuente de muebles","Sessel":"Sillón","Sofa":"Sofá","Speichern & Laden":"Guardar y cargar","Strg":"Ctrl","Strg+G":"Ctrl+G","Strg+⇧+G":"Ctrl+⇧+G","Stuhl":"Silla","Süd":"Sur","Süd (180°)":"Sur (180°)","Südost":"Sureste","Südwest":"Suroeste","Tastenkürzel & Bedienung":"Atajos y controles","Tastenkürzel & Hilfe (?)":"Atajos y ayuda (?)","Teil der Gruppe":"Parte del grupo","Teppich":"Alfombra","Text kopieren oder eigenes JSON einfügen.":"Copia el texto o pega tu propio JSON.","Tiefe":"Fondo","Tür":"Puerta","Tür Bad":"Puerta baño","Tür Küche":"Puerta cocina","Tür Schlafzimmer":"Puerta dormitorio","Tür Wohnzimmer":"Puerta salón","Tür hinzufügen":"Añadir puerta","Um den Drehschritt drehen":"Girar según el paso","Verschieben (Raum: am Namen oder Boden)":"Mover (habitación: por el nombre o el suelo)","Vertikal":"Vertical","Vorderseite zeigt nach":"Frente orientado al","Wand":"Pared","Wand {n}":"Pared {n}","Wand {n} verschieben · Doppelklick = teilen":"Mover pared {n} · doble clic = dividir","Wandlängen":"Longitudes de pared","Waschbecken":"Lavabo","Wer diesen Link hat, plant live mit":"Quien tenga este enlace planifica en directo","West":"Oeste","West (270°)":"Oeste (270°)","Wiederholen":"Rehacer","Wiederholen (Strg+Y)":"Rehacer (Ctrl+Y)","Wirklich?":"¿Seguro?","Wo ist Norden? Kompass ziehen oder Winkel eingeben (0° = oben im Plan, im Uhrzeigersinn). Gilt für alle in diesem Plan.":"¿Dónde está el norte? Arrastra la brújula o introduce un ángulo (0° = arriba del plano, sentido horario). Se aplica a todos en este plano.","Wohnung":"Piso","Wohnungstür":"Puerta de entrada","Wohnzimmer":"Salón","Zeichnen beenden":"Terminar dibujo","Ziehen":"Arrastrar","Ziehen = Raum verschieben":"Arrastrar = mover habitación","Ziehen, Drehen und Löschen wirken auf alle.":"Mover, girar y borrar se aplican a todos.","Zoom":"Zoom","Zoom · einpassen":"Zoom · ajustar","Zoomen":"Hacer zoom","Zu 100 % „vibe coded“: Code, Tests und Doku wurden vollständig von einer KI (Claude) geschrieben.":"100 % «vibe coded»: código, pruebas y documentación escritos íntegramente por una IA (Claude).","Zu Rechteck":"A rectángulo","alle Maße in cm":"todas las medidas en cm","alle Räume":"todas las habitaciones","alt":"antigua","alte Version ohne Versionsangabe – bitte neu laden":"versión antigua sin número – recarga, por favor","aus":"desactivado","ausblenden":"ocultar","ausgeblendet":"oculta","beim Import an bestehende Räume anhängen":"añadir a las habitaciones existentes al importar","einblenden":"mostrar","gesamt {n}":"total {n}","kein gültiges JSON.":"JSON no válido.","links":"izquierda","links bündig":"alinear a la izquierda","mittlere Maustaste":"botón central","nach außen":"hacia fuera","nach innen":"hacia dentro","nur aktiver Raum":"solo habitación activa","oben":"arriba","oben bündig":"alinear arriba","ohne Blatt":"sin hoja","ohne Türblatt (nur Durchgang)":"sin hoja (solo paso)","rechts":"derecha","rechts bündig":"alinear a la derecha","schräg":"oblicua","senkrecht mittig":"centrar verticalmente","unten":"abajo","unten bündig":"alinear abajo","verbinde…":"conectando…","waagrecht mittig":"centrar horizontalmente","zentriert":"centrado","{n} Möbel":"{n} muebles","{n} Raum":"{n} habitación","{n} Raum aus {src} importiert.":"{n} habitación importada desde {src}.","{n} Räume":"{n} habitaciones","{n} Räume aus {src} hinzugefügt – rechts neben der Wohnung.":"{n} habitaciones añadidas desde {src} – a la derecha del piso.","{n} Räume aus {src} importiert.":"{n} habitaciones importadas desde {src}.","Öffnet":"Abre","älter als deine, bitte neu laden":"más antigua que la tuya, recarga","„{name}“ aus {src} hinzugefügt – rechts neben der Wohnung. Zum Platzieren am Namen ziehen.":"«{name}» añadida desde {src} – a la derecha del piso. Arrástrala por el nombre para colocarla.","„{name}“ exportiert als {file}.":"«{name}» exportada como {file}.","↔ auf Wand zentrieren":"↔ centrar en la pared","↔ horizontal zentrieren":"↔ centrar horizontalmente","↕ vertikal zentrieren":"↕ centrar verticalmente","⇋ Spiegeln":"⇋ Reflejar","● Ecke ziehen · ■ Kante verschieben · Doppelklick: Ecke einfügen / löschen":"● arrastrar esquina · ■ mover borde · doble clic: insertar / borrar esquina","● Ecke ziehen · ■ Wand verschieben · Doppelklick auf Wand = neue Ecke · auf ● = Ecke löschen":"● arrastrar esquina · ■ mover pared · doble clic en pared = nueva esquina · en ● = borrar esquina","● Ecke ziehen · ■ Wand verschieben · Doppelklick: Ecke einfügen / löschen":"● arrastrar esquina · ■ mover pared · doble clic: insertar / borrar esquina","● live · {n} online":"● en directo · {n} en línea","⚙ Einstellungen":"⚙ Ajustes","✎ Raum zeichnen":"✎ Dibujar habitación","＋ Anbau / Ausschnitt":"＋ Ampliación / recorte","👁 Ansehen-Link":"👁 Enlace de vista","👁 Nur ansehen · Änderungen erscheinen live":"👁 Solo ver · los cambios aparecen en directo","🔗 Mitplanen-Link":"🔗 Enlace para colaborar","Server unterstützt Nur-Ansehen noch nicht – bitte Server aktualisieren.":"El servidor aún no admite solo vista – actualiza el servidor.","offline – verbinde neu…":"sin conexión – reconectando…","keine Verbindung möglich":"no se puede conectar","Sprache · Language":"Idioma · Language","Das ergibt keine gültige Form (Linien kreuzen die Wände?). Nochmal versuchen.":"Eso no da una forma válida (¿líneas que cruzan las paredes?). Inténtalo de nuevo.","Datei konnte nicht gelesen werden.":"No se pudo leer el archivo.","Diese Form geht nicht (Wände überkreuzen sich oder Raum zu klein).":"Esta forma no es posible (paredes cruzadas o habitación demasiado pequeña).","Diese Möbelform geht nicht (Kanten überkreuzen sich).":"Esta forma de mueble no es posible (bordes cruzados).","Ein Möbel braucht mindestens 3 Ecken.":"Un mueble necesita al menos 3 esquinas.","Ein Raum braucht mindestens 3 Ecken.":"Una habitación necesita al menos 3 esquinas.","JSON in die Zwischenablage kopiert.":"JSON copiado al portapapeles.","Kopieren blockiert – Text unten ist markiert, mit Strg/⌘+C kopieren.":"Copia bloqueada – el texto de abajo está seleccionado, cópialo con Ctrl/⌘+C.","Raum zu klein – mindestens 3 Ecken und 0,25 m².":"Habitación demasiado pequeña – al menos 3 esquinas y 0,25 m².","Rückgängig geht nur, wenn du verbunden bist.":"Deshacer solo funciona con conexión.","Starte auf einer Wand des aktiven Raums.":"Empieza en una pared de la habitación activa.","Zeichne mindestens eine Ecke zwischen Start und Ende.":"Dibuja al menos una esquina entre el inicio y el final.","Zu nah an einer vorhandenen Ecke.":"Demasiado cerca de una esquina existente.","Zum Gruppieren mindestens 2 Möbel auswählen (Shift/Strg+Klick).":"Selecciona al menos 2 muebles para agrupar (Mayús/Ctrl+clic)."},"it":{"(du)":"(tu)","+ Raum":"+ Stanza","1 cm verschieben (mit ⇧ 10 cm)":"Sposta di 1 cm (con ⇧ 10 cm)","45° links / rechts drehen":"Ruota di 45° a sinistra / destra","= links":"= sinistra","= rechts":"= destra","= unten":"= basso","? Hilfe":"? Aiuto","Abbrechen":"Annulla","Abstand":"Distanza","Abstand links":"Distanza sinistra","Abstand oben":"Distanza in alto","Abstand rechts":"Distanza destra","Abstand unten":"Distanza in basso","Abstand von ":"Distanza da ","Abstand von links":"Distanza da sinistra","Abstand von oben":"Distanza dall'alto","Abstand von rechts":"Distanza da destra","Abstand von unten":"Distanza dal basso","Alle Möbel im Raum":"Tutti i mobili della stanza","Alle Räume sind ausgeblendet":"Tutte le stanze sono nascoste","Alle einblenden":"Mostra tutto","Alle löschen":"Elimina tutto","Alles einpassen (0)":"Adatta tutto (0)","Als JSON-Datei speichern":"Salva come file JSON","Am 5-cm-Raster einrasten":"Aggancia alla griglia di 5 cm","Anbau / Ausschnitt":"Ampliamento / ritaglio","Anbau: +{n} m²":"Ampliamento: +{n} m²","Anschlag":"Cerniera","Ansehen-Link kopiert – zum Präsentieren, ohne Bearbeiten.":"Link di visualizzazione copiato – per presentare, senza modifiche.","Ansicht":"Vista","Ansicht verschieben":"Sposta la vista","Auf einer Wand starten und enden – außen erweitert, innen schneidet aus":"Inizia e termina su una parete – all'esterno amplia, all'interno ritaglia","Auf einer Wand starten, Ecken klicken, auf einer Wand enden":"Inizia su una parete, clicca gli angoli, termina su una parete","Aus Gruppe lösen":"Rimuovi dal gruppo","Aus Text importieren":"Importa da testo","Ausblenden":"Nascondi","Ausrichten":"Allinea","Ausschnitt: −{n} m²":"Ritaglio: −{n} m²","Auswahl":"Selezione","Auswahl aufheben · Modus beenden":"Annulla selezione · esci dalla modalità","Auswahl · {n} Möbel":"Selezione · {n} mobili","Auswählen":"Selezionare","Bad":"Bagno","Badewanne":"Vasca da bagno","Bearbeiten":"Modifica","Beispielwohnung laden":"Carica appartamento di esempio","Bett":"Letto","Breite":"Larghezza","Couchtisch":"Tavolino","Dein Name":"Il tuo nome","Der Server antwortet nicht auf diese Anfrage – er läuft noch mit einer älteren Version. Bitte auf dem Server aktualisieren und neu starten.":"Il server non risponde a questa richiesta – usa ancora una versione precedente. Aggiorna e riavvia il server.","Die nächste Wand (im Uhrzeigersinn) wandert mit.":"La parete successiva (in senso orario) si sposta insieme.","Diesen Link an deine Freunde schicken:":"Invia questo link ai tuoi amici:","Doppelklick":"Doppio clic","Doppelklick = hier eine Ecke einfügen":"Doppio clic = inserisci un angolo qui","Drehschritt (R / Doppelklick)":"Passo di rotazione (R / doppio clic)","Drehung:":"Rotazione:","Duplizieren":"Duplica","Durchgang":"Passaggio","Dusche":"Doccia","Eckbank (L)":"Panca ad angolo (L)","Ecke ziehen · Doppelklick = löschen":"Trascina angolo · doppio clic = elimina","Ecken bearbeiten":"Modifica angoli","Ecken fertig":"Angoli fatti","Ecken klicken · Startpunkt oder Enter schließt · ⌫ letzte Ecke":"Clicca gli angoli · punto iniziale o Invio chiude · ⌫ ultimo angolo","Ecken klicken, Startpunkt / Enter = fertig":"Clicca gli angoli, punto iniziale / Invio = fatto","Eckschreibtisch (L)":"Scrivania ad angolo (L)","Ecksofa (L)":"Divano angolare (L)","Einblenden":"Mostra","Einstellungen":"Impostazioni","Einstellungen gelten nur in diesem Browser.":"Le impostazioni valgono solo per questo browser.","Einzelbett":"Letto singolo","Einzelnes Möbel einer Gruppe":"Singolo mobile di un gruppo","Entf":"Canc","Ersetzt den Plan für alle – lässt sich mit Strg+Z zurücknehmen.":"Sostituisce il piano per tutti – annullabile con Ctrl+Z.","Esstisch":"Tavolo da pranzo","Farbe":"Colore","Fenster":"Finestra","Fenster blickt nach":"Finestra rivolta a","Fenster hinzufügen":"Aggiungi finestra","Fertig":"Fatto","Flur":"Corridoio","Form":"Forma","Form bearbeiten":"Modifica forma","Form fertig":"Forma fatta","Frei (Ecken)":"Libera (angoli)","Freie Form · {n} Wände":"Forma libera · {n} pareti","Freie Form: Größe über „Form bearbeiten“ ändern":"Forma libera: cambia le dimensioni con «Modifica forma»","Ganze Gruppe wählen":"Seleziona tutto il gruppo","Garderobe":"Guardaroba","Gast":"Ospite","Gemeinsam drehen (um die Mitte)":"Ruota insieme (attorno al centro)","Gemeinsam planen":"Pianifica insieme","Gesamtmaße der Wohnung":"Misure totali dell'appartamento","Gespeichert als {file}.":"Salvato come {file}.","Gruppe":"Gruppo","Gruppe {n}":"Gruppo {n}","Gruppe · {n} Möbel":"Gruppo · {n} mobili","Gruppenname":"Nome del gruppo","Gruppieren":"Raggruppa","Gruppieren / Gruppe auflösen":"Raggruppa / separa","Gruppierung aufheben":"Separa gruppo","Herauszoomen":"Riduci zoom","Herauszoomen (−)":"Riduci zoom (−)","Himmelsrichtung":"Orientamento","Hineinzoomen":"Aumenta zoom","Hineinzoomen (+)":"Aumenta zoom (+)","Hinzufügen in":"Aggiungi in","Horizontal":"Orizzontale","Im Raum":"Nella stanza","Im WLAN/LAN erreichbar unter {host}":"Raggiungibile in Wi-Fi/LAN su {host}","Import fehlgeschlagen: {e}":"Importazione non riuscita: {e}","JSON als Text":"JSON come testo","JSON kopieren":"Copia JSON","JSON-Datei importieren":"Importa file JSON","Kante verschieben · Doppelklick = neue Ecke":"Sposta lato · doppio clic = nuovo angolo","Keine Räume in der Datei gefunden":"Nessuna stanza trovata nel file","Keine gültige JSON-Struktur":"Struttura JSON non valida","Kleiderschrank":"Armadio","Klick":"Clic","Kommode":"Cassettiera","Kopiert ✓":"Copiato ✓","Küche":"Cucina","Küche L-Form":"Cucina a L","Küchenzeile":"Cucina lineare","Kühlschrank":"Frigorifero","L-Form":"Forma a L","Leere Fläche ziehen":"Trascina area vuota","Leeren":"Svuota","Link ungültig":"Link non valido","Löschen":"Elimina","Mausrad":"Rotellina","Maße":"Misure","Mehrere wählen":"Selezione multipla","Mitplanen-Link kopiert – wer ihn hat, plant live mit.":"Link di collaborazione copiato – chi lo ha pianifica in diretta con te.","Möbel":"Mobile","Möbel / Gruppe wählen · Boden: Raum wählen":"Seleziona mobile / gruppo · pavimento: seleziona stanza","Möbel hinzufügen":"Aggiungi mobile","Möbel-Ecken":"Angoli del mobile","Möbelmaße anzeigen":"Mostra misure dei mobili","Nachttisch":"Comodino","Name":"Nome","Neu laden":"Ricarica","Neue Version {v} verfügbar":"Nuova versione {v} disponibile","Nicht verbunden – bitte kurz warten.":"Non connesso – attendi un momento.","Noch nichts im Raum. Füge oben Möbel, Fenster oder eine Tür hinzu.":"Ancora niente nella stanza. Aggiungi mobili, finestre o una porta sopra.","Nord":"Nord","Nord (0°)":"Nord (0°)","Norden":"Nord","Norden = oben":"Nord = in alto","Norden einstellen":"Imposta il nord","Nordost":"Nord-est","Nordwest":"Nord-ovest","Nur aktiven zeigen":"Mostra solo l'attiva","Nur ansehen – zum Präsentieren, ohne Bearbeiten und ohne den Plan-Code":"Solo visualizzazione – per presentare, senza modifiche e senza il codice del piano","Nur-Ansehen-Link (zum Präsentieren):":"Link di sola visualizzazione (per presentare):","Objekt":"Oggetto","Ost":"Est","Ost (90°)":"Est (90°)","Pinch":"Pizzico","Plan":"Piano","Position":"Posizione","Position X":"Posizione X","Position Y":"Posizione Y","Profil":"Profilo","Präsentation":"Presentazione","Quellcode auf GitHub":"Codice sorgente su GitHub","Raum":"Stanza","Raum exportieren":"Esporta stanza","Raum importieren":"Importa stanza","Raum zeichnen":"Disegna stanza","Raum {n}":"Stanza {n}","Raumnamen anzeigen":"Mostra nomi delle stanze","Rechteck":"Rettangolo","Regal":"Scaffale","Räume fixieren (nicht verschiebbar)":"Blocca stanze (non spostabili)","Räume formen":"Modellare le stanze","Rückgängig":"Annulla","Rückgängig (Strg+Z)":"Annulla (Ctrl+Z)","Rückgängig / Wiederholen (nur eigene Änderungen)":"Annulla / ripeti (solo modifiche proprie)","Schenkel links":"Lato sinistro","Schenkel vorne":"Lato anteriore","Schenkeltiefe":"Profondità del lato","Schlafzimmer":"Camera da letto","Schließen":"Chiudi","Schreibtisch":"Scrivania","Schrift Maße":"Carattere misure","Schrift Möbel":"Carattere mobili","Sessel":"Poltrona","Sofa":"Divano","Speichern & Laden":"Salva e carica","Strg":"Ctrl","Strg+G":"Ctrl+G","Strg+⇧+G":"Ctrl+⇧+G","Stuhl":"Sedia","Süd":"Sud","Süd (180°)":"Sud (180°)","Südost":"Sud-est","Südwest":"Sud-ovest","Tastenkürzel & Bedienung":"Scorciatoie e comandi","Tastenkürzel & Hilfe (?)":"Scorciatoie e aiuto (?)","Teil der Gruppe":"Parte del gruppo","Teppich":"Tappeto","Text kopieren oder eigenes JSON einfügen.":"Copia il testo o incolla il tuo JSON.","Tiefe":"Profondità","Tür":"Porta","Tür Bad":"Porta bagno","Tür Küche":"Porta cucina","Tür Schlafzimmer":"Porta camera","Tür Wohnzimmer":"Porta soggiorno","Tür hinzufügen":"Aggiungi porta","Um den Drehschritt drehen":"Ruota del passo impostato","Verschieben (Raum: am Namen oder Boden)":"Sposta (stanza: dal nome o dal pavimento)","Vertikal":"Verticale","Vorderseite zeigt nach":"Fronte rivolto a","Wand":"Parete","Wand {n}":"Parete {n}","Wand {n} verschieben · Doppelklick = teilen":"Sposta parete {n} · doppio clic = dividi","Wandlängen":"Lunghezze delle pareti","Waschbecken":"Lavandino","Wer diesen Link hat, plant live mit":"Chi ha questo link pianifica in diretta","West":"Ovest","West (270°)":"Ovest (270°)","Wiederholen":"Ripeti","Wiederholen (Strg+Y)":"Ripeti (Ctrl+Y)","Wirklich?":"Sicuro?","Wo ist Norden? Kompass ziehen oder Winkel eingeben (0° = oben im Plan, im Uhrzeigersinn). Gilt für alle in diesem Plan.":"Dov'è il nord? Trascina la bussola o inserisci un angolo (0° = in alto nel piano, senso orario). Vale per tutti in questo piano.","Wohnung":"Appartamento","Wohnungstür":"Porta d'ingresso","Wohnzimmer":"Soggiorno","Zeichnen beenden":"Termina disegno","Ziehen":"Trascina","Ziehen = Raum verschieben":"Trascina = sposta stanza","Ziehen, Drehen und Löschen wirken auf alle.":"Spostare, ruotare ed eliminare valgono per tutti.","Zoom":"Zoom","Zoom · einpassen":"Zoom · adatta","Zoomen":"Zoom","Zu 100 % „vibe coded“: Code, Tests und Doku wurden vollständig von einer KI (Claude) geschrieben.":"100% «vibe coded»: codice, test e documentazione scritti interamente da un'IA (Claude).","Zu Rechteck":"A rettangolo","alle Maße in cm":"tutte le misure in cm","alle Räume":"tutte le stanze","alt":"vecchia","alte Version ohne Versionsangabe – bitte neu laden":"versione vecchia senza numero – ricarica","aus":"disattivato","ausblenden":"nascondi","ausgeblendet":"nascosta","beim Import an bestehende Räume anhängen":"aggiungi alle stanze esistenti durante l'importazione","einblenden":"mostra","gesamt {n}":"totale {n}","kein gültiges JSON.":"JSON non valido.","links":"sinistra","links bündig":"allinea a sinistra","mittlere Maustaste":"tasto centrale","nach außen":"verso l'esterno","nach innen":"verso l'interno","nur aktiver Raum":"solo stanza attiva","oben":"alto","oben bündig":"allinea in alto","ohne Blatt":"senza anta","ohne Türblatt (nur Durchgang)":"senza anta (solo passaggio)","rechts":"destra","rechts bündig":"allinea a destra","schräg":"obliqua","senkrecht mittig":"centra verticalmente","unten":"basso","unten bündig":"allinea in basso","verbinde…":"connessione…","waagrecht mittig":"centra orizzontalmente","zentriert":"centrato","{n} Möbel":"{n} mobili","{n} Raum":"{n} stanza","{n} Raum aus {src} importiert.":"{n} stanza importata da {src}.","{n} Räume":"{n} stanze","{n} Räume aus {src} hinzugefügt – rechts neben der Wohnung.":"{n} stanze aggiunte da {src} – a destra dell'appartamento.","{n} Räume aus {src} importiert.":"{n} stanze importate da {src}.","Öffnet":"Si apre","älter als deine, bitte neu laden":"più vecchia della tua, ricarica","„{name}“ aus {src} hinzugefügt – rechts neben der Wohnung. Zum Platzieren am Namen ziehen.":"«{name}» aggiunta da {src} – a destra dell'appartamento. Trascinala dal nome per posizionarla.","„{name}“ exportiert als {file}.":"«{name}» esportata come {file}.","↔ auf Wand zentrieren":"↔ centra sulla parete","↔ horizontal zentrieren":"↔ centra orizzontalmente","↕ vertikal zentrieren":"↕ centra verticalmente","⇋ Spiegeln":"⇋ Specchia","● Ecke ziehen · ■ Kante verschieben · Doppelklick: Ecke einfügen / löschen":"● trascina angolo · ■ sposta lato · doppio clic: inserisci / elimina angolo","● Ecke ziehen · ■ Wand verschieben · Doppelklick auf Wand = neue Ecke · auf ● = Ecke löschen":"● trascina angolo · ■ sposta parete · doppio clic sulla parete = nuovo angolo · su ● = elimina angolo","● Ecke ziehen · ■ Wand verschieben · Doppelklick: Ecke einfügen / löschen":"● trascina angolo · ■ sposta parete · doppio clic: inserisci / elimina angolo","● live · {n} online":"● live · {n} online","⚙ Einstellungen":"⚙ Impostazioni","✎ Raum zeichnen":"✎ Disegna stanza","＋ Anbau / Ausschnitt":"＋ Ampliamento / ritaglio","👁 Ansehen-Link":"👁 Link di visualizzazione","👁 Nur ansehen · Änderungen erscheinen live":"👁 Solo visualizzazione · le modifiche appaiono in diretta","🔗 Mitplanen-Link":"🔗 Link di collaborazione","Server unterstützt Nur-Ansehen noch nicht – bitte Server aktualisieren.":"Il server non supporta ancora la sola visualizzazione – aggiornalo.","offline – verbinde neu…":"offline – riconnessione…","keine Verbindung möglich":"impossibile connettersi","Sprache · Language":"Lingua · Language","Das ergibt keine gültige Form (Linien kreuzen die Wände?). Nochmal versuchen.":"Non è una forma valida (linee che incrociano le pareti?). Riprova.","Datei konnte nicht gelesen werden.":"Impossibile leggere il file.","Diese Form geht nicht (Wände überkreuzen sich oder Raum zu klein).":"Questa forma non è possibile (pareti incrociate o stanza troppo piccola).","Diese Möbelform geht nicht (Kanten überkreuzen sich).":"Questa forma di mobile non è possibile (lati incrociati).","Ein Möbel braucht mindestens 3 Ecken.":"Un mobile richiede almeno 3 angoli.","Ein Raum braucht mindestens 3 Ecken.":"Una stanza richiede almeno 3 angoli.","JSON in die Zwischenablage kopiert.":"JSON copiato negli appunti.","Kopieren blockiert – Text unten ist markiert, mit Strg/⌘+C kopieren.":"Copia bloccata – il testo sotto è selezionato, copialo con Ctrl/⌘+C.","Raum zu klein – mindestens 3 Ecken und 0,25 m².":"Stanza troppo piccola – almeno 3 angoli e 0,25 m².","Rückgängig geht nur, wenn du verbunden bist.":"Annulla funziona solo se sei connesso.","Starte auf einer Wand des aktiven Raums.":"Inizia su una parete della stanza attiva.","Zeichne mindestens eine Ecke zwischen Start und Ende.":"Disegna almeno un angolo tra inizio e fine.","Zu nah an einer vorhandenen Ecke.":"Troppo vicino a un angolo esistente.","Zum Gruppieren mindestens 2 Möbel auswählen (Shift/Strg+Klick).":"Seleziona almeno 2 mobili per raggruppare (Maiusc/Ctrl+clic)."},"nl":{"(du)":"(jij)","+ Raum":"+ Ruimte","1 cm verschieben (mit ⇧ 10 cm)":"1 cm verplaatsen (met ⇧ 10 cm)","45° links / rechts drehen":"45° links / rechts draaien","= links":"= links","= rechts":"= rechts","= unten":"= onder","? Hilfe":"? Help","Abbrechen":"Annuleren","Abstand":"Afstand","Abstand links":"Afstand links","Abstand oben":"Afstand boven","Abstand rechts":"Afstand rechts","Abstand unten":"Afstand onder","Abstand von ":"Afstand vanaf","Abstand von links":"Afstand vanaf links","Abstand von oben":"Afstand vanaf boven","Abstand von rechts":"Afstand vanaf rechts","Abstand von unten":"Afstand vanaf onder","Alle Möbel im Raum":"Alle meubels in de ruimte","Alle Räume sind ausgeblendet":"Alle ruimtes zijn verborgen","Alle einblenden":"Alles tonen","Alle löschen":"Alles verwijderen","Alles einpassen (0)":"Alles passend maken (0)","Als JSON-Datei speichern":"Opslaan als JSON-bestand","Am 5-cm-Raster einrasten":"Uitlijnen op raster van 5 cm","Anbau / Ausschnitt":"Uitbouw / uitsparing","Anbau: +{n} m²":"Uitbouw: +{n} m²","Anschlag":"Scharnier","Ansehen-Link kopiert – zum Präsentieren, ohne Bearbeiten.":"Bekijklink gekopieerd – om te presenteren, zonder bewerken.","Ansicht":"Weergave","Ansicht verschieben":"Weergave verschuiven","Auf einer Wand starten und enden – außen erweitert, innen schneidet aus":"Begin en eindig op een muur – buiten breidt uit, binnen snijdt uit","Auf einer Wand starten, Ecken klicken, auf einer Wand enden":"Begin op een muur, klik hoeken, eindig op een muur","Aus Gruppe lösen":"Uit groep halen","Aus Text importieren":"Importeren uit tekst","Ausblenden":"Verbergen","Ausrichten":"Uitlijnen","Ausschnitt: −{n} m²":"Uitsparing: −{n} m²","Auswahl":"Selectie","Auswahl aufheben · Modus beenden":"Selectie opheffen · modus verlaten","Auswahl · {n} Möbel":"Selectie · {n} meubels","Auswählen":"Selecteren","Bad":"Badkamer","Badewanne":"Bad","Bearbeiten":"Bewerken","Beispielwohnung laden":"Voorbeeldwoning laden","Bett":"Bed","Breite":"Breedte","Couchtisch":"Salontafel","Dein Name":"Je naam","Der Server antwortet nicht auf diese Anfrage – er läuft noch mit einer älteren Version. Bitte auf dem Server aktualisieren und neu starten.":"De server beantwoordt dit verzoek niet – hij draait nog een oudere versie. Werk de server bij en start hem opnieuw.","Die nächste Wand (im Uhrzeigersinn) wandert mit.":"De volgende muur (met de klok mee) schuift mee.","Diesen Link an deine Freunde schicken:":"Stuur deze link naar je vrienden:","Doppelklick":"Dubbelklik","Doppelklick = hier eine Ecke einfügen":"Dubbelklik = hier een hoek invoegen","Drehschritt (R / Doppelklick)":"Draaistap (R / dubbelklik)","Drehung:":"Draaiing:","Duplizieren":"Dupliceren","Durchgang":"Doorgang","Dusche":"Douche","Eckbank (L)":"Hoekbank (L)","Ecke ziehen · Doppelklick = löschen":"Hoek slepen · dubbelklik = verwijderen","Ecken bearbeiten":"Hoeken bewerken","Ecken fertig":"Hoeken klaar","Ecken klicken · Startpunkt oder Enter schließt · ⌫ letzte Ecke":"Klik hoeken · startpunt of Enter sluit · ⌫ laatste hoek","Ecken klicken, Startpunkt / Enter = fertig":"Klik hoeken, startpunt / Enter = klaar","Eckschreibtisch (L)":"Hoekbureau (L)","Ecksofa (L)":"Hoekbank-sofa (L)","Einblenden":"Tonen","Einstellungen":"Instellingen","Einstellungen gelten nur in diesem Browser.":"Instellingen gelden alleen in deze browser.","Einzelbett":"Eenpersoonsbed","Einzelnes Möbel einer Gruppe":"Los meubel uit een groep","Entf":"Del","Ersetzt den Plan für alle – lässt sich mit Strg+Z zurücknehmen.":"Vervangt het plan voor iedereen – ongedaan te maken met Ctrl+Z.","Esstisch":"Eettafel","Farbe":"Kleur","Fenster":"Raam","Fenster blickt nach":"Raam kijkt naar","Fenster hinzufügen":"Raam toevoegen","Fertig":"Klaar","Flur":"Gang","Form":"Vorm","Form bearbeiten":"Vorm bewerken","Form fertig":"Vorm klaar","Frei (Ecken)":"Vrij (hoeken)","Freie Form · {n} Wände":"Vrije vorm · {n} muren","Freie Form: Größe über „Form bearbeiten“ ändern":"Vrije vorm: grootte wijzigen via „Vorm bewerken”","Ganze Gruppe wählen":"Hele groep selecteren","Garderobe":"Kapstok","Gast":"Gast","Gemeinsam drehen (um die Mitte)":"Samen draaien (om het midden)","Gemeinsam planen":"Samen plannen","Gesamtmaße der Wohnung":"Totale afmetingen van de woning","Gespeichert als {file}.":"Opgeslagen als {file}.","Gruppe":"Groep","Gruppe {n}":"Groep {n}","Gruppe · {n} Möbel":"Groep · {n} meubels","Gruppenname":"Groepsnaam","Gruppieren":"Groeperen","Gruppieren / Gruppe auflösen":"Groeperen / groep opheffen","Gruppierung aufheben":"Groep opheffen","Herauszoomen":"Uitzoomen","Herauszoomen (−)":"Uitzoomen (−)","Himmelsrichtung":"Windrichting","Hineinzoomen":"Inzoomen","Hineinzoomen (+)":"Inzoomen (+)","Hinzufügen in":"Toevoegen aan","Horizontal":"Horizontaal","Im Raum":"In de ruimte","Im WLAN/LAN erreichbar unter {host}":"Bereikbaar in wifi/LAN via {host}","Import fehlgeschlagen: {e}":"Import mislukt: {e}","JSON als Text":"JSON als tekst","JSON kopieren":"JSON kopiëren","JSON-Datei importieren":"JSON-bestand importeren","Kante verschieben · Doppelklick = neue Ecke":"Rand verschuiven · dubbelklik = nieuwe hoek","Keine Räume in der Datei gefunden":"Geen ruimtes in het bestand gevonden","Keine gültige JSON-Struktur":"Geen geldige JSON-structuur","Kleiderschrank":"Kledingkast","Klick":"Klik","Kommode":"Ladekast","Kopiert ✓":"Gekopieerd ✓","Küche":"Keuken","Küche L-Form":"L-keuken","Küchenzeile":"Keukenblok","Kühlschrank":"Koelkast","L-Form":"L-vorm","Leere Fläche ziehen":"Lege vlakte slepen","Leeren":"Leegmaken","Link ungültig":"Ongeldige link","Löschen":"Verwijderen","Mausrad":"Muiswiel","Maße":"Afmetingen","Mehrere wählen":"Meerdere selecteren","Mitplanen-Link kopiert – wer ihn hat, plant live mit.":"Samenwerklink gekopieerd – wie hem heeft, plant live mee.","Möbel":"Meubel","Möbel / Gruppe wählen · Boden: Raum wählen":"Meubel / groep selecteren · vloer: ruimte selecteren","Möbel hinzufügen":"Meubel toevoegen","Möbel-Ecken":"Meubelhoeken","Möbelmaße anzeigen":"Meubelafmetingen tonen","Nachttisch":"Nachtkastje","Name":"Naam","Neu laden":"Opnieuw laden","Neue Version {v} verfügbar":"Nieuwe versie {v} beschikbaar","Nicht verbunden – bitte kurz warten.":"Niet verbonden – even geduld.","Noch nichts im Raum. Füge oben Möbel, Fenster oder eine Tür hinzu.":"Nog niets in de ruimte. Voeg hierboven meubels, ramen of een deur toe.","Nord":"Noord","Nord (0°)":"Noord (0°)","Norden":"Noorden","Norden = oben":"Noorden = boven","Norden einstellen":"Noorden instellen","Nordost":"Noordoost","Nordwest":"Noordwest","Nur aktiven zeigen":"Alleen actieve tonen","Nur ansehen – zum Präsentieren, ohne Bearbeiten und ohne den Plan-Code":"Alleen bekijken – om te presenteren, zonder bewerken en zonder de plancode","Nur-Ansehen-Link (zum Präsentieren):":"Alleen-bekijken-link (om te presenteren):","Objekt":"Object","Ost":"Oost","Ost (90°)":"Oost (90°)","Pinch":"Knijpen","Plan":"Plan","Position":"Positie","Position X":"Positie X","Position Y":"Positie Y","Profil":"Profiel","Präsentation":"Presentatie","Quellcode auf GitHub":"Broncode op GitHub","Raum":"Ruimte","Raum exportieren":"Ruimte exporteren","Raum importieren":"Ruimte importeren","Raum zeichnen":"Ruimte tekenen","Raum {n}":"Ruimte {n}","Raumnamen anzeigen":"Ruimtenamen tonen","Rechteck":"Rechthoek","Regal":"Kast","Räume fixieren (nicht verschiebbar)":"Ruimtes vastzetten (niet verplaatsbaar)","Räume formen":"Ruimtes vormen","Rückgängig":"Ongedaan maken","Rückgängig (Strg+Z)":"Ongedaan maken (Ctrl+Z)","Rückgängig / Wiederholen (nur eigene Änderungen)":"Ongedaan maken / opnieuw (alleen eigen wijzigingen)","Schenkel links":"Linkerbeen","Schenkel vorne":"Voorbeen","Schenkeltiefe":"Beendiepte","Schlafzimmer":"Slaapkamer","Schließen":"Sluiten","Schreibtisch":"Bureau","Schrift Maße":"Lettergrootte maten","Schrift Möbel":"Lettergrootte meubels","Sessel":"Fauteuil","Sofa":"Bank","Speichern & Laden":"Opslaan & laden","Strg":"Ctrl","Strg+G":"Ctrl+G","Strg+⇧+G":"Ctrl+⇧+G","Stuhl":"Stoel","Süd":"Zuid","Süd (180°)":"Zuid (180°)","Südost":"Zuidoost","Südwest":"Zuidwest","Tastenkürzel & Bedienung":"Sneltoetsen & bediening","Tastenkürzel & Hilfe (?)":"Sneltoetsen & help (?)","Teil der Gruppe":"Onderdeel van groep","Teppich":"Vloerkleed","Text kopieren oder eigenes JSON einfügen.":"Kopieer de tekst of plak je eigen JSON.","Tiefe":"Diepte","Tür":"Deur","Tür Bad":"Deur badkamer","Tür Küche":"Deur keuken","Tür Schlafzimmer":"Deur slaapkamer","Tür Wohnzimmer":"Deur woonkamer","Tür hinzufügen":"Deur toevoegen","Um den Drehschritt drehen":"Draaien met de draaistap","Verschieben (Raum: am Namen oder Boden)":"Verplaatsen (ruimte: aan de naam of vloer)","Vertikal":"Verticaal","Vorderseite zeigt nach":"Voorkant wijst naar","Wand":"Muur","Wand {n}":"Muur {n}","Wand {n} verschieben · Doppelklick = teilen":"Muur {n} verschuiven · dubbelklik = splitsen","Wandlängen":"Muurlengtes","Waschbecken":"Wastafel","Wer diesen Link hat, plant live mit":"Wie deze link heeft, plant live mee","West":"West","West (270°)":"West (270°)","Wiederholen":"Opnieuw","Wiederholen (Strg+Y)":"Opnieuw (Ctrl+Y)","Wirklich?":"Zeker?","Wo ist Norden? Kompass ziehen oder Winkel eingeben (0° = oben im Plan, im Uhrzeigersinn). Gilt für alle in diesem Plan.":"Waar is het noorden? Sleep het kompas of voer een hoek in (0° = boven in het plan, met de klok mee). Geldt voor iedereen in dit plan.","Wohnung":"Woning","Wohnungstür":"Voordeur","Wohnzimmer":"Woonkamer","Zeichnen beenden":"Tekenen stoppen","Ziehen":"Slepen","Ziehen = Raum verschieben":"Slepen = ruimte verplaatsen","Ziehen, Drehen und Löschen wirken auf alle.":"Verplaatsen, draaien en verwijderen gelden voor alle.","Zoom":"Zoom","Zoom · einpassen":"Zoom · passend","Zoomen":"Zoomen","Zu 100 % „vibe coded“: Code, Tests und Doku wurden vollständig von einer KI (Claude) geschrieben.":"100% „vibe coded”: code, tests en documentatie volledig geschreven door een AI (Claude).","Zu Rechteck":"Naar rechthoek","alle Maße in cm":"alle maten in cm","alle Räume":"alle ruimtes","alt":"oud","alte Version ohne Versionsangabe – bitte neu laden":"oude versie zonder versienummer – herlaad a.u.b.","aus":"uit","ausblenden":"verbergen","ausgeblendet":"verborgen","beim Import an bestehende Räume anhängen":"bij import toevoegen aan bestaande ruimtes","einblenden":"tonen","gesamt {n}":"totaal {n}","kein gültiges JSON.":"geen geldige JSON.","links":"links","links bündig":"links uitlijnen","mittlere Maustaste":"middelste muisknop","nach außen":"naar buiten","nach innen":"naar binnen","nur aktiver Raum":"alleen actieve ruimte","oben":"boven","oben bündig":"boven uitlijnen","ohne Blatt":"zonder blad","ohne Türblatt (nur Durchgang)":"zonder deurblad (alleen doorgang)","rechts":"rechts","rechts bündig":"rechts uitlijnen","schräg":"schuin","senkrecht mittig":"verticaal centreren","unten":"onder","unten bündig":"onder uitlijnen","verbinde…":"verbinden…","waagrecht mittig":"horizontaal centreren","zentriert":"gecentreerd","{n} Möbel":"{n} meubels","{n} Raum":"{n} ruimte","{n} Raum aus {src} importiert.":"{n} ruimte geïmporteerd uit {src}.","{n} Räume":"{n} ruimtes","{n} Räume aus {src} hinzugefügt – rechts neben der Wohnung.":"{n} ruimtes toegevoegd uit {src} – rechts naast de woning.","{n} Räume aus {src} importiert.":"{n} ruimtes geïmporteerd uit {src}.","Öffnet":"Opent","älter als deine, bitte neu laden":"ouder dan de jouwe, herlaad a.u.b.","„{name}“ aus {src} hinzugefügt – rechts neben der Wohnung. Zum Platzieren am Namen ziehen.":"„{name}” toegevoegd uit {src} – rechts naast de woning. Sleep aan de naam om te plaatsen.","„{name}“ exportiert als {file}.":"„{name}” geëxporteerd als {file}.","↔ auf Wand zentrieren":"↔ op muur centreren","↔ horizontal zentrieren":"↔ horizontaal centreren","↕ vertikal zentrieren":"↕ verticaal centreren","⇋ Spiegeln":"⇋ Spiegelen","● Ecke ziehen · ■ Kante verschieben · Doppelklick: Ecke einfügen / löschen":"● hoek slepen · ■ rand verschuiven · dubbelklik: hoek invoegen / verwijderen","● Ecke ziehen · ■ Wand verschieben · Doppelklick auf Wand = neue Ecke · auf ● = Ecke löschen":"● hoek slepen · ■ muur verschuiven · dubbelklik op muur = nieuwe hoek · op ● = hoek verwijderen","● Ecke ziehen · ■ Wand verschieben · Doppelklick: Ecke einfügen / löschen":"● hoek slepen · ■ muur verschuiven · dubbelklik: hoek invoegen / verwijderen","● live · {n} online":"● live · {n} online","⚙ Einstellungen":"⚙ Instellingen","✎ Raum zeichnen":"✎ Ruimte tekenen","＋ Anbau / Ausschnitt":"＋ Uitbouw / uitsparing","👁 Ansehen-Link":"👁 Bekijklink","👁 Nur ansehen · Änderungen erscheinen live":"👁 Alleen bekijken · wijzigingen verschijnen live","🔗 Mitplanen-Link":"🔗 Samenwerklink","Server unterstützt Nur-Ansehen noch nicht – bitte Server aktualisieren.":"Server ondersteunt alleen-bekijken nog niet – werk de server bij.","offline – verbinde neu…":"offline – opnieuw verbinden…","keine Verbindung möglich":"geen verbinding mogelijk","Sprache · Language":"Taal · Language","Das ergibt keine gültige Form (Linien kreuzen die Wände?). Nochmal versuchen.":"Dat is geen geldige vorm (lijnen kruisen de muren?). Probeer opnieuw.","Datei konnte nicht gelesen werden.":"Bestand kon niet gelezen worden.","Diese Form geht nicht (Wände überkreuzen sich oder Raum zu klein).":"Deze vorm kan niet (muren kruisen of ruimte te klein).","Diese Möbelform geht nicht (Kanten überkreuzen sich).":"Deze meubelvorm kan niet (randen kruisen).","Ein Möbel braucht mindestens 3 Ecken.":"Een meubel heeft minstens 3 hoeken nodig.","Ein Raum braucht mindestens 3 Ecken.":"Een ruimte heeft minstens 3 hoeken nodig.","JSON in die Zwischenablage kopiert.":"JSON naar het klembord gekopieerd.","Kopieren blockiert – Text unten ist markiert, mit Strg/⌘+C kopieren.":"Kopiëren geblokkeerd – de tekst hieronder is geselecteerd, kopieer met Ctrl/⌘+C.","Raum zu klein – mindestens 3 Ecken und 0,25 m².":"Ruimte te klein – minstens 3 hoeken en 0,25 m².","Rückgängig geht nur, wenn du verbunden bist.":"Ongedaan maken werkt alleen als je verbonden bent.","Starte auf einer Wand des aktiven Raums.":"Begin op een muur van de actieve ruimte.","Zeichne mindestens eine Ecke zwischen Start und Ende.":"Teken minstens één hoek tussen begin en einde.","Zu nah an einer vorhandenen Ecke.":"Te dicht bij een bestaande hoek.","Zum Gruppieren mindestens 2 Möbel auswählen (Shift/Strg+Klick).":"Selecteer minstens 2 meubels om te groeperen (Shift/Ctrl+klik)."}};</script>
+<!--/I18N-->
 <script>
+/* ---------- Sprachen ----------
+   Deutsch ist die Quelle: t('deutscher Text') liefert die Übersetzung aus I18N[Sprache] oder den deutschen Text.
+   Neue Sprache: in I18N einen Block mit denselben Schlüsseln anlegen und in LANGS eintragen. */
+const LANGS={de:'Deutsch',en:'English',fr:'Français',es:'Español',it:'Italiano',nl:'Nederlands'};
+const LOCALES={de:'de-DE',en:'en-GB',fr:'fr-FR',es:'es-ES',it:'it-IT',nl:'nl-NL'};
+const LANG=(()=>{try{const v=JSON.parse(localStorage.getItem('rp-settings')||'{}').lang;if(LANGS[v])return v}catch(e){}
+  const b=String(navigator.language||'en').slice(0,2).toLowerCase();return LANGS[b]?b:'en'})();
+const LOC=LOCALES[LANG];
+const DICT=(window.I18N&&window.I18N[LANG])||{};
+const I18N_MISSING=new Set();
+function t(s,p){let r=LANG==='de'?s:(DICT[s]!==undefined?DICT[s]:(I18N_MISSING.add(s),s));
+  if(p)r=r.replace(/\{(\w+)\}/g,(m,k)=>k in p?p[k]:m);return r}
+// Feste Texte und Vorlagen übersetzen; Inhalte mit translate="no" (z. B. von Nutzern vergebene Namen) bleiben unverändert
+function trNode(root){
+  if(LANG==='de'||!root)return;
+  const skip=el=>el.closest('svg,script,style,textarea,[translate="no"]');
+  const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode:n=>skip(n.parentElement)?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT});
+  for(let n=w.nextNode();n;n=w.nextNode()){const v=n.nodeValue,k=v.trim();if(!k||!/[A-Za-zÄÖÜäöüß]/.test(k))continue;
+    if(DICT[k]!==undefined)n.nodeValue=v.replace(k,DICT[k]);else I18N_MISSING.add(k)}
+  for(const el of root.querySelectorAll('[title],[aria-label],[placeholder]')){if(skip(el)&&!el.closest('#plan'))continue;
+    for(const a of ['title','aria-label','placeholder']){const k=el.getAttribute(a);if(k&&DICT[k]!==undefined)el.setAttribute(a,DICT[k]);else if(k&&/[a-zäöü]/i.test(k))I18N_MISSING.add(k)}}
+  if(root.nodeType===1&&root.matches('[title]')){const k=root.getAttribute('title');if(DICT[k]!==undefined)root.setAttribute('title',DICT[k])}
+}
 {
+document.documentElement.lang=LANG;
 const $=s=>document.querySelector(s);
 const svg=$('#plan'), selBox=$('#selBox');
 const T=12;
@@ -472,7 +533,7 @@ const VIEW=(()=>{const v=new URL(location.href).searchParams.get('view');return 
 const RO=!!VIEW;
 document.documentElement.classList.toggle('ro',RO);
 const planId=RO?'view-'+VIEW.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,16):(()=>{const u=new URL(location.href);let p=(u.searchParams.get('plan')||'').toLowerCase();
-  if(!/^[a-z0-9-]{1,40}$/.test(p)){p=(Math.random().toString(36).slice(2,8)+Math.random().toString(36).slice(2,8)).slice(0,12);u.searchParams.set('plan',p);history.replaceState(null,'',u)}return p})();
+  if(!/^[a-z0-9-]{1,40}$/.test(p)||p==='views'||p==='secret'){p=[...crypto.getRandomValues(new Uint8Array(16))].map(b=>'abcdefghijklmnopqrstuvwxyz0123456789'[b%36]).join('');u.searchParams.set('plan',p);history.replaceState(null,'',u)}return p})();
 const ROGUARD=()=>RO; // Schreibschutz in der Oberfläche (der Server erzwingt ihn zusätzlich)
 const KEY='raumplaner-live-'+planId, HKEY='raumplaner-hidden-'+planId;
 const LEGACY=['top','right','bottom','left']; // alte Wandnamen → Kante 0..3 eines Rechtecks
@@ -483,8 +544,8 @@ const nid=p=>(p||'i')+Math.random().toString(36).slice(2,10);
 const safeColor=c=>/^#[0-9a-f]{6}$/i.test(c)?c:'#888888';
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const r1=v=>Math.round(v*10)/10;
-const fmt=v=>r1(v).toLocaleString('de-DE');
-const area=r=>(Math.abs(polyArea(r.pts))/1e4).toLocaleString('de-DE',{maximumFractionDigits:2});
+const fmt=v=>r1(v).toLocaleString(LOC);
+const area=r=>(Math.abs(polyArea(r.pts))/1e4).toLocaleString(LOC,{maximumFractionDigits:2});
 
 /* ---------- Datenmodell & Import-Prüfung ---------- */
 const N=(v,def,min,max)=>{v=+v;return isFinite(v)?Math.min(max,Math.max(min,v)):def};
@@ -492,7 +553,7 @@ const okId=(id,keep,p)=>keep&&typeof id==='string'&&/^[a-z0-9_-]{1,40}$/i.test(i
 function normRoom(r,keep){
   const w=N(r.w,400,50,3000),d=N(r.d,300,50,3000);
   const okPts=Array.isArray(r.pts)&&r.pts.length>=3&&r.pts.length<=64&&r.pts.every(v=>Array.isArray(v)&&isFinite(+v[0])&&isFinite(+v[1]));
-  const room={id:okId(r.id,keep,'r'),name:String(r.name||'Raum').slice(0,60),x:N(r.x,0,-1e5,1e5),y:N(r.y,0,-1e5,1e5),
+  const room={id:okId(r.id,keep,'r'),name:String(r.name||t('Raum')).slice(0,60),x:N(r.x,0,-1e5,1e5),y:N(r.y,0,-1e5,1e5),
     w,d,hidden:!!r.hidden,items:[],...(isFinite(+r.north)&&r.north!==null&&r.north!==''?{north:((+r.north%360)+360)%360}:{}),pts:okPts?r.pts.map(v=>[N(v[0],0,-1e5,1e5),N(v[1],0,-1e5,1e5)]):rectPts(w,d)};
   if(Math.abs(polyArea(room.pts))<100)room.pts=rectPts(w,d);
   if(polyArea(room.pts)<0)room.pts.reverse();
@@ -514,10 +575,10 @@ function keepExtra(src,dst,known){
 function normItem(i,room,keep){
   if(!i||typeof i!=='object')return null;let it;
   if(i.type==='furn'){
-    it={id:okId(i.id,keep),type:'furn',name:String(i.name||'Objekt').slice(0,60),w:N(i.w,100,1,3000),d:N(i.d,50,1,3000),
+    it={id:okId(i.id,keep),type:'furn',name:String(i.name||t('Objekt')).slice(0,60),w:N(i.w,100,1,3000),d:N(i.d,50,1,3000),
       color:safeColor(i.color),x:N(i.x,room.w/2,-1e5,1e5),y:N(i.y,room.d/2,-1e5,1e5),
       rot:((Math.round(N(i.rot,0,-1e4,1e4)/45)*45)%360+360)%360};
-    if(typeof i.grp==='string'&&/^[a-z0-9_-]{1,40}$/i.test(i.grp)){it.grp=i.grp;it.gn=String(i.gn||'Gruppe').slice(0,40)}
+    if(typeof i.grp==='string'&&/^[a-z0-9_-]{1,40}$/i.test(i.grp)){it.grp=i.grp;it.gn=String(i.gn||t('Gruppe')).slice(0,40)}
     // Möbelform: L-Form (Parameter) oder frei (Ecken), sonst Rechteck
     if(i.form==='L'){it.form='L';it.la=N(i.la,60,5,3000);it.lb=N(i.lb,60,5,3000);it.mir=!!i.mir;it.pts=lPts(it)}
     else if(i.form==='free'&&Array.isArray(i.pts)&&i.pts.length>=3&&i.pts.length<=40&&i.pts.every(v=>Array.isArray(v)&&isFinite(+v[0])&&isFinite(+v[1]))){
@@ -528,17 +589,17 @@ function normItem(i,room,keep){
       const k=Math.max(0,LEGACY.indexOf(wall));wall=k;
       if(k>=2){s=wallInfo(room,k).L-s-w;hinge=hinge==='start'?'end':'start'}
     }else wall=Math.round(N(wall,0,0,999))%room.pts.length;
-    it={id:okId(i.id,keep),type:i.type,name:String(i.name||(i.type==='door'?'Tür':'Fenster')).slice(0,60),wall,w,s};
+    it={id:okId(i.id,keep),type:i.type,name:String(i.name||t(i.type==='door'?'Tür':'Fenster')).slice(0,60),wall,w,s};
     if(i.type==='door'){it.hinge=hinge;it.swing=i.swing==='out'?'out':'in';if(i.noleaf)it.noleaf=true} // noleaf = Türblatt ausgehängt
   }else return null;
   clamp(room,it);keepExtra(i,it,ITEM_KEYS);return it;
 }
 function parsePlan(o,keep){
-  if(!o||typeof o!=='object')throw new Error('Keine gültige JSON-Struktur');
+  if(!o||typeof o!=='object')throw new Error(t('Keine gültige JSON-Struktur'));
   let rooms;
   if(Array.isArray(o.rooms))rooms=o.rooms;
-  else if(o.room&&Array.isArray(o.items))rooms=[{name:'Zimmer',x:0,y:0,w:o.room.w,d:o.room.d,items:o.items}];
-  else throw new Error('Keine Räume in der Datei gefunden');
+  else if(o.room&&Array.isArray(o.items))rooms=[{name:t('Raum'),x:0,y:0,w:o.room.w,d:o.room.d,items:o.items}];
+  else throw new Error(t('Keine Räume in der Datei gefunden'));
   const out=[];
   for(const r of rooms){
     if(!r||typeof r!=='object')continue;
@@ -546,7 +607,7 @@ function parsePlan(o,keep){
     for(const i of Array.isArray(r.items)?r.items:[]){const it=normItem(i,room,keep);if(it)room.items.push(it)}
     out.push(room);
   }
-  if(!out.length)throw new Error('Keine Räume in der Datei gefunden');
+  if(!out.length)throw new Error(t('Keine Räume in der Datei gefunden'));
   const fromRoom=out.find(r=>r.north!==undefined);
   const nn=+(o.north!==undefined?o.north:fromRoom?fromRoom.north:o.meta&&o.meta.north);
   return{rooms:out,snap:o.snap===undefined?true:!!o.snap,step:o.step==45?45:90,north:isFinite(nn)?((nn%360)+360)%360:0};
@@ -556,35 +617,35 @@ function exportObj(withIds){return{app:'raumplaner',version:2,snap:S.snap,step:S
 
 function example(){
   const p=parsePlan({snap:true,step:90,rooms:[
-    {name:'Wohnzimmer',x:0,y:0,w:480,d:400,items:[
-      {type:'window',name:'Fenster',wall:'top',s:160,w:160},
-      {type:'furn',name:'Sofa',w:220,d:90,color:'#7a9cc6',x:45,y:200,rot:270},
-      {type:'furn',name:'Couchtisch',w:100,d:60,color:'#d0b25c',x:160,y:200,rot:90},
-      {type:'furn',name:'Sessel',w:80,d:80,color:'#a08bc0',x:300,y:110,rot:0},
-      {type:'furn',name:'Esstisch',w:160,d:90,color:'#b9926a',x:340,y:240,rot:0},
-      {type:'furn',name:'Regal',w:80,d:35,color:'#7fb3ad',x:462.5,y:110,rot:90}]},
-    {name:'Schlafzimmer',x:492,y:0,w:420,d:400,items:[
-      {type:'window',name:'Fenster',wall:'top',s:150,w:120},
-      {type:'furn',name:'Bett',w:140,d:200,color:'#7a9cc6',x:350,y:110,rot:0},
-      {type:'furn',name:'Schreibtisch',w:140,d:70,color:'#b9926a',x:200,y:35,rot:0},
-      {type:'furn',name:'Stuhl',w:45,d:45,color:'#8fae7e',x:200,y:110,rot:0},
-      {type:'furn',name:'Kleiderschrank',w:150,d:60,color:'#c9877a',x:30,y:130,rot:90}]},
-    {name:'Bad',x:0,y:412,w:240,d:220,items:[
-      {type:'window',name:'Fenster',wall:'bottom',s:80,w:80},
-      {type:'furn',name:'Badewanne',w:170,d:75,color:'#7fb3ad',x:95,y:182.5,rot:180},
-      {type:'furn',name:'WC',w:40,d:65,color:'#d9dee0',x:150,y:32.5,rot:0},
-      {type:'furn',name:'Waschbecken',w:60,d:45,color:'#d9dee0',x:95,y:22.5,rot:0}]},
-    {name:'Flur',x:252,y:412,w:420,d:220,items:[
-      {type:'door',name:'Wohnungstür',wall:'bottom',s:160,w:100,hinge:'start',swing:'in'},
-      {type:'door',name:'Tür Wohnzimmer',wall:'top',s:40,w:90,hinge:'start',swing:'out'},
-      {type:'door',name:'Tür Schlafzimmer',wall:'top',s:300,w:90,hinge:'end',swing:'out'},
-      {type:'door',name:'Tür Bad',wall:'left',s:60,w:80,hinge:'end',swing:'out'},
-      {type:'door',name:'Tür Küche',wall:'right',s:60,w:90,hinge:'end',swing:'out'},
-      {type:'furn',name:'Garderobe',w:100,d:40,color:'#b9926a',x:340,y:200,rot:180}]},
-    {name:'Küche',x:684,y:412,w:228,d:220,items:[
-      {type:'window',name:'Fenster',wall:'right',s:60,w:100},
-      {type:'furn',name:'Küchenzeile',w:220,d:60,color:'#c9877a',x:114,y:190,rot:180},
-      {type:'furn',name:'Kühlschrank',w:60,d:65,color:'#d9dee0',x:190,y:32.5,rot:0}]}
+    {name:t('Wohnzimmer'),x:0,y:0,w:480,d:400,items:[
+      {type:'window',name:t('Fenster'),wall:'top',s:160,w:160},
+      {type:'furn',name:t('Sofa'),w:220,d:90,color:'#7a9cc6',x:45,y:200,rot:270},
+      {type:'furn',name:t('Couchtisch'),w:100,d:60,color:'#d0b25c',x:160,y:200,rot:90},
+      {type:'furn',name:t('Sessel'),w:80,d:80,color:'#a08bc0',x:300,y:110,rot:0},
+      {type:'furn',name:t('Esstisch'),w:160,d:90,color:'#b9926a',x:340,y:240,rot:0},
+      {type:'furn',name:t('Regal'),w:80,d:35,color:'#7fb3ad',x:462.5,y:110,rot:90}]},
+    {name:t('Schlafzimmer'),x:492,y:0,w:420,d:400,items:[
+      {type:'window',name:t('Fenster'),wall:'top',s:150,w:120},
+      {type:'furn',name:t('Bett'),w:140,d:200,color:'#7a9cc6',x:350,y:110,rot:0},
+      {type:'furn',name:t('Schreibtisch'),w:140,d:70,color:'#b9926a',x:200,y:35,rot:0},
+      {type:'furn',name:t('Stuhl'),w:45,d:45,color:'#8fae7e',x:200,y:110,rot:0},
+      {type:'furn',name:t('Kleiderschrank'),w:150,d:60,color:'#c9877a',x:30,y:130,rot:90}]},
+    {name:t('Bad'),x:0,y:412,w:240,d:220,items:[
+      {type:'window',name:t('Fenster'),wall:'bottom',s:80,w:80},
+      {type:'furn',name:t('Badewanne'),w:170,d:75,color:'#7fb3ad',x:95,y:182.5,rot:180},
+      {type:'furn',name:t('WC'),w:40,d:65,color:'#d9dee0',x:150,y:32.5,rot:0},
+      {type:'furn',name:t('Waschbecken'),w:60,d:45,color:'#d9dee0',x:95,y:22.5,rot:0}]},
+    {name:t('Flur'),x:252,y:412,w:420,d:220,items:[
+      {type:'door',name:t('Wohnungstür'),wall:'bottom',s:160,w:100,hinge:'start',swing:'in'},
+      {type:'door',name:t('Tür Wohnzimmer'),wall:'top',s:40,w:90,hinge:'start',swing:'out'},
+      {type:'door',name:t('Tür Schlafzimmer'),wall:'top',s:300,w:90,hinge:'end',swing:'out'},
+      {type:'door',name:t('Tür Bad'),wall:'left',s:60,w:80,hinge:'end',swing:'out'},
+      {type:'door',name:t('Tür Küche'),wall:'right',s:60,w:90,hinge:'end',swing:'out'},
+      {type:'furn',name:t('Garderobe'),w:100,d:40,color:'#b9926a',x:340,y:200,rot:180}]},
+    {name:t('Küche'),x:684,y:412,w:228,d:220,items:[
+      {type:'window',name:t('Fenster'),wall:'right',s:60,w:100},
+      {type:'furn',name:t('Küchenzeile'),w:220,d:60,color:'#c9877a',x:114,y:190,rot:180},
+      {type:'furn',name:t('Kühlschrank'),w:60,d:65,color:'#d9dee0',x:190,y:32.5,rot:0}]}
   ]});
   p.active=p.rooms[0].id;return p;
 }
@@ -642,11 +703,13 @@ function endLabels(g){return Math.abs(g.u[0])>=Math.abs(g.u[1])?(g.u[0]>0?['link
 function wallDir(g){const ox=-g.n[0],oy=-g.n[1];if(Math.abs(ox)>.38&&Math.abs(oy)>.38)return'schräg';
   return Math.abs(oy)>Math.abs(ox)?(oy<0?'oben':'unten'):(ox>0?'rechts':'links')}
 // Himmelsrichtung: S.north = Winkel (im Uhrzeigersinn) von „oben im Plan“ nach Norden
-const WINDS=['Nord','Nordost','Ost','Südost','Süd','Südwest','West','Nordwest'],WINDS_S=['N','NO','O','SO','S','SW','W','NW'];
+const WINDS=['Nord','Nordost','Ost','Südost','Süd','Südwest','West','Nordwest'].map(x=>t(x));
+const WINDS_S=({de:['N','NO','O','SO','S','SW','W','NW'],en:['N','NE','E','SE','S','SW','W','NW'],fr:['N','NE','E','SE','S','SO','O','NO'],
+  es:['N','NE','E','SE','S','SO','O','NO'],it:['N','NE','E','SE','S','SO','O','NO'],nl:['N','NO','O','ZO','Z','ZW','W','NW']})[LANG]||['N','NE','E','SE','S','SW','W','NW'];
 function bearing(v){const a=Math.atan2(v[0],-v[1])*180/Math.PI;return(((a-(S.north||0))%360)+360)%360} // Bildschirm-Richtung → Kompass (0 = Nord)
 const windOf=b=>Math.round(b/45)%8;
 const wallFacing=g=>bearing([-g.n[0],-g.n[1]]); // Außenseite der Wand
-function wallName(r,i){const g=wallInfo(r,i);return`Wand ${g.i+1} · ${WINDS_S[windOf(wallFacing(g))]} · ${fmt(g.L)} cm`}
+function wallName(r,i){const g=wallInfo(r,i);return`${t('Wand {n}',{n:g.i+1})} · ${WINDS_S[windOf(wallFacing(g))]} · ${fmt(g.L)} cm`}
 function normalizeRoom(r){ // Ursprung auf min x/y schieben, Möbel bleiben global an ihrem Platz
   const mx=Math.min(...r.pts.map(p=>p[0])),my=Math.min(...r.pts.map(p=>p[1]));
   if(mx||my){r.pts=r.pts.map(p=>[r1(p[0]-mx),r1(p[1]-my)]);r.x=r1(r.x+mx);r.y=r1(r.y+my);
@@ -714,7 +777,7 @@ function render(){
   if(mode==='fshape'){const it=byId(sel);if(!it||it.type!=='furn'||!it.pts||extra.size){mode=null;updateModeUI()}}
   svg.classList.toggle('locked',lockRooms);svg.classList.toggle('drawing',mode==='draw'||mode==='extend');
   if(!vis.length&&mode!=='draw'){svg.setAttribute('viewBox','0 0 400 160');
-    svg.innerHTML='<text class="dimtxt" x="200" y="84" font-size="14" text-anchor="middle">Alle Räume sind ausgeblendet</text>';return}
+    svg.innerHTML='<text class="dimtxt" x="200" y="84" font-size="14" text-anchor="middle">'+esc(t('Alle Räume sind ausgeblendet'))+'</text>';return}
   if(!drag&&mode!=='draw'&&mode!=='extend')computeLayout();
   const fs=layout.fs;
   svg.setAttribute('viewBox',curVB().join(' '));updateZoomUI();
@@ -751,7 +814,7 @@ function render(){
   }
   // Raumnamen über den Möbeln (zum Ziehen des Raums) – abschaltbar
   if(showNames)for(const r of vis){const c=r.pts.reduce((m,p)=>(p[1]<m[1]||(p[1]===m[1]&&p[0]<m[0]))?p:m,r.pts[0]),X=r.x+c[0]+fs*.5,Y=r.y+c[1];
-    h+=`<text class="rname" data-room="${r.id}" x="${X}" y="${Y+fs*1.25}" font-size="${fs*.9}"><title>Ziehen = Raum verschieben</title>${esc(r.name)}</text><text class="rarea" x="${X}" y="${Y+fs*2.3}" font-size="${fs*.7}">${area(r)} m²</text>`}
+    h+=`<text class="rname" data-room="${r.id}" x="${X}" y="${Y+fs*1.25}" font-size="${fs*.9}"><title>${t('Ziehen = Raum verschieben')}</title>${esc(r.name)}</text><text class="rarea" x="${X}" y="${Y+fs*2.3}" font-size="${fs*.7}">${area(r)} m²</text>`}
   // Fenster & Türen
   for(const r of vis){
     h+=`<g transform="translate(${r.x} ${r.y})">`;
@@ -783,7 +846,7 @@ function render(){
     const s=extra.size?null:byId(sel);
     if(extra.size&&mode!=='shape'){const b=unionBox(selItems()),pd=fs*.4,its=selItems(),grp=its[0].grp&&its.every(i=>i.grp===its[0].grp);
       h+=`<rect class="grpbox" x="${r1(b.x0-pd)}" y="${r1(b.y0-pd)}" width="${r1(b.x1-b.x0+2*pd)}" height="${r1(b.y1-b.y0+2*pd)}" rx="${r1(pd)}"/>`
-        +(grp?`<text class="grptx" x="${r1(b.x0-pd)}" y="${r1(b.y0-pd-fs*.3)}" font-size="${r1(fs*.75)}">${esc(its[0].gn||'Gruppe')}</text>`:'')}
+        +(grp?`<text class="grptx" x="${r1(b.x0-pd)}" y="${r1(b.y0-pd-fs*.3)}" font-size="${r1(fs*.75)}">${esc(its[0].gn||t('Gruppe'))}</text>`:'')}
     if(s&&s.type==='furn'&&mode!=='shape'){
       const{hx,hy}=ext(s),Wa=wallsAround(A,s.x,s.y);
       h+=dim(Wa.L,s.y,s.x-hx,s.y,fs)+dim(s.x+hx,s.y,Wa.R,s.y,fs)+dim(s.x,Wa.T,s.x,s.y-hy,fs)+dim(s.x,s.y+hy,s.x,Wa.B,fs);
@@ -795,18 +858,18 @@ function render(){
       h+=`<line class="wallhl" x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}"/>`}
     if(mode==='shape'){const hs=fs*.42;
       for(let i=0;i<A.pts.length;i++){const g=wallInfo(A,i),a=P(g.p,g.n,-T/2),b=P(g.b,g.n,-T/2);
-        h+=`<line class="ehit" data-w="${i}" x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}"><title>Doppelklick = hier eine Ecke einfügen</title></line>`}
+        h+=`<line class="ehit" data-w="${i}" x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}"><title>${t('Doppelklick = hier eine Ecke einfügen')}</title></line>`}
       for(let i=0;i<A.pts.length;i++){const g=wallInfo(A,i),m=P(g.p,g.u,g.L/2);
-        h+=`<rect class="eh" data-e="${i}" x="${r1(m[0]-hs)}" y="${r1(m[1]-hs)}" width="${r1(hs*2)}" height="${r1(hs*2)}" rx="${r1(hs*.3)}"><title>Wand ${i+1} verschieben · Doppelklick = teilen</title></rect>`}
-      A.pts.forEach((p,i)=>h+=`<circle class="vh" data-v="${i}" cx="${p[0]}" cy="${p[1]}" r="${r1(fs*.5)}"><title>Ecke ziehen · Doppelklick = löschen</title></circle>`);
+        h+=`<rect class="eh" data-e="${i}" x="${r1(m[0]-hs)}" y="${r1(m[1]-hs)}" width="${r1(hs*2)}" height="${r1(hs*2)}" rx="${r1(hs*.3)}"><title>${t('Wand {n} verschieben · Doppelklick = teilen',{n:i+1})}</title></rect>`}
+      A.pts.forEach((p,i)=>h+=`<circle class="vh" data-v="${i}" cx="${p[0]}" cy="${p[1]}" r="${r1(fs*.5)}"><title>${t('Ecke ziehen · Doppelklick = löschen')}</title></circle>`);
     }
     h+='</g>';
   }
   if(mode!=='draw')h+=wallDims(vis,A,fs);
   if(mode==='fshape'){const it=byId(sel);if(it&&it.pts){const hs=fs*.38,G=it.pts.map(p=>furnToG(A,it,p));
     G.forEach((a,i)=>{const b=G[(i+1)%G.length],m=[(a[0]+b[0])/2,(a[1]+b[1])/2];
-      h+=`<rect class="feh" data-fe="${i}" x="${r1(m[0]-hs)}" y="${r1(m[1]-hs)}" width="${r1(hs*2)}" height="${r1(hs*2)}" rx="${r1(hs*.3)}"><title>Kante verschieben · Doppelklick = neue Ecke</title></rect>`});
-    G.forEach((p,i)=>h+=`<circle class="fvh" data-fv="${i}" cx="${r1(p[0])}" cy="${r1(p[1])}" r="${r1(fs*.42)}"><title>Ecke ziehen · Doppelklick = löschen</title></circle>`)}}
+      h+=`<rect class="feh" data-fe="${i}" x="${r1(m[0]-hs)}" y="${r1(m[1]-hs)}" width="${r1(hs*2)}" height="${r1(hs*2)}" rx="${r1(hs*.3)}"><title>${t('Kante verschieben · Doppelklick = neue Ecke')}</title></rect>`});
+    G.forEach((p,i)=>h+=`<circle class="fvh" data-fv="${i}" cx="${r1(p[0])}" cy="${r1(p[1])}" r="${r1(fs*.42)}"><title>${t('Ecke ziehen · Doppelklick = löschen')}</title></circle>`)}}
   // Vorschau beim Raum-Zeichnen / Anbau
   if(mode==='draw'||mode==='extend'){
     const q=drawCur?[...drawPts,drawCur]:drawPts;
@@ -861,8 +924,8 @@ function wallDims(vis,A,fs){
     const x0=Math.min(...o.map(p=>p[0])),x1=Math.max(...o.map(p=>p[0])),y0=Math.min(...o.map(p=>p[1])),y1=Math.max(...o.map(p=>p[1]));
     const oy=y0-tf*2.6,ox=x0-tf*2.6,tk=tf*.35;
     h+=`<path class="dimtot" d="M${x0} ${oy}H${x1}M${x0} ${oy-tk}V${oy+tk}M${x1} ${oy-tk}V${oy+tk}M${ox} ${y0}V${y1}M${ox-tk} ${y0}H${ox+tk}M${ox-tk} ${y1}H${ox+tk}"/>`
-      +`<text class="dimtxt ext" font-size="${r1(tf)}" text-anchor="middle" x="${r1((x0+x1)/2)}" y="${r1(oy-tf*.45)}">gesamt ${fmt(x1-x0)}</text>`
-      +`<text class="dimtxt ext" font-size="${r1(tf)}" text-anchor="middle" transform="translate(${r1(ox-tf*.45)} ${r1((y0+y1)/2)}) rotate(-90)">gesamt ${fmt(y1-y0)}</text>`;
+      +`<text class="dimtxt ext" font-size="${r1(tf)}" text-anchor="middle" x="${r1((x0+x1)/2)}" y="${r1(oy-tf*.45)}">${t('gesamt {n}',{n:fmt(x1-x0)})}</text>`
+      +`<text class="dimtxt ext" font-size="${r1(tf)}" text-anchor="middle" transform="translate(${r1(ox-tf*.45)} ${r1((y0+y1)/2)}) rotate(-90)">${t('gesamt {n}',{n:fmt(y1-y0)})}</text>`;
   }
   return h;
 }
@@ -948,20 +1011,20 @@ svg.addEventListener('pointerup',touchEnd,true);svg.addEventListener('pointercan
 /* ---------- Räume ---------- */
 function renderRooms(){
   $('#rooms').innerHTML=S.rooms.map(r=>`<div class="rrow${r.id===S.active?' on':''}${r.hidden?' off':''}">
-    <button type="button" class="eye" data-eye="${r.id}" aria-pressed="${!r.hidden}" title="${r.hidden?'Einblenden':'Ausblenden'}" aria-label="${esc(r.name)} ${r.hidden?'einblenden':'ausblenden'}">${r.hidden?EYE_OFF:EYE}</button>
-    <button type="button" class="rn" data-room="${r.id}"><span>${esc(r.name)}</span><span>${area(r)} m²</span></button></div>`).join('');
+    <button type="button" class="eye" data-eye="${r.id}" aria-pressed="${!r.hidden}" title="${t(r.hidden?'Einblenden':'Ausblenden')}" aria-label="${esc(r.name)} ${t(r.hidden?'einblenden':'ausblenden')}">${r.hidden?EYE_OFF:EYE}</button>
+    <button type="button" class="rn" data-room="${r.id}"><span translate="no">${esc(r.name)}</span><span>${area(r)} m²</span></button></div>`).join('');
   const tot=S.rooms.reduce((a,r)=>a+Math.abs(polyArea(r.pts)),0)/1e4;
-  $('#aptMeta').textContent=`${S.rooms.length} ${S.rooms.length===1?'Raum':'Räume'} · ${tot.toLocaleString('de-DE',{maximumFractionDigits:2})} m²`;
+  $('#aptMeta').textContent=`${t(S.rooms.length===1?'{n} Raum':'{n} Räume',{n:S.rooms.length})} · ${tot.toLocaleString(LOC,{maximumFractionDigits:2})} m²`;
   const A=R();
   const rect=isRect(A);
-  $('#roomMeta').textContent=`${rect?'Rechteck':'Freie Form · '+A.pts.length+' Wände'} · ${fmt(A.w)} × ${fmt(A.d)} cm · ${area(A)} m²${A.hidden?' · ausgeblendet':''}`;
+  $('#roomMeta').textContent=`${rect?t('Rechteck'):t('Freie Form · {n} Wände',{n:A.pts.length})} · ${fmt(A.w)} × ${fmt(A.d)} cm · ${area(A)} m²${A.hidden?' · '+t('ausgeblendet'):''}`;
   $('#addTo').textContent=A.name;
   $('#delRoom').disabled=S.rooms.length<2;
   $('#rectShape').disabled=rect;
   fillWallSelect();renderWalls();
 }
 function syncRoomInputs(){const A=R(),rect=isRect(A);$('#room-name').value=A.name;$('#room-w').value=A.w;$('#room-d').value=A.d;$('#room-x').value=r1(A.x);$('#room-y').value=r1(A.y);
-  $('#room-w').disabled=$('#room-d').disabled=!rect;$('#room-w').title=$('#room-d').title=rect?'':'Freie Form: Größe über „Form bearbeiten“ ändern'}
+  $('#room-w').disabled=$('#room-d').disabled=!rect;$('#room-w').title=$('#room-d').title=rect?'':t('Freie Form: Größe über „Form bearbeiten“ ändern')}
 function renderAll(){render();renderPanel();renderRooms();syncRoomInputs()}
 function setActive(id){if(S.active!==id){S.active=id;sel=null}renderAll();save()}
 $('#rooms').addEventListener('click',e=>{
@@ -971,7 +1034,7 @@ $('#rooms').addEventListener('click',e=>{
 });
 function placeRight(r){const B=bounds(S.rooms);r.x=B.x+B.w+T;r.y=B.y}
 $('#addRoom').addEventListener('click',()=>{
-  const r={id:nid('r'),name:'Raum '+(S.rooms.length+1),x:0,y:0,w:300,d:300,pts:rectPts(300,300),hidden:false,items:[]};
+  const r={id:nid('r'),name:t('Raum {n}',{n:S.rooms.length+1}),x:0,y:0,w:300,d:300,pts:rectPts(300,300),hidden:false,items:[]};
   placeRight(r);S.rooms.push(r);S.active=r.id;sel=null;renderAll();save();
   $('#room-name').focus();$('#room-name').select();
 });
@@ -980,7 +1043,7 @@ $('#onlyActive').addEventListener('click',()=>{S.rooms.forEach(r=>r.hidden=r.id!
 $('#dupRoom').addEventListener('click',()=>{const A=R();
   const c={...A,id:nid('r'),name:A.name+' (Kopie)',hidden:false,pts:A.pts.map(p=>[...p]),items:A.items.map(i=>({...i,id:nid(),...(i.pts?{pts:i.pts.map(p=>[...p])}:{})}))};
   placeRight(c);S.rooms.push(c);S.active=c.id;sel=null;renderAll();save()});
-$('#room-name').addEventListener('input',e=>{const A=R();A.name=e.target.value.slice(0,60)||'Raum';render();renderRooms();renderPanel();save()});
+$('#room-name').addEventListener('input',e=>{const A=R();A.name=e.target.value.slice(0,60)||t('Raum');render();renderRooms();renderPanel();save()});
 document.querySelectorAll('[data-rk]').forEach(el=>el.addEventListener('change',()=>{
   const A=R(),k=el.dataset.rk,v=parseFloat(el.value);
   if(!isFinite(v)||((k==='w'||k==='d')&&(v<50||v>3000))){syncRoomInputs();return}
@@ -989,7 +1052,7 @@ document.querySelectorAll('[data-rk]').forEach(el=>el.addEventListener('change',
 
 function armed(btn,fn){btn.addEventListener('click',()=>{
   if(btn.dataset.armed){clearTimeout(btn._t);delete btn.dataset.armed;btn.textContent=btn._l;fn();return}
-  btn._l=btn.textContent;btn.dataset.armed='1';btn.textContent='Wirklich?';
+  btn._l=btn.textContent;btn.dataset.armed='1';btn.textContent=t('Wirklich?');
   btn._t=setTimeout(()=>{delete btn.dataset.armed;btn.textContent=btn._l},3000)})}
 armed($('#delRoom'),()=>{if(S.rooms.length<2)return;const A=R();S.rooms=S.rooms.filter(r=>r!==A);S.active=S.rooms[0].id;sel=null;renderAll();save()});
 armed($('#clearRoom'),()=>{R().items=[];sel=null;renderAll();save()});
@@ -1007,8 +1070,8 @@ function renderPanel(){
   selBox.hidden=false;
   if(extra.size){ // mehrere Möbel
     const its=selItems(),grp=its[0].grp&&its.every(i=>i.grp===its[0].grp);
-    selBox.innerHTML=`<h2>${grp?'Gruppe':'Auswahl'} · ${its.length} Möbel</h2>
-    ${grp?`<label class="f">Gruppenname<input data-g="gn" maxlength="40" value="${esc(its[0].gn||'Gruppe')}"></label>`:''}
+    selBox.innerHTML=`<h2>${t(grp?'Gruppe · {n} Möbel':'Auswahl · {n} Möbel',{n:its.length})}</h2>
+    ${grp?`<label class="f">Gruppenname<input data-g="gn" maxlength="40" value="${esc(its[0].gn||t('Gruppe'))}"></label>`:''}
     <div class="btnrow">${grp?'<button type="button" data-act="ungroup">Gruppierung aufheben <span class="meta">Strg+⇧+G</span></button>'
       :'<button type="button" data-act="group" class="primary">Gruppieren <span class="meta" style="color:inherit">Strg+G</span></button>'}</div>
     <div class="f" style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)">Gemeinsam drehen (um die Mitte)
@@ -1017,9 +1080,9 @@ function renderPanel(){
       <div class="r3" style="grid-template-columns:repeat(6,1fr)"><button type="button" data-al="l" title="links bündig">⇤</button><button type="button" data-al="cx" title="waagrecht mittig">↔</button><button type="button" data-al="r" title="rechts bündig">⇥</button><button type="button" data-al="t" title="oben bündig">⤒</button><button type="button" data-al="cy" title="senkrecht mittig">↕</button><button type="button" data-al="b" title="unten bündig">⤓</button></div></div>
     <div class="btnrow"><button type="button" data-act="dup">Duplizieren</button><button type="button" data-act="del" class="danger">Alle löschen</button></div>
     <div class="meta">Ziehen, Drehen und Löschen wirken auf alle.</div>`;
-    return}
+    trNode(selBox);return}
   let h=`<h2>Auswahl</h2><label class="f">Name<input data-k="name" value="${esc(it.name)}"></label>`;
-  if(it.grp)h+=`<div class="ginfo">Teil der Gruppe „${esc(it.gn||'Gruppe')}“<button type="button" data-act="selgrp">Ganze Gruppe wählen</button><button type="button" data-act="leavegrp">Aus Gruppe lösen</button></div>`;
+  if(it.grp)h+=`<div class="ginfo">${esc(t('Teil der Gruppe'))} „${esc(it.gn||t('Gruppe'))}“<button type="button" data-act="selgrp">Ganze Gruppe wählen</button><button type="button" data-act="leavegrp">Aus Gruppe lösen</button></div>`;
   if(it.type==='furn'){
     h+=`<div class="r3">${num('w','Breite',it)}${num('d','Tiefe',it)}<label class="f">Farbe<input type="color" data-k="color" value="${esc(it.color)}"></label></div>
     <div class="meta">Vorderseite zeigt nach <b style="color:var(--fg)">${(()=>{const a=it.rot*Math.PI/180,b=bearing([-Math.sin(a),Math.cos(a)]);return WINDS[windOf(b)]+' ('+Math.round(b)+'°)'})()}</b></div>
@@ -1035,7 +1098,7 @@ function renderPanel(){
     <div class="btnrow"><button type="button" data-act="dup">Duplizieren</button><button type="button" data-act="del" class="danger">Löschen</button></div>`;
   }else{
     const A=R(),[a,b]=endLabels(wallInfo(A,it.wall));
-    h+=`<div class="r2"><label class="f">Wand<select data-k="wall">${A.pts.map((_,i)=>`<option value="${i}"${it.wall===i?' selected':''}>${esc(wallName(A,i))}</option>`).join('')}</select></label>${num('w','Breite',it)}</div>
+    h+=`<div class="r2"><label class="f">Wand<select data-k="wall" translate="no">${A.pts.map((_,i)=>`<option value="${i}"${it.wall===i?' selected':''}>${esc(wallName(A,i))}</option>`).join('')}</select></label>${num('w','Breite',it)}</div>
     <div class="r2">${num('ds','Abstand von '+a,it)}${num('de','Abstand von '+b,it)}</div>
     <div class="meta">${it.type==='window'?'Fenster blickt nach':'Tür liegt in der Wand nach'} <b style="color:var(--fg)">${(()=>{const b=wallFacing(wallInfo(A,it.wall));return WINDS[windOf(b)]+' ('+Math.round(b)+'°)'})()}</b></div>`;
     if(it.type==='door')h+=`<label class="chk"><input type="checkbox" data-k="noleaf"${it.noleaf?' checked':''}> Türblatt ausgehängt (nur Durchgang)</label>`;
@@ -1044,7 +1107,7 @@ function renderPanel(){
     h+=`<div class="btnrow"><button type="button" data-act="cs">↔ auf Wand zentrieren</button>${it.type==='door'&&!it.noleaf?'<button type="button" data-act="flip">Anschlag tauschen</button>':''}</div>
     <div class="btnrow"><button type="button" data-act="dup">Duplizieren</button><button type="button" data-act="del" class="danger">Löschen</button></div>`;
   }
-  selBox.innerHTML=h;
+  selBox.innerHTML=h;trNode(selBox);
 }
 function updateFields(except){const it=byId(sel);if(!it)return;
   selBox.querySelectorAll('input[data-k]').forEach(el=>{if(el!==except&&el.type==='number')el.value=getVal(it,el.dataset.k)});
@@ -1071,7 +1134,7 @@ selBox.addEventListener('input',e=>{
   clamp(A,it);render();save();
   if(k==='wall')renderPanel();else{updateFields(e.target);if(k==='name'||k==='color'||k==='w'||k==='d')renderList()}
 });
-selBox.addEventListener('input',e=>{if(e.target.dataset.g!=='gn')return;const v=e.target.value.slice(0,40)||'Gruppe';selItems().forEach(i=>i.gn=v);render();renderList();save()});
+selBox.addEventListener('input',e=>{if(e.target.dataset.g!=='gn')return;const v=e.target.value.slice(0,40)||t('Gruppe');selItems().forEach(i=>i.gn=v);render();renderList();save()});
 selBox.addEventListener('click',e=>{
   const al=e.target.closest('button[data-al]');if(al){alignSel(al.dataset.al);render();renderPanel();save();return}
   const b=e.target.closest('button[data-act]'),it=byId(sel),A=R();if(!b||!it)return;
@@ -1097,21 +1160,21 @@ selBox.addEventListener('click',e=>{
 });
 function renderList(){
   const L=$('#list'),A=R();
-  if(!A.items.length){L.innerHTML='<div class="empty">Noch nichts im Raum. Füge oben Möbel, Fenster oder eine Tür hinzu.</div>';return}
+  if(!A.items.length){L.innerHTML='<div class="empty">'+esc(t('Noch nichts im Raum. Füge oben Möbel, Fenster oder eine Tür hinzu.'))+'</div>';return}
   const order={door:0,window:1,furn:2};
   const row=(it,cls='')=>{
     const sw=it.type==='furn'?`<i class="dot" style="background:${esc(it.color)}"></i>`:`<i class="dot" style="background:${it.type==='window'?'var(--glass)':'var(--floor)'}"></i>`;
-    const sz=it.type==='furn'?`${fmt(it.w)}×${fmt(it.d)}${it.rot?' · '+it.rot+'°':''}`:`${it.noleaf?'ohne Blatt · ':''}${fmt(it.w)} · Wand ${it.wall+1} · ${WINDS_S[windOf(wallFacing(wallInfo(A,it.wall)))]}`;
-    return`<button type="button" data-id="${it.id}" class="${cls} ${isSel(it.id)?'on':''}"><span>${sw}${esc(it.name)}</span><span>${sz}</span></button>`};
+    const sz=it.type==='furn'?`${fmt(it.w)}×${fmt(it.d)}${it.rot?' · '+it.rot+'°':''}`:`${it.noleaf?t('ohne Blatt')+' · ':''}${fmt(it.w)} · ${t('Wand {n}',{n:it.wall+1})} · ${WINDS_S[windOf(wallFacing(wallInfo(A,it.wall)))]}`;
+    return`<button type="button" data-id="${it.id}" class="${cls} ${isSel(it.id)?'on':''}"><span>${sw}<span translate="no">${esc(it.name)}</span></span><span>${sz}</span></button>`};
   const done=new Set();let h='';
   for(const it of [...A.items].sort((a,b)=>order[a.type]-order[b.type])){
     if(done.has(it.id))continue;
     if(it.grp){const g=A.items.filter(i=>i.grp===it.grp),allSel=g.every(i=>isSel(i.id));
-      h+=`<button type="button" data-grp="${esc(it.grp)}" class="ghead ${allSel?'on':''}"><span>▾ ${esc(it.gn||'Gruppe')}</span><span>${g.length} Möbel</span></button>`;
+      h+=`<button type="button" data-grp="${esc(it.grp)}" class="ghead ${allSel?'on':''}"><span>▾ <span translate="no">${esc(it.gn||t('Gruppe'))}</span></span><span>${t('{n} Möbel',{n:g.length})}</span></button>`;
       g.forEach(i=>{done.add(i.id);h+=row(i,'gitem')})}
     else{done.add(it.id);h+=row(it)}
   }
-  L.innerHTML=h;
+  L.innerHTML=h;trNode(L);
 }
 $('#list').addEventListener('click',e=>{
   const gh=e.target.closest('button[data-grp]');
@@ -1155,7 +1218,7 @@ function rotateSel(A,d){
   moveItems(A,items,0,0);
 }
 function groupSel(){const A=R(),items=selItems().filter(i=>i.type==='furn');if(items.length<2){msg('Zum Gruppieren mindestens 2 Möbel auswählen (Shift/Strg+Klick).');return}
-  const g=nid('g'),n=A.items.filter(i=>i.grp).map(i=>i.grp);const name='Gruppe '+(new Set(n).size+1);
+  const g=nid('g'),n=A.items.filter(i=>i.grp).map(i=>i.grp);const name=t('Gruppe {n}',{n:new Set(n).size+1});
   items.forEach(i=>{i.grp=g;i.gn=name});render();renderPanel();save()}
 function ungroupSel(){const A=R();selItems().forEach(i=>{delete i.grp;delete i.gn});cleanGroups(A);render();renderPanel();save()}
 function deleteSel(){const A=R(),ids=new Set(selIds());A.items=A.items.filter(i=>!ids.has(i.id));cleanGroups(A);sel=null;extra.clear()}
@@ -1189,11 +1252,11 @@ const MODES={
   fshape:['Möbel-Ecken','● Ecke ziehen · ■ Kante verschieben · Doppelklick: Ecke einfügen / löschen','Fertig'],
   extend:['Anbau / Ausschnitt','Auf einer Wand starten, Ecken klicken, auf einer Wand enden',null]};
 function updateModeUI(){
-  $('#drawRoom').classList.toggle('on',mode==='draw');$('#drawRoom').textContent=mode==='draw'?'Zeichnen beenden':'✎ Raum zeichnen';
-  $('#editShape').classList.toggle('on',mode==='shape');$('#editShape').textContent=mode==='shape'?'Form fertig':'Form bearbeiten';
-  $('#extendShape').classList.toggle('on',mode==='extend');$('#extendShape').textContent=mode==='extend'?'Abbrechen':'＋ Anbau / Ausschnitt';
+  $('#drawRoom').classList.toggle('on',mode==='draw');$('#drawRoom').textContent=t(mode==='draw'?'Zeichnen beenden':'✎ Raum zeichnen');
+  $('#editShape').classList.toggle('on',mode==='shape');$('#editShape').textContent=t(mode==='shape'?'Form fertig':'Form bearbeiten');
+  $('#extendShape').classList.toggle('on',mode==='extend');$('#extendShape').textContent=t(mode==='extend'?'Abbrechen':'＋ Anbau / Ausschnitt');
   const m=MODES[mode];$('#modeBar').hidden=!m;if(!m)return;
-  $('#modeTitle').textContent=m[0];$('#modeHint').textContent=m[1];
+  $('#modeTitle').textContent=t(m[0]);$('#modeHint').textContent=t(m[1]);$('#modeDone').textContent=t('Fertig');$('#modeCancel').textContent=t('Abbrechen');
   $('#modeDone').hidden=!m[2];$('#modeCancel').hidden=mode==='shape'||mode==='fshape';
 }
 $('#modeDone').addEventListener('click',()=>{if(mode==='draw')finishDraw();else{setMode(null);renderPanel()}});
@@ -1230,7 +1293,7 @@ function cleanPts(p){
 function finishDraw(){
   const q=drawPts.length>=3?cleanPts(drawPts):[];
   if(q.length<3||Math.abs(polyArea(q))<2500){setMode(null);msg('Raum zu klein – mindestens 3 Ecken und 0,25 m².');return}
-  const r={id:nid('r'),name:'Raum '+(S.rooms.length+1),x:0,y:0,pts:q,hidden:false,items:[]};
+  const r={id:nid('r'),name:t('Raum {n}',{n:S.rooms.length+1}),x:0,y:0,pts:q,hidden:false,items:[]};
   normalizeRoom(r);
   S.rooms.push(r);S.active=r.id;sel=null;setMode(null);save();
   $('#room-name').focus();$('#room-name').select();
@@ -1272,7 +1335,7 @@ function renderWalls(){
   const A=R(),ae=document.activeElement,box=$('#wallList');
   if(ae&&box.contains(ae))return; // nicht beim Tippen überschreiben
   box.innerHTML=A.pts.map((_,i)=>{const g=wallInfo(A,i);
-    return`<label class="wrow${wallHL===i?' hl':''}" data-wi="${i}"><span>Wand ${i+1} · ${wallDir(g)} · ${WINDS_S[windOf(wallFacing(g))]}</span><input type="number" min="5" step="1" data-wl="${i}" value="${r1(g.L)}"></label>`}).join('');
+    return`<label class="wrow${wallHL===i?' hl':''}" data-wi="${i}"><span>${t('Wand {n}',{n:i+1})} · ${t(wallDir(g))} · ${WINDS_S[windOf(wallFacing(g))]}</span><input type="number" min="5" step="1" data-wl="${i}" value="${r1(g.L)}"></label>`}).join('');
 }
 let wallHL=null;
 $('#wallList').addEventListener('change',e=>{const i=e.target.dataset.wl;if(i===undefined)return;
@@ -1320,7 +1383,7 @@ function finishExtend(endC){
   A.pts=best;mode='shape';drawPts=[];drawCur=null;extCur=null;extStart=null;updateModeUI();computeLayout();
   commitShape(A,orig,c);
   const diff=(Math.abs(polyArea(A.pts))-before)/1e4;
-  msg(`${diff>=0?'Anbau':'Ausschnitt'}: ${diff>=0?'+':'−'}${Math.abs(diff).toLocaleString('de-DE',{maximumFractionDigits:2})} m²`);
+  msg(t(diff>=0?'Anbau: +{n} m²':'Ausschnitt: −{n} m²',{n:Math.abs(diff).toLocaleString(LOC,{maximumFractionDigits:2})}));
 }
 $('#extendShape').addEventListener('click',()=>{if(mode==='extend'){setMode('shape');return}if(R().hidden)R().hidden=false;setMode('extend')});
 $('#drawRoom').addEventListener('click',()=>setMode(mode==='draw'?null:'draw'));
@@ -1482,25 +1545,25 @@ document.addEventListener('keydown',e=>{
 /* ---------- Hinzufügen ---------- */
 const PRESETS_L=[['Ecksofa (L)',260,200,90],['Eckschreibtisch (L)',160,140,65],['Küche L-Form',240,180,60],['Eckbank (L)',180,140,50]];
 const PRESETS=[['Bett',140,200],['Einzelbett',90,200],['Schreibtisch',140,70],['Stuhl',45,45],['Kleiderschrank',150,60],['Sofa',220,90],['Sessel',80,80],['Couchtisch',100,60],['Esstisch',160,90],['Regal',80,35],['Kommode',100,45],['Nachttisch',45,40],['Teppich',200,140],['Küchenzeile',240,60],['Kühlschrank',60,65],['Badewanne',170,75],['Dusche',90,90],['WC',40,65],['Waschbecken',60,45]];
-$('#presets').innerHTML=PRESETS.map(([n],i)=>`<button type="button" data-i="${i}">${n}</button>`).join('');
-$('#presets').insertAdjacentHTML('beforeend',PRESETS_L.map(([n],i)=>`<button type="button" data-l="${i}">${n}</button>`).join(''));
+$('#presets').innerHTML=PRESETS.map(([n],i)=>`<button type="button" data-i="${i}">${esc(t(n))}</button>`).join('');
+$('#presets').insertAdjacentHTML('beforeend',PRESETS_L.map(([n],i)=>`<button type="button" data-l="${i}">${esc(t(n))}</button>`).join(''));
 $('#a-form').addEventListener('change',()=>{$('#a-arm').disabled=$('#a-form').value!=='L'});
 $('#presets').addEventListener('click',e=>{const b=e.target.closest('button[data-l]');if(!b)return;e.stopImmediatePropagation();const[n,w,d,arm]=PRESETS_L[b.dataset.l];
-  $('#a-name').value=n;$('#a-w').value=w;$('#a-d').value=d;$('#a-form').value='L';$('#a-arm').value=arm;$('#a-arm').disabled=false;$('#a-color').value=COLORS[(+b.dataset.l+5)%COLORS.length]},true);
+  $('#a-name').value=t(n);$('#a-w').value=w;$('#a-d').value=d;$('#a-form').value='L';$('#a-arm').value=arm;$('#a-arm').disabled=false;$('#a-color').value=COLORS[(+b.dataset.l+5)%COLORS.length]},true);
 $('#presets').addEventListener('click',e=>{const b=e.target.closest('button[data-i]');if(!b)return;$('#a-form').value='rect';$('#a-arm').disabled=true;const[n,w,d]=PRESETS[b.dataset.i];
-  $('#a-name').value=n;$('#a-w').value=w;$('#a-d').value=d;$('#a-color').value=COLORS[b.dataset.i%COLORS.length]});
-function setTab(t){tab=t;
-  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
-  document.querySelectorAll('#addForm [data-show]').forEach(el=>el.hidden=!el.dataset.show.split(' ').includes(t));
-  $('#addBtn').textContent=({furn:'Möbel',window:'Fenster',door:'Tür'})[t]+' hinzufügen';
-  if(t!=='furn')$('#a-ow').value=t==='door'?90:120;
+  $('#a-name').value=t(n);$('#a-w').value=w;$('#a-d').value=d;$('#a-color').value=COLORS[b.dataset.i%COLORS.length]});
+function setTab(tb){tab=tb;
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tb));
+  document.querySelectorAll('#addForm [data-show]').forEach(el=>el.hidden=!el.dataset.show.split(' ').includes(tb));
+  $('#addBtn').textContent=t(({furn:'Möbel hinzufügen',window:'Fenster hinzufügen',door:'Tür hinzufügen'})[tb]);
+  if(tb!=='furn')$('#a-ow').value=tb==='door'?90:120;
 }
 $('#tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setTab(b.dataset.tab)});
 function fillWallSelect(){const A=R(),el=$('#a-wall'),cur=+el.value||0;
   el.innerHTML=A.pts.map((_,i)=>`<option value="${i}">${esc(wallName(A,i))}</option>`).join('');
   el.value=String(Math.min(cur,A.pts.length-1));wallLabels()}
 function wallLabels(){const[a,b]=endLabels(wallInfo(R(),+$('#a-wall').value||0));
-  $('#a-om').options[0].text='Abstand von '+a;$('#a-om').options[1].text='Abstand von '+b;
+  $('#a-om').options[0].text=t('Abstand von '+a);$('#a-om').options[1].text=t('Abstand von '+b);
   $('#a-hinge').options[0].text=a;$('#a-hinge').options[1].text=b}
 $('#a-wall').addEventListener('change',wallLabels);
 $('#a-noleaf').addEventListener('change',e=>{$('#a-hinge').disabled=$('#a-swing').disabled=e.target.checked});
@@ -1509,14 +1572,14 @@ $('#addForm').addEventListener('submit',e=>{e.preventDefault();const A=R(),W=A.w
   let it;
   if(tab==='furn'){
     const w=Math.max(1,n('#a-w')),d=Math.max(1,n('#a-d')),hm=$('#a-hm').value,vm=$('#a-vm').value;
-    it={id:nid(),type:'furn',name:$('#a-name').value.trim()||'Objekt',w,d,color:$('#a-color').value,rot:0,
+    it={id:nid(),type:'furn',name:$('#a-name').value.trim()||t('Objekt'),w,d,color:$('#a-color').value,rot:0,
       x:hm==='left'?n('#a-hv')+w/2:hm==='right'?W-n('#a-hv')-w/2:W/2,
       y:vm==='top'?n('#a-vv')+d/2:vm==='bottom'?D-n('#a-vv')-d/2:D/2};
     if($('#a-form').value==='L'){const arm=Math.max(5,n('#a-arm'));it.form='L';it.la=Math.min(arm,w-5);it.lb=Math.min(arm,d-5);it.mir=false;it.pts=lPts(it)}
   }else{
     const wall=+$('#a-wall').value||0,L=wallInfo(A,wall).L,w=Math.max(10,n('#a-ow')),m=$('#a-om').value;
-    it={id:nid(),type:tab,name:tab==='door'?'Tür':'Fenster',wall,w,s:m==='start'?n('#a-ov'):m==='end'?L-w-n('#a-ov'):(L-w)/2};
-    if(tab==='door'){it.hinge=$('#a-hinge').value;it.swing=$('#a-swing').value;if($('#a-noleaf').checked){it.noleaf=true;it.name='Durchgang'}}
+    it={id:nid(),type:tab,name:t(tab==='door'?'Tür':'Fenster'),wall,w,s:m==='start'?n('#a-ov'):m==='end'?L-w-n('#a-ov'):(L-w)/2};
+    if(tab==='door'){it.hinge=$('#a-hinge').value;it.swing=$('#a-swing').value;if($('#a-noleaf').checked){it.noleaf=true;it.name=t('Durchgang')}}
   }
   clamp(A,it);A.items.push(it);sel=it.id;extra.clear();render();renderPanel();renderList();save();
 });
@@ -1529,7 +1592,7 @@ function toast(t,{bad=false,action=null,ms=3500}={}){
   while($('#toasts').children.length>3)$('#toasts').firstChild.remove();
   if(ms)setTimeout(()=>{el.classList.remove('show');setTimeout(()=>el.remove(),250)},ms);return el;
 }
-const msg=t=>toast(t,{bad:/fehlgeschlagen|nicht möglich|geht nicht|ungültig|zu klein|keine gültige|mindestens/i.test(t)});
+const msg=m=>toast(t(m),{bad:/fehlgeschlagen|nicht möglich|geht nicht|ungültig|zu klein|keine gültige|mindestens|failed|invalid|too small|at least/i.test(m)});
 const json=()=>JSON.stringify(exportObj(),null,2);
 function download(name,text){
   const url=URL.createObjectURL(new Blob([text],{type:'application/json'})),a=document.createElement('a');
@@ -1537,7 +1600,7 @@ function download(name,text){
 }
 $('#saveFile').addEventListener('click',()=>{
   const d=new Date(),name=`wohnung-${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}.json`;
-  download(name,json());msg('Gespeichert als '+name+'.');
+  download(name,json());msg(t('Gespeichert als {file}.',{file:name}));
 });
 
 /* ---------- Einzelne Räume exportieren / importieren ---------- */
@@ -1546,10 +1609,10 @@ $('#expRoom').addEventListener('click',()=>{
   const A=R(),{id,hidden,items,...r}=A;
   const obj={app:'raumplaner',version:2,kind:'room',rooms:[{...r,pts:r.pts.map(p=>[...p]),items:items.map(({id,...i})=>i)}]};
   const name='raum-'+(A.name.trim().replace(/[^\wäöüÄÖÜß-]+/g,'-').replace(/^-+|-+$/g,'')||'raum')+'.json';
-  download(name,JSON.stringify(obj,null,2));roomMsg(`„${A.name}“ exportiert als ${name}.`);
+  download(name,JSON.stringify(obj,null,2));roomMsg(t('„{name}“ exportiert als {file}.',{name:A.name,file:name}));
 });
 function importRooms(text,src){
-  let p;try{p=parsePlan(JSON.parse(text))}catch(e){roomMsg('Import fehlgeschlagen: '+(e instanceof SyntaxError?'kein gültiges JSON.':e.message));return}
+  let p;try{p=parsePlan(JSON.parse(text))}catch(e){roomMsg(t('Import fehlgeschlagen: {e}',{e:e instanceof SyntaxError?t('kein gültiges JSON.'):e.message}));return}
   // rechts neben die Wohnung setzen (mehrere Räume behalten ihre Lage zueinander)
   const B=bounds(S.rooms),IB=bounds(p.rooms),dx=B.x+B.w+T*4-IB.x,dy=B.y-IB.y;
   const names=new Set(S.rooms.map(r=>r.name));
@@ -1557,8 +1620,8 @@ function importRooms(text,src){
     if(names.has(r.name)){let k=2;while(names.has(`${r.name} (${k})`))k++;r.name=`${r.name} (${k})`}names.add(r.name)}
   S.rooms.push(...p.rooms);S.active=p.rooms[0].id;sel=null;setView(null);renderAll();save();
   const n=p.rooms.length;
-  roomMsg(n===1?`„${p.rooms[0].name}“ aus ${src} hinzugefügt – rechts neben der Wohnung. Zum Platzieren am Namen ziehen.`
-    :`${n} Räume aus ${src} hinzugefügt – rechts neben der Wohnung.`);
+  roomMsg(n===1?t('„{name}“ aus {src} hinzugefügt – rechts neben der Wohnung. Zum Platzieren am Namen ziehen.',{name:p.rooms[0].name,src})
+    :t('{n} Räume aus {src} hinzugefügt – rechts neben der Wohnung.',{n,src}));
 }
 $('#impRoomIn').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;
   f.text().then(t=>importRooms(t,'„'+f.name+'“')).catch(()=>roomMsg('Datei konnte nicht gelesen werden.'));e.target.value=''});
@@ -1570,13 +1633,13 @@ $('#copyJson').addEventListener('click',async()=>{
 });
 $('#toggleText').addEventListener('click',()=>{if($('#txtBox').hidden){showText(true);msg('Text kopieren oder eigenes JSON einfügen.')}else $('#txtBox').hidden=true});
 function doImport(text,src){
-  let p;try{p=parsePlan(JSON.parse(text))}catch(e){msg('Import fehlgeschlagen: '+(e instanceof SyntaxError?'kein gültiges JSON.':e.message));return}
+  let p;try{p=parsePlan(JSON.parse(text))}catch(e){msg(t('Import fehlgeschlagen: {e}',{e:e instanceof SyntaxError?t('kein gültiges JSON.'):e.message}));return}
   if($('#appendImp').checked){
     const B=bounds(S.rooms),IB=bounds(p.rooms),dx=B.x+B.w+T-IB.x,dy=B.y-IB.y;
     p.rooms.forEach(r=>{r.x+=dx;r.y+=dy});S.rooms.push(...p.rooms);
   }else{S.rooms=p.rooms;S.north=p.north||0;renderCompass()}
   S.active=p.rooms[0].id;sel=null;renderAll();save();
-  msg(`${p.rooms.length} ${p.rooms.length===1?'Raum':'Räume'} aus ${src} importiert.`);
+  msg(t(p.rooms.length===1?'{n} Raum aus {src} importiert.':'{n} Räume aus {src} importiert.',{n:p.rooms.length,src}));
 }
 $('#fileIn').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;
   f.text().then(t=>doImport(t,'„'+f.name+'“')).catch(()=>msg('Datei konnte nicht gelesen werden.'));e.target.value=''});
@@ -1594,13 +1657,13 @@ const COLORS_ME=['#cf5a17','#1e5c76','#8a3fb0','#2f8a4f','#c0336b','#b08a12','#2
 // Damit kann der Server eine hängende alte Verbindung derselben Seite sofort entfernen.
 const SID=Math.random().toString(36).slice(2,12)+Math.random().toString(36).slice(2,8);
 /* ---------- Version ---------- */
-const APP_VERSION='2.0.0'; // bei jedem Update zusammen mit package.json erhöhen
+const APP_VERSION='2.1.0'; // bei jedem Update zusammen mit package.json erhöhen
 let updShown=false,updLast=0;
 async function checkUpdate(force){
   if(updShown||(!force&&Date.now()-updLast<5*60*1000))return;updLast=Date.now();
-  try{const t=await (await fetch('/',{cache:'no-store'})).text(),m=t.match(/const APP_VERSION='([\d.]+)'/);
+  try{const html=await (await fetch('/',{cache:'no-store'})).text(),m=html.match(/const APP_VERSION='([\d.]+)'/);
     if(m&&verCmp(m[1],APP_VERSION)>0){updShown=true;
-      toast(`Neue Version ${m[1]} verfügbar`,{ms:0,action:['Neu laden',()=>{cacheLocal();location.reload()}]})}}catch(e){}
+      toast(t('Neue Version {v} verfügbar',{v:m[1]}),{ms:0,action:[t('Neu laden'),()=>{cacheLocal();location.reload()}]})}}catch(e){}
 }
 setInterval(()=>checkUpdate(false),10*60*1000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate(false)});
@@ -1608,7 +1671,7 @@ function renderVersion(){$('#verTop').textContent='v'+APP_VERSION;$('#verClient'
 const verCmp=(a,b)=>{const x=String(a).split('.').map(Number),y=String(b).split('.').map(Number);for(let i=0;i<3;i++){const d=(x[i]||0)-(y[i]||0);if(d)return d}return 0};
 const me={n:'',c:'',x:null,y:null,sel:null,sid:SID,v:APP_VERSION};
 try{me.n=localStorage.getItem('rp-name')||'';me.c=localStorage.getItem('rp-color')||''}catch(e){}
-if(!me.n)me.n='Gast '+(100+Math.floor(Math.random()*900));
+if(!me.n)me.n=t('Gast')+' '+(100+Math.floor(Math.random()*900));
 if(!/^#[0-9a-f]{6}$/i.test(me.c))me.c=COLORS_ME[Math.floor(Math.random()*COLORS_ME.length)];
 $('#me-name').value=me.n;$('#me-color').value=me.c;
 
@@ -1682,7 +1745,7 @@ function undoRedo(which){
   const from=which==='undo'?undoStack:redoStack,g=from.pop();if(!g){updateUndoUI();return}
   sync();sealUndo(); // offene Änderungen vorher abschließen
   for(let k=g.entries.length-1;k>=0;k--)for(const o of g.entries[k])applyLocal(JSON.parse(JSON.stringify(o)));
-  if(!S.rooms.length)S.rooms=[{id:nid('r'),name:'Raum 1',x:0,y:0,w:400,d:300,pts:rectPts(400,300),hidden:false,items:[]}];
+  if(!S.rooms.length)S.rooms=[{id:nid('r'),name:t('Raum {n}',{n:1}),x:0,y:0,w:400,d:300,pts:rectPts(400,300),hidden:false,items:[]}];
   if(!S.rooms.find(r=>r.id===S.active))S.active=S.rooms[0].id;
   if(sel&&!byId(sel))sel=null;
   {const q=S.rooms.find(r=>r.north!==undefined);if(q){S.north=q.north;renderCompass()}}
@@ -1736,7 +1799,7 @@ function applyRemote(ops,mine){
   if(changed)remoteRender();
 }
 function remoteRender(){
-  if(!S.rooms.length){S.rooms=[{id:nid('r'),name:'Raum 1',x:0,y:0,w:400,d:300,pts:rectPts(400,300),hidden:false,items:[]}];syncSoon()}
+  if(!S.rooms.length){S.rooms=[{id:nid('r'),name:t('Raum {n}',{n:1}),x:0,y:0,w:400,d:300,pts:rectPts(400,300),hidden:false,items:[]}];syncSoon()}
   if(!S.rooms.find(r=>r.id===S.active)){S.active=S.rooms[0].id;sel=null}
   if(sel&&!byId(sel))sel=null;
   if(drag&&drag.kind==='room'&&!S.rooms.includes(drag.r))drag=null;
@@ -1755,14 +1818,14 @@ function renderCursors(){
   g.innerHTML=h;
 }
 function renderPeers(){
-  const list=[{...me,n:me.n+' (du)'},...peers.values()];
+  const list=[{...me,n:me.n+' '+t('(du)')},...peers.values()];
   $('#peers').innerHTML=list.map(p=>{
     const v=p&&typeof p.v==='string'&&/^\d+(\.\d+){0,2}$/.test(p.v)?p.v:null;
     const old=!v||verCmp(v,APP_VERSION)<0;
-    const tip=v?`Version v${v}${old?' – älter als deine, bitte neu laden':''}`:'alte Version ohne Versionsangabe – bitte neu laden';
-    return`<span class="peer${old?' old':''}" title="${esc(tip)}"><i style="background:${safeColor(p&&p.c)}"></i>${esc(String((p&&p.n)||'Gast').slice(0,30))} <span class="pv">${old?'⚠ ':''}${v?'v'+esc(v):'alt'}</span></span>`}).join('');
+    const tip=v?`Version v${v}${old?' – '+t('älter als deine, bitte neu laden'):''}`:t('alte Version ohne Versionsangabe – bitte neu laden');
+    return`<span class="peer${old?' old':''}" title="${esc(tip)}"><i style="background:${safeColor(p&&p.c)}"></i><span translate="no">${esc(String((p&&p.n)||t('Gast')).slice(0,30))}</span> <span class="pv">${old?'⚠ ':''}${v?'v'+esc(v):t('alt')}</span></span>`}).join('');
 }
-function setConn(t,cls){for(const c of [$('#conn'),$('#connRO')]){c.textContent=t;c.className='meta '+(cls||'')}}
+function setConn(txt,cls){for(const c of [$('#conn'),$('#connRO')]){c.textContent=t(txt);c.className='meta '+(cls||'')}}
 function handle(m){
   if(m.t==='init'){
     checkUpdate(true); // nach (Wieder-)Verbindung, z. B. nach einem Server-Update
@@ -1773,12 +1836,12 @@ function handle(m){
     ready=true;
     if(p){p.rooms.forEach(r=>r.hidden=hiddenSet.has(r.id));S.rooms=p.rooms;S.north=p.north;sel=null;drag=null;resetShadow();renderCompass();remoteRender()}
     else{shadowR.clear();shadowI.clear();shadowM.clear();recording=false;sync();recording=true}   // leerer Plan: eigenen Stand hochladen
-    setConn('● live · '+(peers.size+1)+' online','ok');send({t:'pres',p:me});renderPeers();render();
+    setConn(t('● live · {n} online',{n:peers.size+1}),'ok');send({t:'pres',p:me});renderPeers();render();
   }else if(m.t==='viewlink'&&typeof m.token==='string'&&/^[A-Za-z0-9_-]{24}$/.test(m.token)){
     clearTimeout(viewLinkT);const u=new URL(shareUrl);u.search='?view='+m.token;u.hash='';const url=u.href;
     $('#viewLinkHint').textContent=url;
-    (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(()=>{const b=$('#viewLinkBtn');b.textContent='Kopiert ✓';setTimeout(()=>b.textContent='👁 Ansehen-Link',1800);toast('Ansehen-Link kopiert – zum Präsentieren, ohne Bearbeiten.')})
-      .catch(()=>window.prompt('Nur-Ansehen-Link (zum Präsentieren):',url));
+    (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(()=>{const b=$('#viewLinkBtn');b.textContent=t('Kopiert ✓');setTimeout(()=>b.textContent=t('👁 Ansehen-Link'),1800);toast(t('Ansehen-Link kopiert – zum Präsentieren, ohne Bearbeiten.'))})
+      .catch(()=>window.prompt(t('Nur-Ansehen-Link (zum Präsentieren):'),url));
   }else if(m.t==='ops'&&Array.isArray(m.ops)){
     applyRemote(m.ops,m.from===myId);
   }else if(m.t==='pres'&&m.p){
@@ -1787,9 +1850,9 @@ function handle(m){
     const old=peers.get(m.id);peers.set(m.id,m.p);
     if(!old||old.sel!==m.p.sel)render();else renderCursors();
     if(!old||old.n!==m.p.n||old.c!==m.p.c)renderPeers();
-    setConn('● live · '+(peers.size+1)+' online','ok');
+    setConn(t('● live · {n} online',{n:peers.size+1}),'ok');
   }else if(m.t==='leave'){
-    if(peers.delete(m.id)){render();renderPeers();setConn('● live · '+(peers.size+1)+' online','ok')}
+    if(peers.delete(m.id)){render();renderPeers();setConn(t('● live · {n} online',{n:peers.size+1}),'ok')}
   }
 }
 let lastMsg=0,reconnT=null;
@@ -1830,16 +1893,16 @@ $('#me-color').addEventListener('input',e=>{pres({c:e.target.value});renderPeers
 let shareUrl=location.href;
 if(/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)&&typeof fetch==='function'){
   fetch('/lan').then(r=>r.json()).then(d=>{if(d&&d.ips&&d.ips.length){const u=new URL(location.href);u.hostname=d.ips[0];shareUrl=u.href;
-    $('#shareHint').textContent='Im WLAN/LAN erreichbar unter '+u.host}}).catch(()=>{});
+    $('#shareHint').textContent=t('Im WLAN/LAN erreichbar unter {host}',{host:u.host})}}).catch(()=>{});
 }
 $('#shareBtn').addEventListener('click',async()=>{const b=$('#shareBtn'),url=shareUrl;
-  try{await navigator.clipboard.writeText(url);b.textContent='Kopiert ✓';setTimeout(()=>b.textContent='🔗 Mitplanen-Link',1800);toast('Mitplanen-Link kopiert – wer ihn hat, plant live mit.')}
-  catch(e){window.prompt('Diesen Link an deine Freunde schicken:',url)}});
+  try{await navigator.clipboard.writeText(url);b.textContent=t('Kopiert ✓');setTimeout(()=>b.textContent=t('🔗 Mitplanen-Link'),1800);toast(t('Mitplanen-Link kopiert – wer ihn hat, plant live mit.'))}
+  catch(e){window.prompt(t('Diesen Link an deine Freunde schicken:'),url)}});
 let viewLinkT=null;
 $('#viewLinkBtn').addEventListener('click',()=>{
-  if(!ready){$('#viewLinkHint').textContent='Nicht verbunden – bitte kurz warten.';return}
+  if(!ready){$('#viewLinkHint').textContent=t('Nicht verbunden – bitte kurz warten.');return}
   send({t:'viewlink'});clearTimeout(viewLinkT);
-  viewLinkT=setTimeout(()=>{$('#viewLinkHint').textContent='Der Server antwortet nicht auf diese Anfrage – er läuft noch mit einer älteren Version. Bitte auf dem Server aktualisieren und neu starten.'},2500)});
+  viewLinkT=setTimeout(()=>{$('#viewLinkHint').textContent=t('Der Server antwortet nicht auf diese Anfrage – er läuft noch mit einer älteren Version. Bitte auf dem Server aktualisieren und neu starten.')},2500)});
 
 /* ---------- Leiste ---------- */
 function syncSettingsUI(){
@@ -1871,6 +1934,9 @@ document.querySelectorAll('dialog.dlg').forEach(d=>{
 document.addEventListener('keydown',e=>{if(e.key==='?'&&!e.target.closest('input,select,textarea')&&!document.querySelector('dialog[open]')){e.preventDefault();openDlg('#helpDlg')}});
 syncSettingsUI();
 
+$('#langSel').innerHTML=Object.entries(LANGS).map(([k,v])=>`<option value="${k}"${k===LANG?' selected':''}>${v}</option>`).join('');
+$('#langSel').addEventListener('change',e=>{SET.lang=e.target.value;saveSettings();cacheLocal();location.reload()});
+trNode(document.body);$('#a-name').value=t($('#a-name').value);
 wallLabels();renderAll();renderCompass();renderVersion();renderPeers();cacheLocal();connect();
 }
 </script>

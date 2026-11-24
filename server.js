@@ -27,10 +27,24 @@ const LIMITS = {
   maxRooms: 300,                 // Räume pro Plan
   maxItems: 3000,                // Objekte pro Raum
   maxClientsPerPlan: 50,         // gleichzeitige Verbindungen pro Plan
-  msgsPer10s: 600                // Nachrichten pro Verbindung in 10 s (Ziehen erzeugt ~25/s)
+  maxClients: +process.env.MAX_CLIENTS || 500,  // Verbindungen insgesamt
+  maxPlans: +process.env.MAX_PLANS || 10000,    // gespeicherte Pläne insgesamt (Schutz vor vollgeschriebener Platte)
+  maxPlanBytes: 8 * 1024 * 1024, // Größe eines Plans
+  msgsPer10s: 600,               // Nachrichten pro Verbindung in 10 s (Ziehen erzeugt ~25/s)
+  bytesPer10s: 16 * 1024 * 1024  // Datenmenge pro Verbindung in 10 s
 };
 
-const validId = id => typeof id === 'string' && /^[a-z0-9-]{1,40}$/.test(id);
+// Plan-Codes: nur a–z, 0–9, „-“. Namen interner Dateien sind gesperrt, damit kein Plan „views“
+// heißen und so fremde Ansichts-Links (und damit andere Pläne) auslesen oder überschreiben kann.
+const RESERVED = new Set(['views', 'secret']);
+const validId = id => typeof id === 'string' && /^[a-z0-9-]{1,40}$/.test(id) && !RESERVED.has(id);
+// Schlüssel, mit denen sich JS-Objekt-Prototypen verbiegen lassen, aus allen Daten entfernen
+const BAD_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+const clean = v => { // tiefe Kopie ohne gefährliche Schlüssel (Daten kommen von außen)
+  if (Array.isArray(v)) return v.map(clean);
+  if (v && typeof v === 'object') { const o = {}; for (const k of Object.keys(v)) if (!BAD_KEYS.has(k)) o[k] = clean(v[k]); return o; }
+  return v;
+};
 const isObj = o => o && typeof o === 'object' && !Array.isArray(o);
 const log = (...a) => console.log(new Date().toISOString().slice(0, 19).replace('T', ' '), ...a);
 
@@ -80,22 +94,37 @@ function planForView(token) {
 /* ---------- HTTP ---------- */
 const SECURITY_HEADERS = {
   'x-content-type-options': 'nosniff',
-  'referrer-policy': 'no-referrer',           // Plan-Code nie als Referrer an Dritte (z. B. Schriften)
-  'permissions-policy': 'camera=(), microphone=(), geolocation=()'
+  'referrer-policy': 'no-referrer',           // Plan-Code nie als Referrer an Dritte (z. B. GitHub-Link)
+  'permissions-policy': 'camera=(), microphone=(), geolocation=()',
+  'x-frame-options': 'DENY',
+  // Nur eigene Inhalte: keine fremden Server (Schriften liegen lokal), kein Einbetten in fremde Seiten
+  'content-security-policy': "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; " +
+    "img-src 'self' data: blob:; font-src 'self'; connect-src 'self' ws: wss:; object-src 'none'; base-uri 'none'; " +
+    "form-action 'none'; frame-ancestors 'none'"
 };
+let FONTS = new Set();
+try { FONTS = new Set(fs.readdirSync(path.join(__dirname, 'public', 'fonts')).filter(f => /^[a-z0-9-]+\.woff2$/.test(f))); } catch (e) { /* ohne Schriften: Systemschrift */ }
 function lanIPs() {
   return Object.values(os.networkInterfaces()).flat()
     .filter(i => i && i.family === 'IPv4' && !i.internal).map(i => i.address);
 }
-const isLocal = req => /^(::1|127\.|::ffff:127\.)/.test(req.socket.remoteAddress || '');
+// Nur direkt vom eigenen Rechner – nie über einen Reverse-Proxy (der sitzt oft auch auf 127.0.0.1).
+// Sonst könnte jeder aus dem Internet die internen IP-Adressen des Servers abfragen.
+const PROXY_HEADERS = ['x-forwarded-for', 'x-real-ip', 'forwarded', 'cf-connecting-ip', 'x-forwarded-host', 'via'];
+const isLocal = req => /^(::1|127\.|::ffff:127\.)/.test(req.socket.remoteAddress || '') &&
+  !PROXY_HEADERS.some(h => h in req.headers) && /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(req.headers.host || '');
 
 const server = http.createServer((req, res) => {
-  const u = new URL(req.url, 'http://x');
+  let u; try { u = new URL(req.url, 'http://x'); } catch (e) { res.writeHead(400, SECURITY_HEADERS); return res.end(); }
   if (req.method !== 'GET' && req.method !== 'HEAD') { res.writeHead(405, SECURITY_HEADERS); return res.end(); }
   if (u.pathname === '/' || u.pathname === '/index.html') {
     res.writeHead(200, { ...SECURITY_HEADERS, 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-cache' });
     if (req.method === 'HEAD') return res.end();
     fs.createReadStream(INDEX).on('error', () => res.end()).pipe(res);
+  } else if (u.pathname.startsWith('/fonts/') && FONTS.has(u.pathname.slice(7))) {
+    res.writeHead(200, { ...SECURITY_HEADERS, 'content-type': 'font/woff2', 'cache-control': 'public, max-age=31536000, immutable' });
+    if (req.method === 'HEAD') return res.end();
+    fs.createReadStream(path.join(__dirname, 'public', 'fonts', u.pathname.slice(7))).on('error', () => res.end()).pipe(res);
   } else if (u.pathname === '/health') {
     res.writeHead(200, { ...SECURITY_HEADERS, 'content-type': 'text/plain', 'cache-control': 'no-store' });
     res.end('ok');
@@ -113,7 +142,10 @@ function getPlan(id) {
   let p = plans.get(id);
   if (!p) {
     const s = readJSON(file(id));
-    p = { id, state: s && Array.isArray(s.rooms) ? s : { rooms: [] }, clients: new Set(), timer: null, dirty: false, idleTimer: null };
+    const state = s && Array.isArray(s.rooms) ? clean(s) : { rooms: [] };
+    state.rooms = state.rooms.filter(isObj); for (const r of state.rooms) if (!Array.isArray(r.items)) r.items = [];
+    p = { id, state, clients: new Set(), timer: null, dirty: false, idleTimer: null, onDisk: !!s,
+      bytes: s ? JSON.stringify(state).length : 0 };
     plans.set(id, p);
   }
   clearTimeout(p.idleTimer);
@@ -122,7 +154,7 @@ function getPlan(id) {
 function flush(p) {
   clearTimeout(p.timer); p.timer = null;
   if (!p.dirty) return;
-  try { writeAtomic(file(p.id), JSON.stringify(p.state)); p.dirty = false; }
+  try { const text = JSON.stringify(p.state); p.bytes = text.length; writeAtomic(file(p.id), text); p.dirty = false; p.onDisk = true; }
   catch (e) { log('Speichern fehlgeschlagen', p.id, e.message); }
 }
 function persist(p) { p.dirty = true; clearTimeout(p.timer); p.timer = setTimeout(() => flush(p), 800); }
@@ -131,9 +163,17 @@ function releaseIfIdle(p) { // Plan ohne Verbindungen nach 10 min aus dem Speich
   p.idleTimer = setTimeout(() => { if (!p.clients.size) { flush(p); plans.delete(p.id); } }, 10 * 60 * 1000);
 }
 
-function apply(s, o) {
+let planCount = 0;
+try { planCount = fs.readdirSync(DATA).filter(f => /^[a-z0-9-]+\.json$/.test(f) && f !== 'views.json').length; } catch (e) { /* leer */ }
+
+function apply(p, o) {
+  const s = p.state;
   if (!isObj(o)) return false;
-  if (JSON.stringify(o).length > LIMITS.maxOpBytes) return false;
+  const size = JSON.stringify(o).length;
+  if (size > LIMITS.maxOpBytes) return false;
+  const grows = o.t === 'room' || o.t === 'item';
+  if (grows && p.bytes + size > LIMITS.maxPlanBytes) return false; // Löschen geht immer
+  o = clean(o);
   if (o.t === 'room' && isObj(o.r) && typeof o.r.id === 'string') {
     const { items, hidden, ...r } = o.r;
     const ex = s.rooms.find(x => x.id === r.id);
@@ -152,6 +192,7 @@ function apply(s, o) {
   } else if (o.t === 'meta' && o.k === 'north' && Number.isFinite(o.v)) { // ältere Seiten (v1.9): Himmelsrichtung
     s.meta = s.meta || {}; s.meta.north = ((o.v % 360) + 360) % 360;
   } else return false; // unbekannt → ignorieren (neuere Seite, älterer Server)
+  if (grows) p.bytes += size; // grobe Schätzung bis zum nächsten Speichern (dort exakt)
   return true;
 }
 function bcast(p, msg, except) {
@@ -163,49 +204,56 @@ function bcast(p, msg, except) {
 const wss = new WebSocketServer({ server, path: '/ws', maxPayload: LIMITS.maxPayload });
 let cid = 0;
 wss.on('connection', (ws, req) => {
-  const q = new URL(req.url, 'http://x').searchParams;
+  let q; try { q = new URL(req.url, 'http://x').searchParams; } catch (e) { ws.close(1008, 'bad url'); return; }
   const viewTok = q.get('view');
   const readonly = !!viewTok;
   const id = readonly ? planForView(viewTok) : (q.get('plan') || '').toLowerCase();
   if (readonly && !id) { ws.close(4404, 'unknown view'); return; }
   if (!validId(id)) { ws.close(1008, 'bad plan'); return; }
+  if (wss.clients.size > LIMITS.maxClients) { ws.close(1013, 'busy'); return; }
   const sid = /^[a-z0-9]{6,40}$/.test(q.get('sid') || '') ? q.get('sid') : null;
   const p = getPlan(id);
-  // Dieselbe Seite verbindet sich neu → hängende alte Verbindung sofort entfernen (sonst „doppelt da“)
-  if (sid) for (const c of [...p.clients]) if (c.sid === sid) {
+  // Dieselbe Seite verbindet sich neu → hängende alte Verbindung sofort entfernen (sonst „doppelt da“).
+  // Nur gleiche Art (Ansehen/Bearbeiten), damit ein Zuschauer niemanden hinauswerfen kann.
+  if (sid) for (const c of [...p.clients]) if (c.sid === sid && c.readonly === readonly) {
     p.clients.delete(c); c.gone = true;
     bcast(p, { t: 'leave', id: c.cid });
     try { c.terminate(); } catch (e) { /* schon zu */ }
   }
   if (p.clients.size >= LIMITS.maxClientsPerPlan) { ws.close(1013, 'too many clients'); releaseIfIdle(p); return; }
   ws.cid = 'c' + (++cid); ws.sid = sid; ws.readonly = readonly; ws.pres = null; ws.alive = true;
-  ws.rate = { n: 0, t: Date.now() };
+  ws.rate = { n: 0, b: 0, t: Date.now() };
   p.clients.add(ws);
   ws.send(JSON.stringify({
     t: 'init', you: ws.cid, state: p.state,
     peers: [...p.clients].filter(c => c !== ws && c.pres).map(c => ({ id: c.cid, p: c.pres }))
   }));
   ws.on('pong', () => { ws.alive = true; });
-  ws.on('message', buf => {
+  ws.on('message', buf => { try { onMessage(buf); } catch (e) { log('Fehler bei Nachricht:', e.message); } });
+  function onMessage(buf) {
     ws.alive = true;
     const now = Date.now();
-    if (now - ws.rate.t > 10000) ws.rate = { n: 0, t: now };
-    if (++ws.rate.n > LIMITS.msgsPer10s) return; // Flut bremsen
+    if (now - ws.rate.t > 10000) ws.rate = { n: 0, b: 0, t: now };
+    ws.rate.b += buf.length;
+    if (++ws.rate.n > LIMITS.msgsPer10s || ws.rate.b > LIMITS.bytesPer10s) return; // Flut bremsen
     let m; try { m = JSON.parse(buf); } catch (e) { return; }
     if (!isObj(m)) return;
     if (m.t === 'hb') { if (ws.readyState === 1) ws.send('{"t":"hb"}'); return; }
     if (ws.readonly) return; // Nur-Ansehen: keine Änderungen, keine Präsenz
     if (m.t === 'viewlink') { ws.send(JSON.stringify({ t: 'viewlink', token: registerView(p.id) })); return; }
     if (m.t === 'ops' && Array.isArray(m.ops)) {
-      const ops = m.ops.filter(o => apply(p.state, o));
+      if (!p.onDisk && !p.dirty && planCount >= LIMITS.maxPlans) return; // keine neuen Pläne mehr
+      const ops = m.ops.filter(o => apply(p, o)).map(clean);
       if (!ops.length) return;
+      if (!p.onDisk && !p.dirty) planCount++;
       persist(p);
       bcast(p, { t: 'ops', from: ws.cid, ops }); // auch an den Absender (Bestätigung + Reihenfolge)
     } else if (m.t === 'pres' && isObj(m.p) && JSON.stringify(m.p).length < 2000) {
-      ws.pres = m.p;
-      bcast(p, { t: 'pres', id: ws.cid, p: m.p }, ws);
+      const { sid: _s, ...pr } = clean(m.p); // Sitzungs-ID nie an andere weitergeben
+      ws.pres = pr;
+      bcast(p, { t: 'pres', id: ws.cid, p: pr }, ws);
     }
-  });
+  }
   ws.on('close', () => {
     if (ws.gone) return; // schon als ersetzt gemeldet
     p.clients.delete(ws);
